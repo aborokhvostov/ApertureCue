@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-alpha.2 — SDK compatibility and frame ownership, 2026-10-26
+
+- Use the stable Objective-C camera-disconnect notification name across Apple SDKs; the first macOS CI exposed a Swift API rename that the newer local SDK accepted.
+- Acquire each media source once per composition and retain exactly its CoreVideo frame wrappers until GPU completion, including asynchronous sampling. Repeated video surfaces now have a dedicated frame-consistency check.
+- Capture immutable UDP packet/error snapshots and explicit main-actor sendable shutdown completion.
+- Verified Linux XCTest: 38 tests, zero failures. Local GPU/media suite: 28 checks; lighting pipeline: 11 checks. macOS CI is rerun on this revision; see status for its result.
+
 ## 0.1.0 — initial development stage, 2026-10-25
 
 ### Added

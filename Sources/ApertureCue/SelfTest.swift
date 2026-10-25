@@ -213,6 +213,17 @@ enum SelfTest {
             let sharedFrameB = media.texture(for: movie.id)
             try expect(sharedFrameA != nil && sharedFrameA === sharedFrameB, "Paused source did not share the same decoded texture across consumers")
             checks.append("multiple output consumers share the paused decoder texture")
+            var leftVideo = videoSurface, rightVideo = videoSurface
+            leftVideo.output = [Point2(0,0),Point2(0.5,0),Point2(0.5,1),Point2(0,1)]
+            rightVideo.id = UUID(); rightVideo.output = [Point2(0.5,0),Point2(1,0),Point2(1,1),Point2(0.5,1)]
+            let repeatedVideo = try frame([leftVideo,rightVideo])
+            let leftPixel = pixel(repeatedVideo,32,48), rightPixel = pixel(repeatedVideo,96,48)
+            try expect(near(leftPixel,rightPixel,tolerance:0) && leftPixel[2] > 230,
+                       "Repeated video surfaces did not use one consistent decoded frame")
+            let retainedFrame = media.frameResources(for:Set([movie.id]))
+            try expect(retainedFrame.textures.count == 1 && retainedFrame.retained.count == 1,
+                       "Composition did not retain its exact CoreVideo source frame")
+            checks.append("repeated video surfaces use one frame with matching retained CoreVideo ownership")
             media.seek(to: 1.8); media.play()
             try expect(pump(timeout: 5) {
                 _ = media.texture(for: movie.id)

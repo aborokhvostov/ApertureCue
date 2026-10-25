@@ -46,14 +46,14 @@ import MappingCore
     func validateDestination() throws {
         var address = in_addr(); guard inet_pton(AF_INET,destination,&address) == 1 else { throw SystemFailure(message:"Enter a numeric IPv4 destination") }
     }
-    func stop(completion:(()->Void)? = nil) {
+    func stop(completion:(@MainActor @Sendable ()->Void)? = nil) {
         generation &+= 1; isSampling = false
         if isSending, !lastUniverses.isEmpty {
             let black = lastUniverses.mapValues { Array(repeating:UInt8(0),count:$0.count) }
             try? transmit(black,terminating:wireProtocol == .sacn,force:true)
         }
         isSending = false; lastUniverses = [:]; swatches?.universes = [:]
-        if let completion { queue.async { DispatchQueue.main.async(execute:completion) } }
+        if let completion { queue.async { DispatchQueue.main.async { completion() } } }
     }
     private func transmit(_ universes:[Int:[UInt8]],terminating:Bool = false,force:Bool = false) throws {
         guard !senderBusy || force else { return }; try validateDestination()
@@ -75,8 +75,9 @@ import MappingCore
             }
         }
         let target = destination, isArtNet = wireProtocol == .artnet, port:UInt16 = wireProtocol == .artnet ? 6454 : 5568
+        let outboundPackets = packets
         senderBusy = true
-        queue.async { [weak self] in
+        queue.async { [weak self, outboundPackets] in
             let fd = socket(AF_INET,SOCK_DGRAM,0)
             var error:String?
             if fd >= 0 {
@@ -92,12 +93,16 @@ import MappingCore
                 }
                 var address = sockaddr_in(); address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size); address.sin_family = sa_family_t(AF_INET); address.sin_port = port.bigEndian
                 inet_pton(AF_INET,target,&address.sin_addr)
-                for data in packets where error == nil {
+                for data in outboundPackets where error == nil {
                     let count = data.withUnsafeBytes { b in withUnsafePointer(to:&address) { $0.withMemoryRebound(to:sockaddr.self,capacity:1) { sendto(fd,b.baseAddress,data.count,0,$0,socklen_t(MemoryLayout<sockaddr_in>.size)) } } }
                     if count != data.count { error = String(cString:strerror(errno)); break }
                 }
             } else { error = "Cannot create lighting UDP socket" }
-            DispatchQueue.main.async { self?.senderBusy = false; if let error { self?.errorDescription = error; self?.isSending = false } }
+            let finalError = error
+            DispatchQueue.main.async { [weak self] in
+                self?.senderBusy = false
+                if let finalError { self?.errorDescription = finalError; self?.isSending = false }
+            }
         }
     }
     func showSimulator() {

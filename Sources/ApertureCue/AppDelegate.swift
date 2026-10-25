@@ -22,7 +22,7 @@ import MappingCore
         guard editor.confirmDiscard() else { return .terminateCancel }
         editor.media.pause(); editor.network?.stop(); editor.midi?.stop()
         waitingForTermination = true
-        let finish = { [weak self] in
+        let finish: @MainActor @Sendable () -> Void = { [weak self] in
             guard let self, self.waitingForTermination else { return }
             self.waitingForTermination = false; sender.reply(toApplicationShouldTerminate:true)
         }

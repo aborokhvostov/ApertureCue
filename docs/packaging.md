@@ -28,7 +28,7 @@ ApertureCue-macOS-arm64/
   START-HERE.txt
 ```
 
-It verifies the app with `codesign --verify --deep --strict`, uses `ditto` to preserve the bundle/executable layout and prints the ZIP's SHA-256. The filename and first-run text are specifically for arm64; an Intel build needs a separately named/tested package. The source build itself targets the host CPU architecture.
+It verifies the app with `codesign --verify --deep --strict`, uses `ditto` to preserve the bundle/executable layout without extended attributes/AppleDouble entries and prints the ZIP's SHA-256. Packaging uses a fresh system temporary folder so a File Provider managing the source folder cannot add Finder metadata to the signed app before archiving. The script uses the host CPU architecture in the package name; the published package is arm64, and an Intel package still needs separate testing.
 
 `START-HERE.txt` explains opening the included demo, the GPL license, signing status and current hardware/protocol limits. The demo assets are generated from original project code. No MadMapper resources, SDKs, system frameworks or foreign projects are included.
 

@@ -27,7 +27,10 @@ final class MediaPool {
                         return
                     }
                     let input = try AVCaptureDeviceInput(device: device)
-                    self.observers.append(NotificationCenter.default.addObserver(forName: AVCaptureDevice.wasDisconnectedNotification, object: device, queue: nil) { _ in
+                    // The Swift spelling changed between Apple SDKs; the notification's
+                    // Objective-C name is stable (verified against the local SDK).
+                    let disconnected = Notification.Name("AVCaptureDeviceWasDisconnectedNotification")
+                    self.observers.append(NotificationCenter.default.addObserver(forName: disconnected, object: device, queue: nil) { _ in
                         onError("Camera disconnected")
                     })
                     self.observers.append(NotificationCenter.default.addObserver(forName: AVCaptureSession.runtimeErrorNotification, object: self.session, queue: nil) { notification in
@@ -137,9 +140,20 @@ final class MediaPool {
         return value.isFinite ? value : 0
     }
 
-    /// Keep the Core Video wrappers alive until the corresponding GPU work
-    /// finishes, even if the next decoder frame replaces the shared cache.
-    func retainedVideoFrames() -> [CVMetalTexture] { entries.values.compactMap(\.cvTexture) }
+    /// Acquire each source once for an entire composition. The returned wrappers
+    /// belong to exactly these textures and must survive the submitted GPU work.
+    func frameResources(for ids: Set<UUID>) -> (textures: [UUID: MTLTexture], retained: [CVMetalTexture]) {
+        precondition(Thread.isMainThread)
+        var textures: [UUID: MTLTexture] = [:]
+        var retained: [CVMetalTexture] = []
+        for id in ids {
+            if let texture = texture(for: id) {
+                textures[id] = texture
+                if let wrapper = entries[id]?.cvTexture { retained.append(wrapper) }
+            }
+        }
+        return (textures, retained)
+    }
 
     func reconcile(assets: [MediaAsset], baseURL: URL) {
         precondition(Thread.isMainThread)

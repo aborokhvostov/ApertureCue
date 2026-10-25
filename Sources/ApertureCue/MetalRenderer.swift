@@ -102,8 +102,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         guard let drawable = view.currentDrawable,
               let descriptor = view.currentRenderPassDescriptor,
               let buffer = queue.makeCommandBuffer() else { slots.signal(); return }
-        encode(descriptor: descriptor, buffer: buffer)
-        let videoFrames = media.retainedVideoFrames()
+        let videoFrames = encode(descriptor: descriptor, buffer: buffer)
         buffer.present(drawable)
         let slots = self.slots
         buffer.addCompletedHandler { [weak self] command in
@@ -149,8 +148,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         pass.colorAttachments[0].loadAction = .clear
         pass.colorAttachments[0].storeAction = .store
         pass.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1)
-        encode(descriptor: pass, buffer: buffer)
-        let videoFrames = media.retainedVideoFrames()
+        let videoFrames = encode(descriptor: pass, buffer: buffer)
         buffer.commit()
         buffer.waitUntilCompleted()
         withExtendedLifetime(videoFrames) {}
@@ -189,8 +187,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         pass.colorAttachments[0].storeAction = .store
         pass.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1)
         asyncSnapshotPending = true
-        encode(descriptor: pass, buffer: buffer)
-        let videoFrames = media.retainedVideoFrames()
+        let videoFrames = encode(descriptor: pass, buffer: buffer)
         let worker = snapshotQueue
         buffer.addCompletedHandler { [weak self] command in
             withExtendedLifetime(videoFrames) {}
@@ -219,18 +216,22 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         buffer.commit()
     }
 
-    private func encode(descriptor: MTLRenderPassDescriptor, buffer: MTLCommandBuffer) {
-        guard let encoder = buffer.makeRenderCommandEncoder(descriptor: descriptor) else { return }
+    private func encode(descriptor: MTLRenderPassDescriptor, buffer: MTLCommandBuffer) -> [CVMetalTexture] {
+        guard let encoder = buffer.makeRenderCommandEncoder(descriptor: descriptor) else { return [] }
         defer { encoder.endEncoding() }
-        guard !blackout else { return }
-        for surface in surfaces where surface.enabled && surface.opacity > 0 {
-            if let outputID, let assigned = surface.outputID, assigned != outputID { continue }
-            do { try draw(surface: surface, encoder: encoder) }
+        guard !blackout else { return [] }
+        let visible = surfaces.filter { surface in
+            surface.enabled && surface.opacity > 0 && (outputID == nil || surface.outputID == nil || outputID == surface.outputID)
+        }
+        let resources = media.frameResources(for: Set(visible.compactMap(\.mediaID)))
+        for surface in visible {
+            do { try draw(surface: surface, encoder: encoder, textures: resources.textures) }
             catch { errorDescription = "\(surface.name): \(error.localizedDescription)" }
         }
+        return resources.retained
     }
 
-    private func draw(surface: Surface, encoder: MTLRenderCommandEncoder) throws {
+    private func draw(surface: Surface, encoder: MTLRenderCommandEncoder, textures: [UUID: MTLTexture]) throws {
         guard surface.input.count == 4, surface.output.count == 4 else { return }
         let unit = [Point2(0, 0), Point2(1, 0), Point2(1, 1), Point2(0, 1)]
         let columns = surface.meshColumns
@@ -261,7 +262,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             vertices = [vertex(points[0], 0, 0), vertex(points[1], 1, 0), vertex(points[2], 1, 1),
                         vertex(points[0], 0, 0), vertex(points[2], 1, 1), vertex(points[3], 0, 1)]
         }
-        let texture = surface.mediaID.flatMap { media.texture(for: $0) }
+        let texture = surface.mediaID.flatMap { textures[$0] }
         let generators = ["checker": Float(1), "gradient": Float(2), "solid": Float(3), "grid": Float(4)]
         let generator = texture != nil ? Float(0) : (generators[surface.generator] ?? 1)
         let tint = surface.color.count >= 3 ? surface.color : [1, 1, 1]
