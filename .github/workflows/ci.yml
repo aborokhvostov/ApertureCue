@@ -1,0 +1,54 @@
+name: Build and core tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: macOS desktop and core
+    runs-on: macos-14
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Record toolchain
+        run: swift --version
+      - name: Build with SwiftPM
+        run: swift build -c release
+      - name: Run core XCTest suite
+        run: swift test
+      - name: Package native macOS application
+        run: ./scripts/build.sh
+      - name: Archive application preserving executable permissions
+        run: ditto -c -k --norsrc --noextattr --keepParent dist/ApertureCue.app dist/ApertureCue-macOS.zip
+      - name: Upload development build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ApertureCue-macOS-${{ github.sha }}
+          path: dist/ApertureCue-macOS.zip
+          if-no-files-found: error
+          retention-days: 14
+      # GPU/media self-tests require a real logged-in graphics session. They are
+      # deliberately reported separately from this headless build/core job.
+
+  linux-core:
+    name: Linux portable core
+    runs-on: ubuntu-24.04
+    container: swift:6.0
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Record toolchain
+        run: swift --version
+      - name: Run portable core XCTest suite
+        run: swift test

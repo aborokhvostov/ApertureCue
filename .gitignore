@@ -1,0 +1,9 @@
+.build/
+.swiftpm/
+build/
+dist/
+.DS_Store
+*.recovery
+*.xcuserstate
+*.log
+artifacts/local/

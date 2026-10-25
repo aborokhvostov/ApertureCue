@@ -1,0 +1,26 @@
+{
+  "checkCount" : 9,
+  "checks" : [
+    "hidden editor startup with valid demo project",
+    "add, duplicate, delete and controller undo\/redo",
+    "production overlay callbacks edit independent input\/output with command history",
+    "timeline sampling follows seek; delete\/undo\/redo keep target bindings consistent",
+    "controller media import mutation, assignment and asynchronous texture load",
+    "document save marks clean and preserves separate recovery; next save removes sidecar",
+    "new document clears media, playback time, history, URL and selection",
+    "open document restores resources and title while resetting history, selection and transport",
+    "hidden independent output shares media, receives blackout and closes without fullscreen"
+  ],
+  "documentAssetCount" : 1,
+  "documentSurfaceCount" : 2,
+  "gpu" : "Apple M2",
+  "hardwareVerification" : false,
+  "modalDialogs" : false,
+  "nativeScreenCount" : 1,
+  "passed" : true,
+  "platform" : "Version 26.6.2 (Build 25G83)",
+  "schemaVersion" : 1,
+  "scope" : "Production EditorController and hidden output renderer integration; no external application, visible output, or hardware interaction.",
+  "timestampUTC" : "2026-10-25T21:01:40Z",
+  "windowsShown" : false
+}
