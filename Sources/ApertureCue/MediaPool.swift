@@ -33,7 +33,8 @@ final class MediaPool {
                     self.observers.append(NotificationCenter.default.addObserver(forName: disconnected, object: device, queue: nil) { _ in
                         onError("Camera disconnected")
                     })
-                    self.observers.append(NotificationCenter.default.addObserver(forName: AVCaptureSession.runtimeErrorNotification, object: self.session, queue: nil) { notification in
+                    let runtimeError = Notification.Name("AVCaptureSessionRuntimeErrorNotification")
+                    self.observers.append(NotificationCenter.default.addObserver(forName: runtimeError, object: self.session, queue: nil) { notification in
                         let error = notification.userInfo?[AVCaptureSessionErrorKey] as? NSError
                         onError("Camera runtime error: \(error?.localizedDescription ?? "capture stopped")")
                     })
