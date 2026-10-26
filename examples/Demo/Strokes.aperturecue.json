@@ -1,0 +1,722 @@
+{
+  "assets" : [
+
+  ],
+  "cues" : [
+    {
+      "duration" : 1,
+      "id" : "FFC0082A-D995-4513-BA18-35717CAD6C86",
+      "name" : "Paths",
+      "surfaces" : [
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "checker",
+          "group" : "",
+          "groupID" : "D305149F-7E49-4B31-86C4-C8721FEF47CF",
+          "id" : "699811ED-408F-46E1-AEF4-638429439C6C",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "mask" : [
+
+          ],
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshRows" : 0,
+          "name" : "Round polyline",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.05,
+              "y" : 0.06
+            },
+            {
+              "x" : 0.95,
+              "y" : 0.06
+            },
+            {
+              "x" : 0.95,
+              "y" : 0.42
+            },
+            {
+              "x" : 0.05,
+              "y" : 0.42
+            }
+          ],
+          "shape" : "line",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.08,
+                  "y" : 0.65
+                },
+                "incoming" : {
+                  "x" : 0.08,
+                  "y" : 0.65
+                },
+                "outgoing" : {
+                  "x" : 0.08,
+                  "y" : 0.65
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.33,
+                  "y" : 0.25
+                },
+                "incoming" : {
+                  "x" : 0.33,
+                  "y" : 0.25
+                },
+                "outgoing" : {
+                  "x" : 0.33,
+                  "y" : 0.25
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.63,
+                  "y" : 0.7
+                },
+                "incoming" : {
+                  "x" : 0.63,
+                  "y" : 0.7
+                },
+                "outgoing" : {
+                  "x" : 0.63,
+                  "y" : 0.7
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.92,
+                  "y" : 0.3
+                },
+                "incoming" : {
+                  "x" : 0.92,
+                  "y" : 0.3
+                },
+                "outgoing" : {
+                  "x" : 0.92,
+                  "y" : 0.3
+                }
+              }
+            ],
+            "width" : 0.18
+          }
+        },
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "gradient",
+          "group" : "",
+          "groupID" : "D305149F-7E49-4B31-86C4-C8721FEF47CF",
+          "id" : "EFA24369-91F3-4EDC-9A53-E3CF5D4C7125",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "mask" : [
+
+          ],
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshRows" : 0,
+          "name" : "Textured cubic",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.05,
+              "y" : 0.43
+            },
+            {
+              "x" : 0.95,
+              "y" : 0.43
+            },
+            {
+              "x" : 0.95,
+              "y" : 0.95
+            },
+            {
+              "x" : 0.05,
+              "y" : 0.95
+            }
+          ],
+          "shape" : "bezier",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.65
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.65
+                },
+                "outgoing" : {
+                  "x" : 0.3,
+                  "y" : 0.05
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.35
+                },
+                "incoming" : {
+                  "x" : 0.7,
+                  "y" : 0.95
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.35
+                }
+              }
+            ],
+            "width" : 0.16
+          }
+        }
+      ]
+    },
+    {
+      "duration" : 2,
+      "id" : "04A9297F-7544-4CBE-8896-63BF3ECC3FFC",
+      "name" : "Curve tangents",
+      "surfaces" : [
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "checker",
+          "group" : "",
+          "groupID" : "D305149F-7E49-4B31-86C4-C8721FEF47CF",
+          "id" : "699811ED-408F-46E1-AEF4-638429439C6C",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "mask" : [
+
+          ],
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshRows" : 0,
+          "name" : "Round polyline",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.05,
+              "y" : 0.06
+            },
+            {
+              "x" : 0.95,
+              "y" : 0.06
+            },
+            {
+              "x" : 0.95,
+              "y" : 0.42
+            },
+            {
+              "x" : 0.05,
+              "y" : 0.42
+            }
+          ],
+          "shape" : "line",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.08,
+                  "y" : 0.65
+                },
+                "incoming" : {
+                  "x" : 0.08,
+                  "y" : 0.65
+                },
+                "outgoing" : {
+                  "x" : 0.08,
+                  "y" : 0.65
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.33,
+                  "y" : 0.25
+                },
+                "incoming" : {
+                  "x" : 0.33,
+                  "y" : 0.25
+                },
+                "outgoing" : {
+                  "x" : 0.33,
+                  "y" : 0.25
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.63,
+                  "y" : 0.7
+                },
+                "incoming" : {
+                  "x" : 0.63,
+                  "y" : 0.7
+                },
+                "outgoing" : {
+                  "x" : 0.63,
+                  "y" : 0.7
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.92,
+                  "y" : 0.3
+                },
+                "incoming" : {
+                  "x" : 0.92,
+                  "y" : 0.3
+                },
+                "outgoing" : {
+                  "x" : 0.92,
+                  "y" : 0.3
+                }
+              }
+            ],
+            "width" : 0.18
+          }
+        },
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "gradient",
+          "group" : "",
+          "groupID" : "D305149F-7E49-4B31-86C4-C8721FEF47CF",
+          "id" : "EFA24369-91F3-4EDC-9A53-E3CF5D4C7125",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "mask" : [
+
+          ],
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshRows" : 0,
+          "name" : "Textured cubic",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.05,
+              "y" : 0.43
+            },
+            {
+              "x" : 0.95,
+              "y" : 0.43
+            },
+            {
+              "x" : 0.95,
+              "y" : 0.95
+            },
+            {
+              "x" : 0.05,
+              "y" : 0.95
+            }
+          ],
+          "shape" : "bezier",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.65
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.65
+                },
+                "outgoing" : {
+                  "x" : 0.25,
+                  "y" : 0.9
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.35
+                },
+                "incoming" : {
+                  "x" : 0.75,
+                  "y" : 0.1
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.35
+                }
+              }
+            ],
+            "width" : 0.16
+          }
+        }
+      ]
+    }
+  ],
+  "fixtures" : [
+
+  ],
+  "groups" : [
+    {
+      "enabled" : true,
+      "id" : "D305149F-7E49-4B31-86C4-C8721FEF47CF",
+      "name" : "Paths",
+      "opacity" : 1,
+      "transform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "tx" : 0,
+        "ty" : 0
+      }
+    }
+  ],
+  "name" : "ApertureCue Textured Paths",
+  "outputs" : [
+    {
+      "height" : 1080,
+      "id" : "1E53EE07-43B9-4C45-B07E-2D83A78DE4AB",
+      "name" : "Output",
+      "screenIndex" : 0,
+      "width" : 1920
+    }
+  ],
+  "surfaces" : [
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "checker",
+      "group" : "",
+      "groupID" : "D305149F-7E49-4B31-86C4-C8721FEF47CF",
+      "id" : "699811ED-408F-46E1-AEF4-638429439C6C",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "mask" : [
+
+      ],
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshRows" : 0,
+      "name" : "Round polyline",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.05,
+          "y" : 0.06
+        },
+        {
+          "x" : 0.95,
+          "y" : 0.06
+        },
+        {
+          "x" : 0.95,
+          "y" : 0.42
+        },
+        {
+          "x" : 0.05,
+          "y" : 0.42
+        }
+      ],
+      "shape" : "line",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.08,
+              "y" : 0.65
+            },
+            "incoming" : {
+              "x" : 0.08,
+              "y" : 0.65
+            },
+            "outgoing" : {
+              "x" : 0.08,
+              "y" : 0.65
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.33,
+              "y" : 0.25
+            },
+            "incoming" : {
+              "x" : 0.33,
+              "y" : 0.25
+            },
+            "outgoing" : {
+              "x" : 0.33,
+              "y" : 0.25
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.63,
+              "y" : 0.7
+            },
+            "incoming" : {
+              "x" : 0.63,
+              "y" : 0.7
+            },
+            "outgoing" : {
+              "x" : 0.63,
+              "y" : 0.7
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.92,
+              "y" : 0.3
+            },
+            "incoming" : {
+              "x" : 0.92,
+              "y" : 0.3
+            },
+            "outgoing" : {
+              "x" : 0.92,
+              "y" : 0.3
+            }
+          }
+        ],
+        "width" : 0.18
+      }
+    },
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "gradient",
+      "group" : "",
+      "groupID" : "D305149F-7E49-4B31-86C4-C8721FEF47CF",
+      "id" : "EFA24369-91F3-4EDC-9A53-E3CF5D4C7125",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "mask" : [
+
+      ],
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshRows" : 0,
+      "name" : "Textured cubic",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.05,
+          "y" : 0.43
+        },
+        {
+          "x" : 0.95,
+          "y" : 0.43
+        },
+        {
+          "x" : 0.95,
+          "y" : 0.95
+        },
+        {
+          "x" : 0.05,
+          "y" : 0.95
+        }
+      ],
+      "shape" : "bezier",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.65
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.65
+            },
+            "outgoing" : {
+              "x" : 0.3,
+              "y" : 0.05
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.35
+            },
+            "incoming" : {
+              "x" : 0.7,
+              "y" : 0.95
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.35
+            }
+          }
+        ],
+        "width" : 0.16
+      }
+    }
+  ],
+  "timeline" : [
+
+  ],
+  "version" : 4
+}

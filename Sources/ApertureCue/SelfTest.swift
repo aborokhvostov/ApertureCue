@@ -166,6 +166,179 @@ enum SelfTest {
                 checks.append("\(shape.rawValue) shape-aware feather numerical oracle")
             }
 
+            // Independent dense CPU centerline oracle. This deliberately does
+            // not use StrokeGeometry.hit/samples, so GPU distance, UV and cubic
+            // flattening errors do not share an implementation with the oracle.
+            func strokeOracle(_ points:[Point2],width:Double,at p:Point2) -> (distance:Double,along:Double,across:Double) {
+                let aspect=16.0/9.0
+                let lengths=zip(points,points.dropFirst()).map { hypot(($1.x-$0.x)*aspect,$1.y-$0.y) }
+                let total=lengths.reduce(0,+)
+                var best=Double.infinity,along=0.0,across=0.5,travelled=0.0
+                for i in lengths.indices {
+                    let a=points[i],b=points[i+1],dx=(b.x-a.x)*aspect,dy=b.y-a.y,len=lengths[i]
+                    if len > 1e-12 {
+                        let px=(p.x-a.x)*aspect,py=p.y-a.y
+                        let t=max(0,min(1,(px*dx+py*dy)/(len*len)))
+                        let ex=px-dx*t,ey=py-dy*t,distance=hypot(ex,ey)
+                        if distance < best {
+                            best=distance; along=(travelled+t*len)/total
+                            across=max(0,min(1,0.5+(dx*ey-dy*ex)/(len*width)))
+                        }
+                    }
+                    travelled += len
+                }
+                return (best,along,across)
+            }
+            func gradientPixel(_ u:Double,_ v:Double,alpha:Double=1) -> [Int] {
+                [Int((255*u*alpha).rounded()),Int((255*v*alpha).rounded()),Int((255*(1-u)*alpha).rounded()),255]
+            }
+            func strokePoint(_ x:Int,_ y:Int) -> Point2 { Point2((Double(x)+0.5)/320,(Double(y)+0.5)/180) }
+            let strokeLine=[Point2(0.2,0.5),Point2(0.8,0.5)]
+            var lineStroke=Surface(name:"Original stroke width/cap reference",output:unit,color:[1,0,0],generator:"solid",shape:.line)
+            lineStroke.stroke=StrokePath(nodes:strokeLine.map { StrokeNode(anchor:$0) },width:0.16)
+            image=try frame([lineStroke],width:320,height:180)
+            for (x,y) in [(160,90),(53,89),(160,78)] {
+                try expect(near(pixel(image,x,y),[255,0,0,255]),"Straight stroke removed its center, side or round-cap interior")
+            }
+            for (x,y) in [(46,89),(160,71),(275,90)] {
+                try expect(near(pixel(image,x,y),[0,0,0,255]),"Straight stroke retained an exterior side/cap sample at \(x),\(y): \(pixel(image,x,y))")
+            }
+            var strokeArea=0.0,strokeFractional=0
+            for y in 0..<180 { for x in 0..<320 {
+                let r=pixel(image,x,y)[0]; strokeArea += Double(r)/255
+                if r > 0 && r < 255 { strokeFractional += 1 }
+            } }
+            let expectedStrokeArea=0.6*0.16+Double.pi*pow(0.08,2)/(16.0/9.0)
+            try expect(abs(strokeArea/(320*180)-expectedStrokeArea) < 0.002 && strokeFractional > 30,"Stroke capsule area or derivative antialias coverage differs")
+            var tinyStroke=lineStroke
+            tinyStroke.stroke=StrokePath(nodes:[StrokeNode(anchor:Point2(0.5,0.5)),StrokeNode(anchor:Point2(0.50000001,0.5))],width:0.16)
+            image=try frame([tinyStroke],width:320,height:180)
+            try expect(pixel(image,160,90)[0] == 255 && pixel(image,180,90)[0] == 0,"Float-collapsed stroke endpoints lost their round-cap disc")
+            checks.append("straight stroke width, round caps, analytic capsule area and derivative antialias")
+
+            let jointPoints=[Point2(0.2,0.7),Point2(0.5,0.3),Point2(0.8,0.7)]
+            var jointStroke=lineStroke
+            jointStroke.stroke=StrokePath(nodes:jointPoints.map { StrokeNode(anchor:$0) },width:0.14)
+            image=try frame([jointStroke],width:320,height:180)
+            var jointSamples=0
+            for y in stride(from:20,to:160,by:7) { for x in stride(from:30,to:290,by:7) {
+                let oracle=strokeOracle(jointPoints,width:0.14,at:strokePoint(x,y))
+                if abs(oracle.distance-0.07)>0.02 {
+                    try expect(pixel(image,x,y)[0] == (oracle.distance < 0.07 ? 255 : 0),"Polyline round join differs from independent capsule-union oracle")
+                    jointSamples += 1
+                }
+            } }
+            try expect(jointSamples>300,"Polyline joint oracle did not cover enough interior/exterior samples")
+            checks.append("polyline sharp-corner round joins vs independent CPU capsule union")
+
+            var uvStroke=lineStroke; uvStroke.generator="gradient"; uvStroke.color=[1,1,1]
+            uvStroke.input=[Point2(0.15,0.2),Point2(0.85,0.2),Point2(0.85,0.8),Point2(0.15,0.8)]
+            image=try frame([uvStroke],width:320,height:180)
+            for (x,y) in [(80,85),(160,90),(240,94)] {
+                let oracle=strokeOracle(strokeLine,width:0.16,at:strokePoint(x,y))
+                try expect(near(pixel(image,x,y),gradientPixel(0.15+0.7*oracle.along,0.2+0.6*oracle.across)),"Stroke arclength/across UV crop differs from independent CPU reference")
+            }
+            uvStroke.feather=0.06
+            image=try frame([uvStroke],width:320,height:180)
+            for (x,y) in [(120,81),(200,90),(160,99)] {
+                let oracle=strokeOracle(strokeLine,width:0.16,at:strokePoint(x,y))
+                let t=max(0,min(1,(0.08-oracle.distance)/0.06)),alpha=t*t*(3-2*t)
+                try expect(near(pixel(image,x,y),gradientPixel(0.15+0.7*oracle.along,0.2+0.6*oracle.across,alpha:alpha),tolerance:3),"Stroke feather differs from centerline-distance oracle")
+            }
+            uvStroke.feather=0
+            uvStroke.mask=[Point2(0,0),Point2(0.5,0),Point2(0.5,1),Point2(0,1)]
+            image=try frame([uvStroke],width:320,height:180)
+            try expect(pixel(image,80,90)[0]>30 && near(pixel(image,240,90),[0,0,0,255]),"Stroke source-UV mask did not intersect cropped arclength coordinates")
+            checks.append("stroke arclength/across texture UV, independent source crop, mask and feather numerical oracle")
+
+            let cubicA=Point2(0.12,0.68),cubicB=Point2(0.25,0.08),cubicC=Point2(0.72,0.94),cubicD=Point2(0.88,0.3)
+            let denseCubic=(0...2048).map { index -> Point2 in
+                let t=Double(index)/2048,u=1-t
+                return Point2(u*u*u*cubicA.x+3*u*u*t*cubicB.x+3*u*t*t*cubicC.x+t*t*t*cubicD.x,
+                              u*u*u*cubicA.y+3*u*u*t*cubicB.y+3*u*t*t*cubicC.y+t*t*t*cubicD.y)
+            }
+            var cubicStroke=Surface(name:"Original cubic ribbon",output:unit,generator:"gradient",shape:.bezier)
+            cubicStroke.stroke=StrokePath(nodes:[StrokeNode(anchor:cubicA,outgoing:cubicB),StrokeNode(anchor:cubicD,incoming:cubicC)],width:0.16)
+            image=try frame([cubicStroke],width:320,height:180)
+            var cubicInterior=0,cubicExterior=0
+            for y in stride(from:20,to:160,by:9) { for x in stride(from:20,to:300,by:9) {
+                let oracle=strokeOracle(denseCubic,width:0.16,at:strokePoint(x,y))
+                if oracle.distance < 0.055 {
+                    try expect(near(pixel(image,x,y),gradientPixel(oracle.along,oracle.across),tolerance:4),"Cubic ribbon UV differs from dense independent Bernstein reference")
+                    cubicInterior += 1
+                } else if oracle.distance > 0.105 {
+                    try expect(near(pixel(image,x,y),[0,0,0,255]),"Cubic ribbon retained a pixel outside its dense-reference stroke")
+                    cubicExterior += 1
+                }
+            } }
+            try expect(cubicInterior>20 && cubicExterior>100,"Cubic oracle did not cover enough interior/exterior samples")
+            if let png=image.representation(using:.png,properties:[:]) { try png.write(to:directory.appendingPathComponent("cubic-stroke.png"),options:.atomic) }
+            checks.append("cubic stroke coverage and UV vs 2048-step independent Bernstein reference")
+
+            var closedStroke=lineStroke
+            closedStroke.stroke=StrokePath(nodes:[Point2(0.2,0.75),Point2(0.5,0.2),Point2(0.8,0.75)].map { StrokeNode(anchor:$0) },width:0.12,closed:true)
+            image=try frame([closedStroke],width:320,height:180)
+            try expect(pixel(image,160,134)[0]==255 && pixel(image,160,32)[0]==255 && pixel(image,160,99)[0]==0,"Closed stroke closing edge, round join or hollow center differs")
+            var crossingStroke=lineStroke; crossingStroke.opacity=0.5
+            crossingStroke.stroke=StrokePath(nodes:[Point2(0.15,0.2),Point2(0.85,0.8),Point2(0.15,0.8),Point2(0.85,0.2)].map { StrokeNode(anchor:$0) },width:0.14)
+            image=try frame([crossingStroke],width:320,height:180)
+            try expect(near(pixel(image,160,90),[128,0,0,255]),"Self-crossing stroke accumulated opacity more than once")
+            checks.append("closed stroke closing edge/round joins and single-alpha self-crossings")
+
+            let strokeGroup=SurfaceGroup(name:"Original mirrored stroke group",transform:.translation(x:0.01,y:-0.02).concatenating(.rotation(degrees:11,around:Point2(0.5,0.5),aspectRatio:16.0/9.0)).concatenating(.scale(x:-0.85,y:0.8)))
+            var projectedStroke=cubicStroke; projectedStroke.output=quad; projectedStroke.groupID=strokeGroup.id
+            let worldStroke=try GroupEngine.resolve(surfaces:[projectedStroke],groups:[strokeGroup])[0]
+            let strokeInverse=try Homography.solve(from:worldStroke.output,to:unit)
+            image=try frame([worldStroke],width:320,height:180)
+            var projectedInterior=0
+            for y in stride(from:20,to:160,by:8) { for x in stride(from:20,to:300,by:8) {
+                let local=try strokeInverse.applying(strokePoint(x,y))
+                let oracle=strokeOracle(denseCubic,width:0.16,at:local)
+                if (0.05...0.95).contains(local.x),(0.05...0.95).contains(local.y),oracle.distance<0.045 {
+                    try expect(near(pixel(image,x,y),gradientPixel(oracle.along,oracle.across),tolerance:4),"Grouped mirrored perspective stroke differs from inverse-homography CPU oracle")
+                    projectedInterior += 1
+                }
+            } }
+            try expect(projectedInterior>10,"Projected stroke oracle did not reach enough interior samples")
+            var strokeMesh=lineStroke; strokeMesh.generator="gradient"; strokeMesh.color=[1,1,1]
+            strokeMesh.meshColumns=1; strokeMesh.meshRows=1
+            strokeMesh.mesh=[Point2(0.1,0.1),Point2(0.9,0.15),Point2(0.05,0.9),Point2(0.8,0.85)]
+            image=try frame([strokeMesh],width:320,height:180)
+            var meshStrokeSamples=0
+            for y in stride(from:35,to:145,by:5) { for x in stride(from:35,to:285,by:5) {
+                let p=strokePoint(x,y)
+                var local:Point2?
+                for (ids,uvs) in [([0,1,3],[Point2(0,0),Point2(1,0),Point2(1,1)]),([0,3,2],[Point2(0,0),Point2(1,1),Point2(0,1)])] {
+                    let a=strokeMesh.mesh[ids[0]],b=strokeMesh.mesh[ids[1]],c=strokeMesh.mesh[ids[2]]
+                    let determinant=(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x)
+                    let wb=((p.x-a.x)*(c.y-a.y)-(p.y-a.y)*(c.x-a.x))/determinant
+                    let wc=((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x))/determinant,wa=1-wb-wc
+                    if min(wa,wb,wc)>1e-5 { local=Point2(wa*uvs[0].x+wb*uvs[1].x+wc*uvs[2].x,wa*uvs[0].y+wb*uvs[1].y+wc*uvs[2].y); break }
+                }
+                if let local {
+                    let oracle=strokeOracle(strokeLine,width:0.16,at:local)
+                    if oracle.distance<0.05 {
+                        try expect(near(pixel(image,x,y),gradientPixel(oracle.along,oracle.across),tolerance:3),"Displaced mesh stroke UV differs from independent barycentric oracle")
+                        meshStrokeSamples += 1
+                    }
+                }
+            } }
+            try expect(meshStrokeSamples>25,"Stroke mesh oracle did not reach enough interior samples")
+            checks.append("cubic group mirror/perspective and displaced-mesh stroke vs independent inverse/barycentric UV")
+
+            var routedStroke=lineStroke; routedStroke.outputID=UUID()
+            renderer.outputID=UUID()
+            image=try frame([routedStroke],width:320,height:180)
+            try expect(near(pixel(image,160,90),[0,0,0,255]),"Stroke leaked into another routed output")
+            renderer.outputID=routedStroke.outputID
+            image=try frame([routedStroke],width:320,height:180)
+            try expect(pixel(image,160,90)[0]==255,"Stroke was absent from its routed output")
+            renderer.outputID=nil; renderer.blackout=true
+            image=try frame([routedStroke],width:320,height:180)
+            try expect(near(pixel(image,160,90),[0,0,0,255]),"Blackout retained stroke pixels")
+            renderer.blackout=false
+            checks.append("stroke output routing and blackout through production compositor")
+
             let groupParent = SurfaceGroup(name:"Rotated parent",transform:.rotation(degrees:17,around:Point2(0.5,0.5),aspectRatio:4.0/3.0))
             let groupChild = SurfaceGroup(name:"Mirrored child",parentID:groupParent.id,transform:.translation(x:0.03,y:-0.02).concatenating(.scale(x:-0.7,y:0.65)))
             let hierarchy = [groupParent,groupChild]

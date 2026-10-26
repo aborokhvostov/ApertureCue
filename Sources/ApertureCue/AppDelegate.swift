@@ -149,7 +149,7 @@ import MappingCore
         // A shared implicit backing can leave black holes after a modal closes.
         overlay.wantsLayer = true; overlay.layer?.backgroundColor = NSColor.clear.cgColor; overlay.layer?.isOpaque = false
         fill(metalView, in: canvas); fill(overlay, in: canvas)
-        modePicker = ActionPopUp(items:["Output geometry", "Input region"], action: { [weak self] _ in self?.overlay.maskMode = false; self?.overlay.meshMode = false; self?.updateRender(); self?.refreshInspector() })
+        modePicker = ActionPopUp(items:["Output geometry", "Input region"], action: { [weak self] _ in self?.overlay.maskMode = false; self?.overlay.meshMode = false; self?.overlay.pathMode = false; self?.updateRender(); self?.refreshInspector() })
         let help = label("Drag corners · Shift: snap 5% · Layer order: back → front", size: 11)
         let canvasContainer = NSView(); canvasContainer.translatesAutoresizingMaskIntoConstraints = false
         canvas.translatesAutoresizingMaskIntoConstraints = false; canvasContainer.addSubview(canvas)
@@ -203,6 +203,7 @@ import MappingCore
             label("SURFACES · back → front",bold:true),layers,
             stack([ActionButton("+ Quad") { [weak self] in self?.addSurface() },ActionButton("Duplicate") { [weak self] in self?.duplicateSurface() }],vertical:false),
             stack([ActionButton("+ Triangle") { [weak self] in self?.addSurface(shape:.triangle) },ActionButton("+ Ellipse") { [weak self] in self?.addSurface(shape:.ellipse) }],vertical:false),
+            stack([ActionButton("+ Line") { [weak self] in self?.addSurface(shape:.line) },ActionButton("+ Bézier") { [weak self] in self?.addSurface(shape:.bezier) }],vertical:false),
             stack([ActionButton("↓") { [weak self] in self?.moveLayer(-1) },ActionButton("↑") { [weak self] in self?.moveLayer(1) },ActionButton("Delete") { [weak self] in self?.deleteSurface() }],vertical:false)])
         for v in [assets,layers] { v.widthAnchor.constraint(equalTo:s.widthAnchor).isActive = true }
         layers.heightAnchor.constraint(greaterThanOrEqualToConstant:120).isActive = true
@@ -231,6 +232,7 @@ import MappingCore
             guard let self, let i = self.project.surfaces.firstIndex(where:{$0.id == id}) else { return }
             do {
                 var edited = self.project.surfaces[i]
+                if self.overlay.pathMode && !input { try self.editStrokeHandles(surfaceID:id,world:points); return }
                 if self.overlay.maskMode { edited.mask = points }
                 else if input { try Geometry.validateQuad(points); edited.input = points }
                 else {
@@ -292,6 +294,7 @@ import MappingCore
             s.shape = .quad; s.mesh = []; s.meshColumns = 0; s.meshRows = 0; s.mask = []; s.feather = 0; s.opacity = 1; s.brightness = 1; s.gamma = 1; s.color = [1,1,1]; s.enabled = true
             renderer.surfaces = [s]
         } else { renderer.surfaces = effective }
+        if selectedIndex.map({ !project.surfaces[$0].shape.isStroke }) ?? true { overlay.pathMode=false }
         overlay.inputMode = inputMode; overlay.selectedID = selectedID; overlay.surfaces = resolvedBaseSurfaces
         renderer.blackout = false
         for (_, value) in outputWindows { value.1.surfaces = effective; value.1.blackout = blackout }
@@ -308,8 +311,13 @@ import MappingCore
         add(label("SURFACE",bold:true)); add(ActionField(surface.name) { [weak self] v in self?.editSurface("Rename") { $0.name = v } })
         add(ActionButton(surface.enabled ? "Hide surface" : "Show surface") { [weak self] in self?.editSurface("Visibility") { $0.enabled.toggle() } })
         add(label("Shape · four-corner frame",size:11))
-        let shapes: [SurfaceShape] = [.quad,.triangle,.ellipse]
-        add(ActionPopUp(items:["Quad","Triangle","Ellipse"],selected:shapes.firstIndex(of:surface.shape) ?? 0) { [weak self] v in self?.setSurfaceShape(shapes[v]) })
+        let shapes: [SurfaceShape] = [.quad,.triangle,.ellipse,.line,.bezier]
+        add(ActionPopUp(items:["Quad","Triangle","Ellipse","Line","Bézier"],selected:shapes.firstIndex(of:surface.shape) ?? 0) { [weak self] v in self?.setSurfaceShape(shapes[v]) })
+        if surface.shape.isStroke {
+            add(ActionButton(overlay.pathMode ? "Edit cage corners" : "Edit path points") { [weak self] in guard let self else { return }; self.setStrokeEditing(!self.overlay.pathMode) })
+            add(ActionButton("Path nodes…") { [weak self] in self?.configureStroke() })
+            property("Stroke width",surface.stroke.width,0.001,0.5) { $0.stroke.width=$1 }
+        }
         add(label("Generator / fallback",size:11))
         let generators = ["checker","gradient","solid","grid"]
         add(ActionPopUp(items:generators,selected:generators.firstIndex(of:surface.generator) ?? 0) { [weak self] v in self?.editSurface("Generator") { $0.generator = generators[v]; $0.mediaID = nil } })
@@ -344,12 +352,12 @@ import MappingCore
         })
         add(ActionButton("Create 4 × 4 warp mesh") { [weak self] in
             self?.editSurface("Create mesh") { s in s.meshColumns = 4; s.meshRows = 4; s.mesh = (try? Geometry.regularMesh(quad:s.output,columns:4,rows:4)) ?? [] }
-            self?.modePicker.selectItem(at:0); self?.overlay.meshMode = true; self?.overlay.maskMode = false; self?.updateRender()
+            self?.modePicker.selectItem(at:0); self?.overlay.meshMode = true; self?.overlay.maskMode = false; self?.overlay.pathMode = false; self?.updateRender()
         })
-        add(ActionButton(overlay.meshMode ? "Edit quad corners" : "Edit mesh points") { [weak self] in self?.overlay.meshMode.toggle(); if self?.overlay.meshMode == true { self?.modePicker.selectItem(at:0) }; self?.overlay.maskMode = false; self?.updateRender(); self?.refreshInspector() })
+        add(ActionButton(overlay.meshMode ? "Edit quad corners" : "Edit mesh points") { [weak self] in self?.overlay.meshMode.toggle(); if self?.overlay.meshMode == true { self?.modePicker.selectItem(at:0) }; self?.overlay.maskMode = false; self?.overlay.pathMode = false; self?.updateRender(); self?.refreshInspector() })
         add(ActionButton(surface.mask.isEmpty ? "Add polygon mask" : "Edit polygon mask") { [weak self] in
             self?.editSurface("Mask") { s in if s.mask.isEmpty { s.mask = [Point2(0.1,0.1),Point2(0.9,0.1),Point2(0.8,0.9),Point2(0.2,0.9)] } }
-            self?.modePicker.selectItem(at:1); self?.overlay.maskMode = true; self?.overlay.meshMode = false; self?.updateRender()
+            self?.modePicker.selectItem(at:1); self?.overlay.maskMode = true; self?.overlay.meshMode = false; self?.overlay.pathMode = false; self?.updateRender()
         })
         add(ActionButton("Remove mask") { [weak self] in self?.overlay.maskMode = false; self?.editSurface("Remove mask") { $0.mask = [] } })
         if let a = project.assets.first(where:{$0.id == surface.mediaID}) {
@@ -361,7 +369,7 @@ import MappingCore
     }
     @objc func newProject() {
         guard confirmDiscard() else { return }; closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil
-        history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; documentGeneration = UUID()
+        history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false; documentGeneration = UUID()
         lighting?.stop(); selectedID = project.surfaces.first?.id; dirty = false; media.pause(); media.seek(to:0); reconcile(); refresh()
     }
     @objc func openDialog() {
@@ -372,7 +380,7 @@ import MappingCore
         guard confirmDiscard() else { return }
         do {
             let loaded = try ProjectStore.load(from:url)
-            closeOutputs(); lighting?.stop(); media.pause(); media.seek(to:0); history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; documentGeneration = UUID(); project = loaded; projectURL = url; dirty = false; selectedID = loaded.surfaces.first?.id
+            closeOutputs(); lighting?.stop(); media.pause(); media.seek(to:0); history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false; documentGeneration = UUID(); project = loaded; projectURL = url; dirty = false; selectedID = loaded.surfaces.first?.id
             if FileManager.default.fileExists(atPath:ProjectStore.recoveryURL(for:url).path) {
                 let alert = NSAlert(); alert.messageText = "Recovery snapshot found"; alert.informativeText = "Restore the autosaved state for this project?"; alert.addButton(withTitle:"Restore"); alert.addButton(withTitle:"Use saved project")
                 if alert.runModal() == .alertFirstButtonReturn, let recovered = try? ProjectStore.loadRecovery(for:url) { project = recovered; dirty = true }
@@ -419,10 +427,22 @@ import MappingCore
     func addSurface(shape:SurfaceShape = .quad) {
         mutate("Add surface") { p in
             var s = Surface(name:"\(shape == .quad ? "Surface" : shape.rawValue.capitalized) \(p.surfaces.count+1)")
-            s.shape = shape; p.surfaces.append(s); selectedID = s.id
+            s.shape = shape; s.stroke = shape == .bezier ? .bezier : .line; p.surfaces.append(s); selectedID = s.id
         }
+        if shape.isStroke { setStrokeEditing(true) }
     }
-    func setSurfaceShape(_ shape:SurfaceShape) { editSurface("Surface shape") { $0.shape = shape } }
+    func changeSurfaceShape(_ shape:SurfaceShape) throws {
+        guard let i=selectedIndex else { return }
+        var candidate=project
+        if !candidate.surfaces[i].shape.isStroke && shape.isStroke { candidate.surfaces[i].stroke = shape == .bezier ? .bezier : .line }
+        candidate.surfaces[i].shape=shape
+        try ProjectStore.validate(candidate)
+        overlay.pathMode=false
+        mutate("Surface shape") { $0=candidate }
+    }
+    func setSurfaceShape(_ shape:SurfaceShape) {
+        do { try changeSurfaceShape(shape) } catch { showError(error) }
+    }
     func duplicateSurface() { guard let i = selectedIndex else { return }; mutate("Duplicate surface") { p in var s = p.surfaces[i]; s.id = UUID(); s.name += " copy"; p.surfaces.append(s); selectedID = s.id } }
     func deleteSurface() { guard let i = selectedIndex else { return }; mutate("Delete surface") { p in let id = p.surfaces[i].id; p.surfaces.remove(at:i); p.timeline.removeAll { $0.surfaceID == id }; selectedID = p.surfaces.last?.id } }
     func moveLayer(_ delta:Int) { guard let i = selectedIndex, project.surfaces.indices.contains(i+delta) else { return }; mutate("Reorder layers") { $0.surfaces.swapAt(i,i+delta) } }

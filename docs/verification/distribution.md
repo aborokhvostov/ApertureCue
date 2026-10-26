@@ -41,3 +41,15 @@ Same signing/runtime/hardware limitations as above. Alpha 1/2 reject schema-2 pr
 Same signing/runtime/hardware limitations as earlier archives. Group opacity is inherited per layer, not an isolated group buffer. Group setup is shared project state outside surface-only scenes. Group perspective/FX/automation remain open. Alpha 1/2/3 reject schema-3 projects; retain a separate older document if returning to them.
 
 [Alpha 4 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.4) is a prerelease with both ZIP (842,915 bytes) and SHA256SUMS assets confirmed `uploaded`. GitHub reported the same ZIP SHA-256 as above; its tag resolves to the source revision above. Earlier releases remain available.
+
+## Alpha 5 candidate
+
+27 October 2026, Apple M2 / arm64 / macOS 26.6.2. Adds textured polyline/cubic stroke surfaces and schema 4. Exact source revision and remote CI are recorded after those gates finish.
+
+- Archive `ApertureCue-macOS-arm64.zip`, 908,240 bytes, SHA-256 `736863d32709c9ca26f9822e8037cb34a7c308eec99fb73346037c0080cef623`.
+- Fresh package contains the original `Demo/Strokes.aperturecue.json` with two path surfaces and compatible curve scenes, previous demos, license and notices.
+- ZIP validation rejected absolute/traversal/AppleDouble entries; the fresh extraction passed `codesign --verify --deep --strict`.
+- Executable directly from the extracted archive passed **23 production editor checks**, including invalid shape conversion rejection, cubic split/remove/history, inverse group+mesh tangent editing, visible stroke pixels and schema-4 scene/save/new/open.
+- Final optimized production binary also passed **46 GPU/media** and **11 lighting/UDP** checks. Local portable core passed **57 assertion methods** with zero failures through the standalone harness. [Native GUI path workflow](stroke-workflow.md) passed separately.
+
+Ad hoc signing only, not notarized or universal; macOS 13+ target, runtime tested on macOS 26.6.2. No new stroke throughput/4K/soak or hardware compatibility claim. Local-width/cage clipping, round joins/caps, accepted nearest-segment UV seams and bounded local cubic tolerance are specified in the user guide. Freehand drawing, alternate join/cap modes, filled FreeDraw and Bezier mesh/masks remain open. Alpha 1–4 reject schema 4; retain an older project copy when downgrading.

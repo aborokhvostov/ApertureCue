@@ -137,10 +137,10 @@ final class GroupTests:XCTestCase {
             let upgradeURL=directory.appendingPathComponent("saved-legacy-\(version).aperturecue.json")
             try ProjectStore.save(legacy,to:upgradeURL)
             let upgraded=try ProjectStore.load(from:upgradeURL)
-            XCTAssertEqual(upgraded.version,3); XCTAssertEqual(upgraded.groups.count,2)
+            XCTAssertEqual(upgraded.version,Project.currentVersion); XCTAssertEqual(upgraded.groups.count,2)
             XCTAssertEqual(upgraded.surfaces[0].groupID,upgraded.cues[0].surfaces[0].groupID)
             XCTAssertTrue(upgraded.surfaces[0].group.isEmpty)
-            XCTAssertEqual(loaded.version,3); XCTAssertEqual(loaded.groups.count,2)
+            XCTAssertEqual(loaded.version,Project.currentVersion); XCTAssertEqual(loaded.groups.count,2)
             XCTAssertEqual(loaded.surfaces[0].groupID,loaded.cues[0].surfaces[0].groupID)
             XCTAssertTrue(loaded.surfaces[0].group.isEmpty)
             XCTAssertEqual(loaded.surfaces[0].shape,version<2 ? .quad : .ellipse)
@@ -152,8 +152,8 @@ final class GroupTests:XCTestCase {
             let history=EditHistory(); history.commit(before:loaded,after:after,label:"Group transform")
             XCTAssertEqual(history.undo(current:after),loaded); XCTAssertEqual(history.redo(current:loaded),after)
         }
-        try Data("{\"version\":4}".utf8).write(to:url)
-        XCTAssertThrowsError(try ProjectStore.load(from:url)) { XCTAssertEqual($0 as? ProjectError,.unsupportedVersion(4)) }
+        try Data("{\"version\":999}".utf8).write(to:url)
+        XCTAssertThrowsError(try ProjectStore.load(from:url)) { XCTAssertEqual($0 as? ProjectError,.unsupportedVersion(999)) }
     }
     func testCueCoordinatesSwitchFramesDiscretelyAndStaySavable() throws {
         let a=SurfaceGroup(name:"A",transform:.translation(x:0.2,y:0))

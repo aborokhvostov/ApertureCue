@@ -51,4 +51,11 @@ runCase("Group.dissolve appearance", GroupTests.self) { try $0.testDissolvePrese
 runCase("Group.malformed atomic bounds", GroupTests.self) { try $0.testMalformedTreesDepthOverflowAndAtomicCommandRejection() }
 runCase("Group.migration persistence history", GroupTests.self) { try $0.testLegacyMigrationSchemaRoundTripCollectAndHistory() }
 runCase("Group.cue local frames", GroupTests.self) { try $0.testCueCoordinatesSwitchFramesDiscretelyAndStaySavable() }
+runCase("Stroke.metric caps UV joins closed", StrokeTests.self) { try $0.testMetricWidthCapsJoinsClosedAndTextureCoordinates() }
+runCase("Stroke.cubic bounded flatten", StrokeTests.self) { try $0.testCubicFlatteningAccuracyReversalsAndCoincidentEndpointLoops() }
+runCase("Stroke.malformed precision", StrokeTests.self) { try $0.testMalformedBoundsAndExplicitPrecisionBudgetRejection() }
+runCase("Stroke.crossing inverse mesh", StrokeTests.self) { try $0.testCrossingTieOwnershipAndProjectedMeshInverse() }
+runCase("Stroke.schema four migration", StrokeTests.self) { try $0.testSchemaFourMigrationDefaultsAndMalformedPersistence() }
+runCase("Stroke.cue frames collapse", StrokeTests.self) { try $0.testCuePathInterpolationFramesAndCollapseRemainValid() }
+runCase("Stroke.group history collect", StrokeTests.self) { try $0.testGroupHistorySaveAndPortableCollectionKeepLocalStroke() }
 exit(finishTests())

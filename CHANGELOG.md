@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-alpha.5 candidate — textured line and Bezier paths, 2026-10-27
+
+- Add round-cap/round-join textured polyline and cubic Bezier surfaces inside projective/mesh cages, with bounded adaptive flattening and single coverage at self-crossings.
+- Add working path creation, canvas anchors/tangents, numeric node/width/closed editing, shape-preserving cubic insertion, removal and Undo/Redo. World edits invert group and warp frames; shape changes reject invalid geometry atomically.
+- Add schema 4 path persistence/migration and compatible scene interpolation. Keep local tolerance, cage clipping, 16:9 width metric and nearest-segment UV seams explicit.
+- Local verification: 57 standalone core methods, 46 GPU/media checks, 23 editor checks and 11 lighting/UDP checks passed; native path editing/save/relaunch/open passed. Remote CI/release are pending; see status.
+
 ## 0.1.0-alpha.4 — hierarchical groups, 2026-10-27
 
 - Add UUID group hierarchies with affine/shear transforms, inherited per-layer opacity/visibility, numeric world-space translate/scale/mirror/rotation and pivots. Assign/reparent preserve world geometry; Dissolve preserves surfaces, media and scene references with Undo/Redo. A guard prevents losing direct opacity automation when dissolving non-unit-opacity groups.

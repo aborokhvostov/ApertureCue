@@ -2,7 +2,9 @@ import Foundation
 
 /// A primitive in the normalized local cage. Source-UV polygon masks are separate.
 public enum SurfaceShape: String, Codable, CaseIterable, Sendable {
-    case quad, triangle, ellipse
+    case quad, triangle, ellipse, line, bezier
+
+    public var isStroke:Bool { self == .line || self == .bezier }
 
     /// Signed distance to the closest primitive edge, positive inside. Triangle
     /// distances use its three supporting half-planes, matching the GPU shader.
@@ -12,6 +14,7 @@ public enum SurfaceShape: String, Codable, CaseIterable, Sendable {
         case .quad: return min(point.x, 1-point.x, point.y, 1-point.y)
         case .triangle: return min((point.y-2*point.x+1)/sqrt(5), (point.y+2*point.x-1)/sqrt(5), 1-point.y)
         case .ellipse: return 0.5-hypot(point.x-0.5, point.y-0.5)
+        case .line,.bezier: return -.infinity // Requires the surface's centerline/width.
         }
     }
 
@@ -21,7 +24,7 @@ public enum SurfaceShape: String, Codable, CaseIterable, Sendable {
     /// bounded regardless of caller input; straight primitives need only corners.
     public func outline(segments: Int = 64) -> [Point2] {
         switch self {
-        case .quad: return Point2.unitQuad
+        case .quad,.line,.bezier: return Point2.unitQuad
         case .triangle: return [Point2(0.5,0), Point2(1,1), Point2(0,1)]
         case .ellipse:
             let count = max(8,min(256,segments))
@@ -46,6 +49,33 @@ public enum SurfaceGeometry {
         return meshPoint(local:local,surface:surface)
     }
 
+    /// Inverse of the editable cage/mesh. Folded meshes are not one-to-one;
+    /// the first nondegenerate covering triangle owns an ambiguous edit.
+    public static func localPoint(output:Point2,surface:Surface) throws -> Point2 {
+        guard output.x.isFinite,output.y.isFinite else { throw GeometryError.nonFinite }
+        if surface.mesh.isEmpty {
+            let point=try Homography.solve(from:surface.output,to:Point2.unitQuad).applying(output)
+            guard point.x >= -1e-9,point.x<=1+1e-9,point.y >= -1e-9,point.y<=1+1e-9 else { throw ProjectError.invalid("output point lies outside the surface cage") }
+            return Point2(min(1,max(0,point.x)),min(1,max(0,point.y)))
+        }
+        guard validMesh(surface) else { throw ProjectError.invalid("invalid surface mesh") }
+        let columns=surface.meshColumns,rows=surface.meshRows
+        for y in 0..<rows {
+            for x in 0..<columns {
+                let a=y*(columns+1)+x,b=a+1,d=a+columns+1,c=d+1
+                let u=Double(x)/Double(columns),v=Double(y)/Double(rows),u1=Double(x+1)/Double(columns),v1=Double(y+1)/Double(rows)
+                let candidates=[(a,b,c,Point2(u,v),Point2(u1,v),Point2(u1,v1)),(a,c,d,Point2(u,v),Point2(u1,v1),Point2(u,v1))]
+                for (i,j,k,p,q,r) in candidates {
+                    if let w=barycentric(output,surface.mesh[i],surface.mesh[j],surface.mesh[k]) {
+                        let local=interpolate(p,q,r,w.0,w.1,w.2)
+                        return Point2(min(1,max(0,local.x)),min(1,max(0,local.y)))
+                    }
+                }
+            }
+        }
+        throw ProjectError.invalid("output point lies outside the surface mesh")
+    }
+
     /// Projects one closed primitive contour without repeating its first point.
     /// Mesh validation or the projective solve happens once for the entire batch.
     /// Straight edges split at every mesh cell/diagonal boundary, preserving their
@@ -66,6 +96,26 @@ public enum SurfaceGeometry {
             }
         }
         return contour
+    }
+
+    /// Project the flattened stroke through every crossed regular-mesh cell and
+    /// diagonal. The editor centerline follows the same piecewise-linear warp
+    /// as fragment-local coordinates, including straight local line segments.
+    public static func outputCenterline(surface:Surface) throws -> [Point2] {
+        let local=try StrokeGeometry.samples(surface:surface)
+        if surface.mesh.isEmpty {
+            let projection=try Homography.solve(from:Point2.unitQuad,to:surface.output)
+            return try local.map { try projection.applying($0) }
+        }
+        guard validMesh(surface) else { throw ProjectError.invalid("invalid stroke surface mesh") }
+        var result:[Point2]=[]
+        for (a,b) in zip(local,local.dropFirst()) {
+            for t in meshEdgeParameters(from:a,to:b,columns:surface.meshColumns,rows:surface.meshRows) {
+                result.append(meshPoint(local:Point2.interpolate(a,b,t:t),surface:surface))
+            }
+        }
+        if let last=local.last { result.append(meshPoint(local:last,surface:surface)) }
+        return result
     }
 
     /// The caller has already validated the complete mesh and local unit point.
@@ -108,7 +158,7 @@ public enum SurfaceGeometry {
         if surface.mesh.isEmpty {
             guard let inverse=try? Homography.solve(from:surface.output,to:Point2.unitQuad),
                   let local=try? inverse.applying(output) else { return false }
-            return surface.shape.contains(local)
+            return containsLocal(local,surface:surface)
         }
         guard validMesh(surface) else { return false }
         let columns=surface.meshColumns, rows=surface.meshRows
@@ -118,12 +168,16 @@ public enum SurfaceGeometry {
                 let u=Double(x)/Double(columns), v=Double(y)/Double(rows)
                 let u1=Double(x+1)/Double(columns), v1=Double(y+1)/Double(rows)
                 if let weights=barycentric(output,surface.mesh[a],surface.mesh[b],surface.mesh[c]),
-                   surface.shape.contains(interpolate(Point2(u,v),Point2(u1,v),Point2(u1,v1),weights.0,weights.1,weights.2)) { return true }
+                   containsLocal(interpolate(Point2(u,v),Point2(u1,v),Point2(u1,v1),weights.0,weights.1,weights.2),surface:surface) { return true }
                 if let weights=barycentric(output,surface.mesh[a],surface.mesh[c],surface.mesh[d]),
-                   surface.shape.contains(interpolate(Point2(u,v),Point2(u1,v1),Point2(u,v1),weights.0,weights.1,weights.2)) { return true }
+                   containsLocal(interpolate(Point2(u,v),Point2(u1,v1),Point2(u,v1),weights.0,weights.1,weights.2),surface:surface) { return true }
             }
         }
         return false
+    }
+
+    private static func containsLocal(_ local:Point2,surface:Surface) -> Bool {
+        surface.shape.isStroke ? StrokeGeometry.contains(local:local,surface:surface) : surface.shape.contains(local)
     }
 
     private static func validMesh(_ surface: Surface) -> Bool {

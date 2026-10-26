@@ -7,6 +7,7 @@ final class CanvasOverlay: NSView {
     var surfaces: [Surface] = [] { didSet { needsDisplay = true } }
     var selectedID: UUID? { didSet { needsDisplay = true } }
     var inputMode = false { didSet { needsDisplay = true } }
+    var pathMode = false { didSet { needsDisplay = true } }
     var meshMode = false
     var maskMode = false
     var onSelect: ((UUID) -> Void)?
@@ -29,8 +30,13 @@ final class CanvasOverlay: NSView {
     private func vertices(_ s: Surface) -> [Point2] {
         if maskMode { return s.mask }
         if inputMode { return s.input }
+        if pathMode && s.shape.isStroke { return pathControlPoints(s) }
         if meshMode && !s.mesh.isEmpty { return s.mesh }
         return s.output
+    }
+    func pathControlPoints(_ surface:Surface) -> [Point2] {
+        let points=surface.stroke.nodes.flatMap { node in surface.shape == .bezier ? [node.anchor,node.incoming,node.outgoing] : [node.anchor] }
+        return (try? points.map { try SurfaceGeometry.outputPoint(local:$0,surface:surface) }) ?? []
     }
     override var wantsUpdateLayer: Bool { true }
     override func setFrameSize(_ newSize:NSSize) { super.setFrameSize(newSize); needsDisplay = true }
@@ -40,7 +46,7 @@ final class CanvasOverlay: NSView {
         defer { CATransaction.commit() }
         backing.contents = nil; backing.backgroundColor = NSColor.clear.cgColor
         backing.sublayers?.forEach { $0.removeFromSuperlayer() }
-        let muted = CGMutablePath(), contours = CGMutablePath(), selectedPath = CGMutablePath(), mask = CGMutablePath(), handles = CGMutablePath()
+        let muted = CGMutablePath(), contours = CGMutablePath(), selectedPath = CGMutablePath(), centerlines = CGMutablePath(), guides = CGMutablePath(), mask = CGMutablePath(), handles = CGMutablePath()
         // The flipped backing view supplies the same y-down convention as the
         // document and mouse events. Do not apply a second vertical flip.
         func cg(_ p:Point2) -> CGPoint { CGPoint(x:p.x*bounds.width,y:p.y*bounds.height) }
@@ -73,19 +79,32 @@ final class CanvasOverlay: NSView {
             if !inputMode && (shaped || !surface.mesh.isEmpty),let outline = try? SurfaceGeometry.outputOutline(surface:surface) {
                 polygon(outline,into:selected ? selectedPath : contours)
             }
+            if !inputMode && surface.shape.isStroke, let projected=try? SurfaceGeometry.outputCenterline(surface:surface),let first=projected.first {
+                centerlines.move(to:cg(first)); projected.dropFirst().forEach {centerlines.addLine(to:cg($0))}
+            }
             if selected {
                 let vertices = vertices(surface)
+                if pathMode && !inputMode && surface.shape == .bezier {
+                    for node in stride(from:0,to:vertices.count,by:3) {
+                        guides.move(to:cg(vertices[node+1])); guides.addLine(to:cg(vertices[node])); guides.addLine(to:cg(vertices[node+2]))
+                    }
+                }
                 if maskMode && vertices.count > 1 { polygon(vertices,into:mask) }
                 for (index,p) in vertices.enumerated() {
                     let q = cg(p); handles.addEllipse(in:CGRect(x:q.x-5,y:q.y-5,width:10,height:10))
-                    if vertices.count <= 4 { numberLabels.append((String(index+1),NSPoint(x:p.x*bounds.width+8,y:p.y*bounds.height+3))) }
+                    if vertices.count <= 4 || pathMode {
+                        let value=pathMode && surface.shape == .bezier ? "\(index/3+1)" + (["","i","o"][index%3]) : String(index+1)
+                        numberLabels.append((value,NSPoint(x:p.x*bounds.width+8,y:p.y*bounds.height+3)))
+                    }
                 }
-                selectedTitle = surface.name + (inputMode ? " · INPUT" : " · OUTPUT")
+                selectedTitle = surface.name + (inputMode ? " · INPUT" : (pathMode ? " · PATH" : " · OUTPUT"))
             }
         }
         stroke(muted,color:NSColor.white.withAlphaComponent(0.35),width:1)
         stroke(contours,color:NSColor.white.withAlphaComponent(0.6),width:1)
         stroke(selectedPath,color:.systemCyan,width:2)
+        stroke(centerlines,color:NSColor.systemCyan.withAlphaComponent(0.6),width:1)
+        stroke(guides,color:.systemOrange,width:1)
         stroke(mask,color:.systemOrange,width:1)
         stroke(handles,color:.black,width:2,fill:.systemCyan)
         for (value,position) in numberLabels { text(value,at:position,fontSize:11,bold:false) }
@@ -113,7 +132,11 @@ final class CanvasOverlay: NSView {
     override func mouseDragged(with event: NSEvent) {
         guard let i = dragging, let id = selectedID else { return }
         var pts = original; pts[i] = normalized(event)
-        if !meshMode && !maskMode && (try? Geometry.validateQuad(pts)) == nil { return }
+        if pathMode,let surface=surfaces.first(where:{$0.id == id}),surface.shape == .bezier,i%3 == 0 {
+            let delta=Point2(pts[i].x-original[i].x,pts[i].y-original[i].y)
+            for handle in [i+1,i+2] { pts[handle]=Point2(original[handle].x+delta.x,original[handle].y+delta.y) }
+        }
+        if !pathMode && !meshMode && !maskMode && (try? Geometry.validateQuad(pts)) == nil { return }
         onChange?(id, pts, inputMode, meshMode)
     }
     override func mouseUp(with event: NSEvent) {

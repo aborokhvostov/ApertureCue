@@ -90,6 +90,20 @@ public final class CueEngine {
         if a.groupID == b.groupID, a.meshColumns == b.meshColumns, a.meshRows == b.meshRows, a.mesh.count == b.mesh.count {
             s.mesh=zip(a.mesh,b.mesh).map { Point2.interpolate($0,$1,t:u) }
         }
+        if a.groupID == b.groupID,a.shape == b.shape,a.shape.isStroke,
+           a.stroke.closed == b.stroke.closed,a.stroke.nodes.count == b.stroke.nodes.count {
+            let nodes=zip(a.stroke.nodes,b.stroke.nodes).map { x,y in
+                StrokeNode(anchor:Point2.interpolate(x.anchor,y.anchor,t:u),
+                           incoming:Point2.interpolate(x.incoming,y.incoming,t:u),
+                           outgoing:Point2.interpolate(x.outgoing,y.outgoing,t:u))
+            }
+            var candidate=s
+            candidate.stroke=StrokePath(nodes:nodes,width:mix(a.stroke.width,b.stroke.width),closed:a.stroke.closed)
+            // Crossing/reversed centerlines can collapse during interpolation.
+            // Keep the midpoint-selected discrete path rather than publish an
+            // invalid document or silently drop the surface from the renderer.
+            if (try? StrokeGeometry.samples(surface:candidate)) != nil { s.stroke=candidate.stroke }
+        }
         s.opacity=mix(a.enabled ? a.opacity : 0,b.enabled ? b.opacity : 0)
         s.enabled=a.enabled || b.enabled
         s.brightness=mix(a.brightness,b.brightness); s.gamma=mix(a.gamma,b.gamma); s.feather=mix(a.feather,b.feather)

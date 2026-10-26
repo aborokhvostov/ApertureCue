@@ -6,7 +6,7 @@ public enum ProjectError: Error, LocalizedError, Equatable {
     case invalid(String)
     public var errorDescription: String? {
         switch self {
-        case .unsupportedVersion(let v): return "Project version \(v) is unsupported. This build supports versions 0 through 3."
+        case .unsupportedVersion(let v): return "Project version \(v) is unsupported. This build supports versions 0 through \(Project.currentVersion)."
         case .tooLarge: return "The project exceeds the 16 MiB document limit."
         case .invalid(let reason): return "Invalid project: \(reason)"
         }
@@ -73,6 +73,7 @@ public enum ProjectStore {
     public static func save(_ project: Project, to url: URL) throws {
         guard project.version >= 0,project.version <= Project.currentVersion else { throw ProjectError.unsupportedVersion(project.version) }
         var portable = project.version < 3 ? GroupEngine.migrateLegacyLabels(project) : project
+        if portable.version < 4 { clearLegacyStrokeExtensions(&portable) }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
@@ -107,6 +108,7 @@ public enum ProjectStore {
             }
         }
         if p.version < 3 { p = GroupEngine.migrateLegacyLabels(p) }
+        if p.version < 4 { clearLegacyStrokeExtensions(&p) }
         p.version = Project.currentVersion
         try validate(p)
         let base = url.deletingLastPathComponent()
@@ -114,6 +116,19 @@ public enum ProjectStore {
             p.assets[index].path = absoluteURL(path:p.assets[index].path, base:base).path
         }
         return p
+    }
+
+    /// Stroke payloads and these two enum values had no meaning in schemas 0...3.
+    /// Preserve established primitive/group fields without activating extensions.
+    private static func clearLegacyStrokeExtensions(_ project:inout Project) {
+        func normalized(_ surface:Surface) -> Surface {
+            var result=surface
+            result.stroke = .line
+            if result.shape.isStroke { result.shape = .quad }
+            return result
+        }
+        project.surfaces=project.surfaces.map(normalized)
+        for i in project.cues.indices { project.cues[i].surfaces=project.cues[i].surfaces.map(normalized) }
     }
 
     public static func recoveryURL(for projectURL: URL) -> URL {
@@ -167,6 +182,8 @@ public enum ProjectStore {
         try unique(surfaces.map(\.id), "surface IDs")
         for s in surfaces {
             try Geometry.validateQuad(s.input); try Geometry.validateQuad(s.output)
+            try StrokeGeometry.validate(s.stroke)
+            if s.shape.isStroke { _ = try StrokeGeometry.samples(surface:s) }
             let allPoints = s.input + s.output + s.mesh + s.mask
             guard allPoints.allSatisfy({ $0.x.isFinite && $0.y.isFinite && abs($0.x) <= 10000 && abs($0.y) <= 10000 }) else { throw ProjectError.invalid("coordinate outside finite working range") }
             guard s.name.utf8.count <= 4096, s.group.utf8.count <= 4096 else { throw ProjectError.invalid("surface label is too long") }

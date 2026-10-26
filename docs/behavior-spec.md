@@ -103,3 +103,9 @@ H01 OBJ parser имеет лимиты и проверяет indices; normals/UV
 Для каждого build указывать commit, ОС, CPU/GPU/RAM, backend, разрешение, codec/pixel format, surface/output count, длительность теста, FPS и frame time percentiles, drops и память. CPU/GPU utilization публиковать только если измерены конкретным инструментом. 4K/60, неопределённое «unlimited» и полное равенство MadMapper не выводятся из архитектуры или производителя GPU.
 
 Порядок приёмки: unit geometry/state/packets → deterministic frame comparisons → desktop launch/import/transport/save/reopen/undo → soak → физические outputs/devices. Для каждого непроверенного пункта сохраняется причина и ближайшая проверка; кнопки и документы не меняют статус функции на I.
+
+## Line/Bezier stroke contract
+
+A path is an open or closed union of round segment capsules in local 16:9 metric space, clipped to the existing projective/mesh cage. Width is normalized to cage height and transforms with it. Source UV is normalized arc length by signed normal width; nearest-segment ties retain the first segment. Crossings composite one alpha; UV discontinuities at sharp turns, crossings and the closed seam are accepted. Input crop and source mask act after path UV mapping. No constant screen-pixel-width promise is made.
+
+Editable anchors/tangents stay in [0,1]. Independent tangents, numeric nodes, shape-preserving cubic subdivision, minimum node counts, atomic conversion/rejection and one-command drag Undo/Redo are required. Flattening has an explicit local tolerance and rejects a failed subdivision budget. Group/mesh edits do not rewrite source UV. Snapshot interpolation preserves valid path geometry or uses its midpoint-selected discrete form. Schema-4 save/open/collect must retain path data; older project schemas cannot activate undefined stroke extensions.

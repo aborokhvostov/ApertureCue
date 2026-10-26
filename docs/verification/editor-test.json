@@ -1,5 +1,5 @@
 {
-  "checkCount" : 20,
+  "checkCount" : 23,
   "checks" : [
     "hidden editor startup with valid demo project",
     "add, duplicate, delete and controller undo\/redo",
@@ -20,7 +20,10 @@
     "group reparent\/visibility and real parent picker preserve geometry; cycles reject atomically",
     "group opacity follows automation; dissolve preserves scene references and rejects unsafe tracks",
     "group output\/light composition and schema-3 save\/new\/open share resolved geometry",
-    "production editor dissolve\/undo\/redo preserve exact visible checker pixels"
+    "production editor dissolve\/undo\/redo preserve exact visible checker pixels",
+    "stroke creation, actual shape picker, cubic split\/remove and undo preserve path data",
+    "world path tangent drag inverts hierarchy and mesh, preserves source, and rejects invalid edits",
+    "stroke scenes and schema-4 save\/new\/open retain visible production geometry"
   ],
   "documentAssetCount" : 1,
   "documentSurfaceCount" : 2,
@@ -35,6 +38,6 @@
   "platform" : "Version 26.6.2 (Build 25G83)",
   "schemaVersion" : 1,
   "scope" : "Production EditorController and hidden output renderer integration; no external application, visible output, or hardware interaction.",
-  "timestampUTC" : "2026-10-26T22:50:08Z",
+  "timestampUTC" : "2026-10-26T23:45:46Z",
   "windowsShown" : false
 }

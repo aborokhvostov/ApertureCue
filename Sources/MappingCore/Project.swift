@@ -22,6 +22,7 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
     public var outputID: UUID?
     public var generator: String
     public var shape: SurfaceShape
+    public var stroke: StrokePath
 
     public init(id: UUID = UUID(), name: String = "Surface", mediaID: UUID? = nil,
                 input: [Point2] = Point2.unitQuad, output: [Point2] = Point2.insetQuad,
@@ -29,15 +30,15 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
                 blendMode: String = "normal", feather: Double = 0, gamma: Double = 1,
                 color: [Double] = [1,1,1], mask: [Point2] = [],
                 meshColumns: Int = 0, meshRows: Int = 0, mesh: [Point2] = [],
-                group: String = "", outputID: UUID? = nil, generator: String = "checker", shape: SurfaceShape = .quad, groupID: UUID? = nil) {
+                group: String = "", outputID: UUID? = nil, generator: String = "checker", shape: SurfaceShape = .quad, groupID: UUID? = nil, stroke: StrokePath = .line) {
         self.id=id; self.name=name; self.mediaID=mediaID; self.input=input; self.output=output
         self.opacity=opacity; self.brightness=brightness; self.enabled=enabled; self.blendMode=blendMode
         self.feather=feather; self.gamma=gamma; self.color=color; self.mask=mask
         self.meshColumns=meshColumns; self.meshRows=meshRows; self.mesh=mesh
-        self.group=group; self.outputID=outputID; self.generator=generator; self.shape=shape; self.groupID=groupID
+        self.group=group; self.outputID=outputID; self.generator=generator; self.shape=shape; self.groupID=groupID; self.stroke=stroke
     }
     private enum CodingKeys: String, CodingKey {
-        case id,name,mediaID,input,output,opacity,brightness,enabled,blendMode,feather,gamma,color,mask,meshColumns,meshRows,mesh,group,outputID,generator,shape,groupID
+        case id,name,mediaID,input,output,opacity,brightness,enabled,blendMode,feather,gamma,color,mask,meshColumns,meshRows,mesh,group,outputID,generator,shape,groupID,stroke
     }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -61,7 +62,8 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
                   outputID: try c.decodeIfPresent(UUID.self, forKey:.outputID),
                   generator: try c.decodeIfPresent(String.self, forKey:.generator) ?? "checker",
                   shape: try c.decodeIfPresent(SurfaceShape.self, forKey:.shape) ?? .quad,
-                  groupID: try c.decodeIfPresent(UUID.self, forKey:.groupID))
+                  groupID: try c.decodeIfPresent(UUID.self, forKey:.groupID),
+                  stroke: try c.decodeIfPresent(StrokePath.self, forKey:.stroke) ?? .line)
     }
 }
 
@@ -111,7 +113,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 3
+    public static let currentVersion = 4
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]

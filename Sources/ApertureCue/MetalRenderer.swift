@@ -11,6 +11,9 @@ import MappingCore
 /// independent of the diagonal used to rasterize the quad.
 final class MetalRenderer: NSObject, MTKViewDelegate {
     private struct Vertex { var position: SIMD2<Float>; var local: SIMD2<Float> }
+    private struct StrokeSegment { var endpoints: SIMD4<Float>; var range: SIMD4<Float> }
+    private struct StrokeCache { var shape: SurfaceShape; var path: StrokePath; var buffer: MTLBuffer; var count: Int }
+    private var strokeCache: [UUID: StrokeCache] = [:]
     private struct Uniforms {
         var sourceX: SIMD4<Float>; var sourceY: SIMD4<Float>; var sourceW: SIMD4<Float>
         var localX: SIMD4<Float>; var localY: SIMD4<Float>; var localW: SIMD4<Float>
@@ -224,6 +227,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let visible = surfaces.filter { surface in
             surface.enabled && surface.opacity > 0 && (outputID == nil || surface.outputID == nil || outputID == surface.outputID)
         }
+        let visibleIDs = Set(visible.filter { $0.shape.isStroke }.map(\.id))
+        strokeCache = strokeCache.filter { visibleIDs.contains($0.key) }
         let resources = media.frameResources(for: Set(visible.compactMap(\.mediaID)))
         for surface in visible {
             do { try draw(surface: surface, encoder: encoder, textures: resources.textures) }
@@ -238,7 +243,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let columns = surface.meshColumns
         let rows = surface.meshRows
         let hasMesh = columns > 0 && rows > 0 && columns <= 64 && rows <= 64 && surface.mesh.count == (columns + 1) * (rows + 1)
-        let source = try Homography.solve(from: hasMesh ? unit : surface.output, to: surface.input).values
+        let source = try Homography.solve(from: hasMesh || surface.shape.isStroke ? unit : surface.output, to: surface.input).values
         let local = try Homography.solve(from: surface.output, to: unit).values
         func row(_ values: [Double], _ offset: Int) -> SIMD4<Float> {
             SIMD4(Float(values[offset]), Float(values[offset + 1]), Float(values[offset + 2]), 0)
@@ -268,6 +273,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let generator = texture != nil ? Float(0) : (generators[surface.generator] ?? 1)
         let tint = surface.color.count >= 3 ? surface.color : [1, 1, 1]
         let polygon = Array(surface.mask.prefix(128)).map { SIMD2<Float>(Float($0.x), Float($0.y)) }
+        let stroke = surface.shape.isStroke ? try strokeResources(surface) : nil
         var uniforms = Uniforms(
             sourceX: row(source, 0), sourceY: row(source, 3), sourceW: row(source, 6),
             localX: row(local, 0), localY: row(local, 3), localW: row(local, 6),
@@ -275,7 +281,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                               Float(max(0.01, surface.gamma)), Float(max(0, min(0.5, surface.feather)))),
             tint: SIMD4(Float(tint[0]), Float(tint[1]), Float(tint[2]), 1),
             misc: SIMD4(generator, Float(polygon.count), hasMesh ? 1 : 0, Float(media.currentTime)),
-            shape: SIMD4(surface.shape == .triangle ? 1 : (surface.shape == .ellipse ? 2 : 0), 0, 0, 0))
+            shape: SIMD4(surface.shape.isStroke ? 3 : (surface.shape == .triangle ? 1 : (surface.shape == .ellipse ? 2 : 0)), Float(surface.stroke.width), Float(stroke?.count ?? 0), 0))
         guard let pipeline = pipelines[surface.blendMode] ?? pipelines["normal"] else { return }
         encoder.setRenderPipelineState(pipeline)
         // set*Bytes is limited to 4 KiB; a dense mesh gets an ordinary buffer.
@@ -293,8 +299,32 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             var zero = SIMD2<Float>(0, 0)
             encoder.setFragmentBytes(&zero, length: MemoryLayout<SIMD2<Float>>.stride, index: 1)
         }
+        if let stroke { encoder.setFragmentBuffer(stroke.buffer, offset:0, index:2) }
+        else { var zero = StrokeSegment(endpoints:.zero,range:.zero); encoder.setFragmentBytes(&zero,length:MemoryLayout<StrokeSegment>.stride,index:2) }
         encoder.setFragmentTexture(texture ?? fallback, index: 0)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertices.count)
+    }
+
+    /// Geometry is local to the cage; only changed paths are flattened/uploaded.
+    private func strokeResources(_ surface:Surface) throws -> StrokeCache {
+        if let cached = strokeCache[surface.id], cached.shape == surface.shape, cached.path == surface.stroke { return cached }
+        let points = try StrokeGeometry.samples(surface:surface)
+        let metric = points.map { Point2($0.x*StrokeGeometry.aspectRatio,$0.y) }
+        let lengths = zip(metric,metric.dropFirst()).map { hypot($1.x-$0.x,$1.y-$0.y) }
+        let total = lengths.reduce(0,+)
+        guard total > 1e-12 else { throw ProjectError.invalid("stroke has no length") }
+        var segments:[StrokeSegment] = [], position = 0.0
+        for i in lengths.indices {
+            let length = lengths[i]
+            if length > 1e-12 {
+                segments.append(StrokeSegment(endpoints:SIMD4(Float(metric[i].x),Float(metric[i].y),Float((metric[i+1].x-metric[i].x)/length),Float((metric[i+1].y-metric[i].y)/length)),range:SIMD4(Float(position/total),Float(length/total),Float(length),0)))
+            }
+            position += length
+        }
+        guard !segments.isEmpty, segments.count <= 256,
+              let buffer = device.makeBuffer(bytes:segments,length:segments.count*MemoryLayout<StrokeSegment>.stride,options:.storageModeShared) else { throw ProjectError.invalid("stroke segment allocation failed") }
+        let cached = StrokeCache(shape:surface.shape,path:surface.stroke,buffer:buffer,count:segments.count)
+        strokeCache[surface.id] = cached; return cached
     }
 
     private static let shaderSource = """
@@ -302,6 +332,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     using namespace metal;
     struct Vertex { float2 position; float2 local; };
     struct Raster { float4 position [[position]]; float2 screen; float2 local; };
+    struct StrokeSegment { float4 endpoints; float4 range; };
     struct Uniforms {
         float4 sourceX; float4 sourceY; float4 sourceW;
         float4 localX; float4 localY; float4 localW;
@@ -320,12 +351,35 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         return float2(dot(a.xyz, q), dot(b.xyz, q)) / dot(c.xyz, q);
     }
     fragment float4 mappingFragment(Raster in [[stage_in]], constant Uniforms& u [[buffer(0)]],
-                                    constant float2* mask [[buffer(1)]], texture2d<float> image [[texture(0)]]) {
+                                    constant float2* mask [[buffer(1)]], const device StrokeSegment* segments [[buffer(2)]], texture2d<float> image [[texture(0)]]) {
         float2 local = u.misc.z > 0.5 ? in.local : project(in.screen, u.localX, u.localY, u.localW);
         // Shape is defined in local surface space, independent of source UV crop.
         float edge = min(min(local.x, 1.0 - local.x), min(local.y, 1.0 - local.y));
         float coverage = 1.0;
-        if (u.shape.x > 0.5) {
+        float2 strokeUV = local;
+        if (u.shape.x > 2.5) {
+            float best = INFINITY;
+            float2 q = local * float2(16.0/9.0, 1.0);
+            for (int i = 0; i < int(u.shape.z); ++i) {
+                // Unit direction and length are computed in Double before
+                // upload: very short segments must not collapse when their
+                // two absolute endpoints round to the same Float coordinate.
+                float2 a = segments[i].endpoints.xy, direction = segments[i].endpoints.zw;
+                float segmentLength = segments[i].range.z;
+                if (segmentLength <= 1e-12) continue;
+                float t = clamp(dot(q-a,direction)/segmentLength,0.0,1.0);
+                float2 delta = q-(a+t*segmentLength*direction);
+                float distance = length(delta);
+                // Strict comparison gives the first segment a deterministic tie.
+                if (distance < best) {
+                    best = distance;
+                    float side = (direction.x*delta.y-direction.y*delta.x);
+                    strokeUV = float2(segments[i].range.x+t*segments[i].range.y,clamp(0.5+side/u.shape.y,0.0,1.0));
+                }
+            }
+            edge = min(edge,u.shape.y*0.5-best);
+            coverage = clamp(edge/max(fwidth(edge),1e-7)+0.5,0.0,1.0);
+        } else if (u.shape.x > 0.5) {
             if (u.shape.x < 1.5) {
                 edge = min(min((local.y - 2.0 * local.x + 1.0) / sqrt(5.0),
                                (local.y + 2.0 * local.x - 1.0) / sqrt(5.0)), 1.0 - local.y);
@@ -333,7 +387,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             // One fragment footprint at the boundary; no fixed-resolution tessellation.
             coverage = clamp(edge / max(fwidth(edge), 1e-7) + 0.5, 0.0, 1.0);
         }
-        float2 uv = project(u.misc.z > 0.5 ? local : in.screen, u.sourceX, u.sourceY, u.sourceW);
+        if (coverage <= 0.0) discard_fragment();
+        float2 uv = project(u.shape.x > 2.5 ? strokeUV : (u.misc.z > 0.5 ? local : in.screen), u.sourceX, u.sourceY, u.sourceW);
         if (!all(isfinite(uv)) || any(uv < float2(0.0)) || any(uv > float2(1.0))) discard_fragment();
         int count = int(u.misc.y);
         if (count >= 3) {

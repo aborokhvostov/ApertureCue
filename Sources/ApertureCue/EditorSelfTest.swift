@@ -212,7 +212,7 @@ enum EditorSelfTest {
             e.addSurface(shape:.triangle)
             let shapeID=try required(e.selectedID,"Shape creation lost selection")
             try expect(e.project.surfaces.last?.shape == .triangle,"Triangle button path did not create a triangle")
-            guard let shapePicker=e.inspector.arrangedSubviews.compactMap({ $0 as? ActionPopUp }).first(where:{ $0.itemTitles == ["Quad","Triangle","Ellipse"] }),let action=shapePicker.action else { throw Failure(message:"Working inspector shape selector missing") }
+            guard let shapePicker=e.inspector.arrangedSubviews.compactMap({ $0 as? ActionPopUp }).first(where:{ $0.itemTitles == ["Quad","Triangle","Ellipse","Line","Bézier"] }),let action=shapePicker.action else { throw Failure(message:"Working inspector shape selector missing") }
             shapePicker.selectItem(at:2)
             app.sendAction(action,to:shapePicker.target,from:shapePicker)
             try expect(e.project.surfaces.last?.shape == .ellipse,"Shape selector did not edit the selected surface")
@@ -348,7 +348,7 @@ enum EditorSelfTest {
             e.saveTo(groupURL); let groupSaved=e.project
             e.newProject(); try expect(e.selectedGroupID == nil && e.project.groups.isEmpty,"New retained old group selection/definitions")
             e.openProject(groupURL)
-            try expect(e.project == groupSaved && e.project.version == 3,"Schema-3 groups did not survive production save/new/open")
+            try expect(e.project == groupSaved && e.project.version == Project.currentVersion,"Schema-3 groups did not survive production save/new/open")
             report["groupCount"]=e.project.groups.count
             passed("group output/light composition and schema-3 save/new/open share resolved geometry")
 
@@ -368,6 +368,78 @@ enum EditorSelfTest {
             e.undoEdit(); try expect(try editorPixels() == baselinePixels,"Editor undo changed checker pixels")
             e.redoEdit(); try expect(try editorPixels() == baselinePixels,"Editor redo changed checker pixels")
             passed("production editor dissolve/undo/redo preserve exact visible checker pixels")
+
+            e.addSurface(shape:.bezier)
+            let strokeID=try required(e.selectedID,"Stroke creation has no selection")
+            let createdStroke=try required(e.project.surfaces.last,"Stroke was not appended")
+            try expect(createdStroke.shape == .bezier && createdStroke.stroke == .bezier && e.overlay.pathMode,"Bezier creation did not initialize its editable curve")
+            let strokePicker=try required(e.inspector.arrangedSubviews.compactMap {$0 as? ActionPopUp}.first(where:{$0.itemTitles == ["Quad","Triangle","Ellipse","Line","Bézier"]}),"Actual stroke shape picker missing")
+            strokePicker.selectItem(at:3); strokePicker.actionBlock?(3)
+            try expect(e.project.surfaces.last?.shape == .line && e.project.surfaces.last?.stroke == createdStroke.stroke,"Shape picker lost editable node data")
+            e.undoEdit(); try expect(e.project.surfaces.last == createdStroke,"Undo shape picker did not restore Bezier")
+            e.setStrokeEditing(true)
+            let beforeInsert=e.project
+            try e.insertStrokeNode(after:0)
+            try expect(e.project.surfaces.last?.stroke.nodes.count == 3,"Insert did not split its cubic")
+            let split=e.project
+            try e.removeStrokeNode(at:1); try expect(e.project.surfaces.last?.stroke.nodes.count == 2,"Remove did not remove the selected node")
+            e.undoEdit(); try expect(e.project == split,"Undo node removal lost tangent data")
+            e.undoEdit(); try expect(e.project == beforeInsert,"Undo insertion lost original curve")
+            var hardLine=Surface(shape:.line)
+            hardLine.stroke.nodes=(0..<32).map { i in
+                StrokeNode(anchor:Point2(i%2 == 0 ? 0.1 : 0.9,0.5),incoming:Point2(0.9,0.05),outgoing:Point2(0.1,0.95))
+            }
+            e.mutate("Conversion budget fixture") {$0=Project(surfaces:[hardLine])}; e.selectedID=hardLine.id; e.refresh()
+            let validLine=e.project
+            do { try e.changeSurfaceShape(.bezier); throw Failure(message:"Shape conversion accepted an exhausted curve budget") }
+            catch is Failure { throw Failure(message:"Shape conversion accepted an exhausted curve budget") }
+            catch { try expect(e.project == validLine,"Rejected shape conversion changed the project") }
+            var loopCurve=Surface(shape:.bezier,stroke:StrokePath(nodes:[StrokeNode(anchor:Point2(0.5,0.5),outgoing:Point2(0.1,0.1)),StrokeNode(anchor:Point2(0.5,0.5),incoming:Point2(0.9,0.1))]))
+            loopCurve.name="Closed-end cubic with an open path"
+            e.mutate("Conversion collapse fixture") {$0=Project(surfaces:[loopCurve])}; e.selectedID=loopCurve.id; e.refresh()
+            let validLoop=e.project
+            do { try e.changeSurfaceShape(.line); throw Failure(message:"Shape conversion accepted a zero-length line") }
+            catch is Failure { throw Failure(message:"Shape conversion accepted a zero-length line") }
+            catch { try expect(e.project == validLoop,"Rejected collapsed conversion changed the project") }
+            passed("stroke creation, actual shape picker, cubic split/remove and undo preserve path data")
+
+            var strokeFixture=createdStroke
+            strokeFixture.output=Point2.insetQuad; strokeFixture.input=[Point2(0.2,0.1),Point2(0.8,0.1),Point2(0.8,0.9),Point2(0.2,0.9)]
+            strokeFixture.meshColumns=2; strokeFixture.meshRows=2
+            strokeFixture.mesh=try Geometry.regularMesh(quad:strokeFixture.output,columns:2,rows:2)
+            strokeFixture.mesh[4].x += 0.07
+            let strokeGroup=SurfaceGroup(name:"Stroke frame",transform:Affine2D.rotation(degrees:8,aspectRatio:16.0/9.0).concatenating(.scale(x:0.9,y:0.85)))
+            strokeFixture.groupID=strokeGroup.id
+            e.mutate("Stroke drag fixture") {$0=Project(surfaces:[strokeFixture],groups:[strokeGroup])}
+            e.selectedID=strokeID; e.setStrokeEditing(true); e.refresh()
+            let strokeBeforeDrag=e.project
+            let resolvedStroke=try required(e.resolvedBaseSurfaces.first,"Resolved stroke missing")
+            var pathHandles=e.overlay.pathControlPoints(resolvedStroke)
+            let tangent=Point2(0.4,0.2)
+            pathHandles[2]=try SurfaceGeometry.outputPoint(local:tangent,surface:resolvedStroke)
+            e.overlay.onBegin?(); e.overlay.onChange?(strokeID,pathHandles,false,false); e.overlay.onEnd?()
+            let dragged=e.project.surfaces[0]
+            try expect(hypot(dragged.stroke.nodes[0].outgoing.x-tangent.x,dragged.stroke.nodes[0].outgoing.y-tangent.y)<1e-8,"World tangent drag did not invert group and warped cage")
+            try expect(dragged.input == strokeFixture.input && dragged.output == strokeFixture.output && dragged.mesh == strokeFixture.mesh,"Path editing changed source/cage/warp")
+            let afterStrokeDrag=e.project
+            e.undoEdit(); try expect(e.project == strokeBeforeDrag,"Undo path drag differs")
+            e.redoEdit(); try expect(e.project == afterStrokeDrag,"Redo path drag differs")
+            var invalidPath=dragged.stroke; invalidPath.nodes[0].anchor.x = -1
+            do { try e.replaceStroke(invalidPath); throw Failure(message:"Invalid stroke was accepted") }
+            catch is Failure { throw Failure(message:"Invalid stroke was accepted") }
+            catch { try expect(e.project == afterStrokeDrag,"Rejected path changed document/history") }
+            passed("world path tangent drag inverts hierarchy and mesh, preserves source, and rejects invalid edits")
+
+            e.captureCue()
+            let strokeURL=directory.appendingPathComponent("strokes.aperturecue.json")
+            e.saveTo(strokeURL); let savedStroke=e.project
+            e.newProject(); try expect(!e.overlay.pathMode,"New document retained path editing")
+            e.openProject(strokeURL)
+            try expect(e.project == savedStroke && e.project.version == 4,"Stroke scene/path did not survive schema-4 save/new/open")
+            try expect(e.renderer.surfaces.first?.stroke == savedStroke.surfaces.first?.stroke,"Production renderer lost path payload")
+            let strokePixels=try editorPixels()
+            try expect(stride(from:0,to:strokePixels.count,by:4).contains {strokePixels[$0]>40},"Production editor stroke rendered no visible pixels")
+            passed("stroke scenes and schema-4 save/new/open retain visible production geometry")
 
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count
