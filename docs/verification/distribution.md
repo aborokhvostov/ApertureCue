@@ -28,9 +28,9 @@ Same signing/runtime/hardware limitations as above. Alpha 1/2 reject schema-2 pr
 
 [Alpha 3 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.3) assets were confirmed `uploaded` through GitHub API; server ZIP digest matched the SHA-256 above. Alpha 1/2 archives and tags remain available independently.
 
-## Alpha 4 candidate
+## Alpha 4
 
-27 October 2026, Apple M2 / macOS 26.6.2. Production source adds UUID affine group hierarchy, schema 3 and vector editor overlay. Source revision and independent remote CI will be recorded after publication gates finish.
+27 October 2026, Apple M2 / macOS 26.6.2. Production source adds UUID affine group hierarchy, schema 3 and vector editor overlay. The `v0.1.0-alpha.4` tag identifies source `aa3cde6666a6794d461e23bce2a291e642cccb25`. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/40415540170) passed 50 XCTest on macOS and 50 XCTest on Linux, plus macOS SwiftPM release build/native bundle/signature/archive/artifact.
 
 - Archive `ApertureCue-macOS-arm64.zip`, SHA-256 `59a986c33959b2cf045a426c4f7adf905a3cd46b6c444b50da393474884e7286`.
 - Fresh package includes the original `Demo/Groups.aperturecue.json`, previous shape/media demos, license and notices. No third-party application assets or SDKs are included.
@@ -39,3 +39,5 @@ Same signing/runtime/hardware limitations as above. Alpha 1/2 reject schema-2 pr
 - Local core: **50 methods, 0 failed assertions** through the standalone harness. Production GPU/media: **39 checks**; GPU-to-localhost-UDP lighting: **11 checks**. Native GUI regression is recorded in [group-workflow.md](group-workflow.md).
 
 Same signing/runtime/hardware limitations as earlier archives. Group opacity is inherited per layer, not an isolated group buffer. Group setup is shared project state outside surface-only scenes. Group perspective/FX/automation remain open. Alpha 1/2/3 reject schema-3 projects; retain a separate older document if returning to them.
+
+[Alpha 4 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.4) is a prerelease with both ZIP (842,915 bytes) and SHA256SUMS assets confirmed `uploaded`. GitHub reported the same ZIP SHA-256 as above; its tag resolves to the source revision above. Earlier releases remain available.
