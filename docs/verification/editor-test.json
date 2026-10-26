@@ -1,5 +1,5 @@
 {
-  "checkCount" : 13,
+  "checkCount" : 20,
   "checks" : [
     "hidden editor startup with valid demo project",
     "add, duplicate, delete and controller undo\/redo",
@@ -13,12 +13,20 @@
     "production hidden output constructor shares media, receives blackout and closes",
     "hidden production fullscreen frame, borderless style, menu-level coverage and Escape cleanup",
     "triangle creation, actual shape selector, undo\/redo, unclipped input and shape-aware selection",
-    "schema-2 surface and scene shapes survive production save\/new\/open"
+    "current-schema surface and scene shapes survive production save\/new\/open",
+    "no-op editing interrupts a scene with dirty\/undo state and clears stale cue snapshots",
+    "hierarchical group creation\/assignment and non-destructive transform with undo\/redo",
+    "grouped output\/mesh drags invert parent frame; input and masks stay in source UV",
+    "group reparent\/visibility and real parent picker preserve geometry; cycles reject atomically",
+    "group opacity follows automation; dissolve preserves scene references and rejects unsafe tracks",
+    "group output\/light composition and schema-3 save\/new\/open share resolved geometry",
+    "production editor dissolve\/undo\/redo preserve exact visible checker pixels"
   ],
   "documentAssetCount" : 1,
   "documentSurfaceCount" : 2,
   "fullscreenPresentationVerified" : false,
   "gpu" : "Apple M2",
+  "groupCount" : 2,
   "hardwareVerification" : false,
   "hiddenFullscreenConfigurationVerified" : true,
   "modalDialogs" : false,
@@ -27,6 +35,6 @@
   "platform" : "Version 26.6.2 (Build 25G83)",
   "schemaVersion" : 1,
   "scope" : "Production EditorController and hidden output renderer integration; no external application, visible output, or hardware interaction.",
-  "timestampUTC" : "2026-10-26T13:24:55Z",
+  "timestampUTC" : "2026-10-26T22:50:08Z",
   "windowsShown" : false
 }

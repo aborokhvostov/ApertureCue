@@ -6,7 +6,7 @@ public enum ProjectError: Error, LocalizedError, Equatable {
     case invalid(String)
     public var errorDescription: String? {
         switch self {
-        case .unsupportedVersion(let v): return "Project version \(v) is unsupported. This build supports versions 0 through 2."
+        case .unsupportedVersion(let v): return "Project version \(v) is unsupported. This build supports versions 0 through 3."
         case .tooLarge: return "The project exceeds the 16 MiB document limit."
         case .invalid(let reason): return "Invalid project: \(reason)"
         }
@@ -71,9 +71,10 @@ public enum ProjectStore {
     }
 
     public static func save(_ project: Project, to url: URL) throws {
-        try validate(project)
-        var portable = project
+        guard project.version >= 0,project.version <= Project.currentVersion else { throw ProjectError.unsupportedVersion(project.version) }
+        var portable = project.version < 3 ? GroupEngine.migrateLegacyLabels(project) : project
         portable.version = Project.currentVersion
+        try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
         portable.assets = portable.assets.map { asset in
             var a = asset
@@ -105,6 +106,7 @@ public enum ProjectStore {
                 for surfaceIndex in p.cues[cueIndex].surfaces.indices { p.cues[cueIndex].surfaces[surfaceIndex].shape = .quad }
             }
         }
+        if p.version < 3 { p = GroupEngine.migrateLegacyLabels(p) }
         p.version = Project.currentVersion
         try validate(p)
         let base = url.deletingLastPathComponent()
@@ -141,6 +143,10 @@ public enum ProjectStore {
         for output in project.outputs {
             guard output.screenIndex >= 0, output.screenIndex < 64, (1...16384).contains(output.width), (1...16384).contains(output.height) else { throw ProjectError.invalid("invalid output size or screen index") }
         }
+        if project.version >= 3, (project.surfaces + project.cues.flatMap(\.surfaces)).contains(where:{ !$0.group.isEmpty }) {
+            throw ProjectError.invalid("schema 3 uses groupID references; legacy group labels must be migrated from a version 0...2 document")
+        }
+        try GroupEngine.validate(project)
         try validateSurfaces(project.surfaces, mediaIDs:mediaIDs, outputIDs:outputIDs)
         try FixtureSampler.validate(fixtures:project.fixtures)
         var totalCueSurfaces = 0

@@ -166,6 +166,78 @@ enum SelfTest {
                 checks.append("\(shape.rawValue) shape-aware feather numerical oracle")
             }
 
+            let groupParent = SurfaceGroup(name:"Rotated parent",transform:.rotation(degrees:17,around:Point2(0.5,0.5),aspectRatio:4.0/3.0))
+            let groupChild = SurfaceGroup(name:"Mirrored child",parentID:groupParent.id,transform:.translation(x:0.03,y:-0.02).concatenating(.scale(x:-0.7,y:0.65)))
+            let hierarchy = [groupParent,groupChild]
+            let worldInverse = try GroupEngine.worldTransform(for:groupChild.id,groups:hierarchy).inverse()
+            var grouped = Surface(name:"Group gradient",output:unit,generator:"gradient",groupID:groupChild.id)
+            grouped.input = [Point2(0.1,0.2),Point2(0.9,0.2),Point2(0.9,0.8),Point2(0.1,0.8)]
+            image = try frame(GroupEngine.resolve(surfaces:[grouped],groups:hierarchy))
+            for (x,y) in [(64,48),(52,38),(75,55),(47,60)] {
+                let local = try worldInverse.applying(Point2((Double(x)+0.5)/128,(Double(y)+0.5)/96))
+                let u = 0.1+0.8*local.x, v = 0.2+0.6*local.y
+                try expect(near(pixel(image,x,y),[Int((255*u).rounded()),Int((255*v).rounded()),Int((255*(1-u)).rounded()),255]),"Hierarchical affine/crop UV differs from CPU inverse")
+            }
+            checks.append("hierarchical rotation, negative/nonuniform scale and input crop vs CPU inverse affine")
+
+            grouped.meshColumns = 2; grouped.meshRows = 2
+            grouped.mesh = try Geometry.regularMesh(quad:unit,columns:2,rows:2)
+            grouped.mesh[4] = Point2(0.65,0.45)
+            func meshUV(_ point:Point2) -> Point2? {
+                for row in 0..<2 { for column in 0..<2 {
+                    let a = row*3+column, b = a+1, d = a+3, c = d+1
+                    let local = [Point2(Double(column)/2,Double(row)/2),Point2(Double(column+1)/2,Double(row)/2),Point2(Double(column+1)/2,Double(row+1)/2),Point2(Double(column)/2,Double(row+1)/2)]
+                    for (indices,uv) in [([a,b,c],[local[0],local[1],local[2]]),([a,c,d],[local[0],local[2],local[3]])] {
+                        let p = grouped.mesh[indices[0]],q = grouped.mesh[indices[1]],r = grouped.mesh[indices[2]]
+                        let det = (q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x)
+                        let wb = ((point.x-p.x)*(r.y-p.y)-(point.y-p.y)*(r.x-p.x))/det
+                        let wc = ((q.x-p.x)*(point.y-p.y)-(q.y-p.y)*(point.x-p.x))/det
+                        let wa = 1-wb-wc
+                        if min(wa,wb,wc) >= -1e-10 {
+                            return Point2(wa*uv[0].x+wb*uv[1].x+wc*uv[2].x,wa*uv[0].y+wb*uv[1].y+wc*uv[2].y)
+                        }
+                    }
+                } }
+                return nil
+            }
+            image = try frame(GroupEngine.resolve(surfaces:[grouped],groups:hierarchy))
+            for (x,y) in [(64,48),(52,38),(75,55),(47,60)] {
+                let original = try worldInverse.applying(Point2((Double(x)+0.5)/128,(Double(y)+0.5)/96))
+                guard let uv = meshUV(original) else { throw Failure(message:"Grouped mesh oracle point fell outside") }
+                let u = 0.1+0.8*uv.x,v = 0.2+0.6*uv.y
+                try expect(near(pixel(image,x,y),[Int((255*u).rounded()),Int((255*v).rounded()),Int((255*(1-u)).rounded()),255]),"Grouped displaced mesh differs from CPU barycentric UV")
+            }
+            checks.append("group-transformed displaced mesh vs independent CPU barycentric UV")
+
+            var parentOpacity = SurfaceGroup(name:"Half opacity",opacity:0.5)
+            let childOpacity = SurfaceGroup(name:"Nested half",parentID:parentOpacity.id,opacity:0.5)
+            var groupRed = red; groupRed.groupID = parentOpacity.id
+            var groupBlue = red; groupBlue.color = [0,0,1]; groupBlue.groupID = parentOpacity.id
+            image = try frame(GroupEngine.resolve(surfaces:[groupRed,groupBlue],groups:[parentOpacity]))
+            try expect(near(pixel(image,64,48),[64,0,128,255]),"Group opacity was isolated or applied after compositing")
+            groupRed.groupID = childOpacity.id
+            image = try frame(GroupEngine.resolve(surfaces:[groupRed],groups:[parentOpacity,childOpacity]))
+            try expect(near(pixel(image,64,48),[64,0,0,255]),"Nested group opacity was not multiplied once")
+            parentOpacity.enabled = false
+            image = try frame(GroupEngine.resolve(surfaces:[groupRed],groups:[parentOpacity,childOpacity]))
+            try expect(near(pixel(image,64,48),[0,0,0,255]),"Ancestor visibility did not hide its descendant")
+            checks.append("nested opacity/ancestor visibility and non-isolated group compositing")
+
+            let dissolveParent=SurfaceGroup(name:"GUI regression parent",transform:Affine2D(a:0.8314254606237348,b:0.31417766612461406,c:-0.10525529347649067,d:0.8803328406604252,tx:0.17312406516308548,ty:-0.07650681991806495))
+            let dissolveChild=SurfaceGroup(name:"Identity child",parentID:dissolveParent.id)
+            let dissolveSurface=Surface(name:"GUI checker regression",output:[Point2(0.09441550974712976,0.1637106255209871),Point2(0.4900000000000001,0.22999999999999998),Point2(0.45999999999999996,0.8800000000000001),Point2(0.08999999999999997,0.8000000000000002)],generator:"checker",groupID:dissolveChild.id)
+            let dissolveProject=Project(surfaces:[dissolveSurface],groups:[dissolveParent,dissolveChild])
+            let beforeDissolve=try frame(GroupEngine.resolve(surfaces:dissolveProject.surfaces,groups:dissolveProject.groups))
+            let dissolved=try GroupEngine.dissolve(groupID:dissolveChild.id,in:dissolveProject)
+            image=try frame(GroupEngine.resolve(surfaces:dissolved.surfaces,groups:dissolved.groups))
+            var brightPixels=0
+            for y in 0..<96 { for x in 0..<128 {
+                try expect(near(pixel(image,x,y),pixel(beforeDissolve,x,y)),"Dissolve changed a production checker pixel")
+                if pixel(image,x,y)[0] > 150 { brightPixels += 1 }
+            } }
+            try expect(brightPixels > 400,"Dissolve regression checker did not render visible cells")
+            checks.append("GUI-derived grouped checker remains pixel-identical and visible after dissolve")
+
             var cropped = Surface(name: "Input crop", output: unit, generator: "gradient")
             cropped.input = [Point2(0.25, 0.25), Point2(0.75, 0.25), Point2(0.75, 0.75), Point2(0.25, 0.75)]
             image = try frame([cropped])

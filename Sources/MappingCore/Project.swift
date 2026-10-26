@@ -18,6 +18,7 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
     public var meshRows: Int
     public var mesh: [Point2]
     public var group: String
+    public var groupID: UUID?
     public var outputID: UUID?
     public var generator: String
     public var shape: SurfaceShape
@@ -28,15 +29,15 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
                 blendMode: String = "normal", feather: Double = 0, gamma: Double = 1,
                 color: [Double] = [1,1,1], mask: [Point2] = [],
                 meshColumns: Int = 0, meshRows: Int = 0, mesh: [Point2] = [],
-                group: String = "", outputID: UUID? = nil, generator: String = "checker", shape: SurfaceShape = .quad) {
+                group: String = "", outputID: UUID? = nil, generator: String = "checker", shape: SurfaceShape = .quad, groupID: UUID? = nil) {
         self.id=id; self.name=name; self.mediaID=mediaID; self.input=input; self.output=output
         self.opacity=opacity; self.brightness=brightness; self.enabled=enabled; self.blendMode=blendMode
         self.feather=feather; self.gamma=gamma; self.color=color; self.mask=mask
         self.meshColumns=meshColumns; self.meshRows=meshRows; self.mesh=mesh
-        self.group=group; self.outputID=outputID; self.generator=generator; self.shape=shape
+        self.group=group; self.outputID=outputID; self.generator=generator; self.shape=shape; self.groupID=groupID
     }
     private enum CodingKeys: String, CodingKey {
-        case id,name,mediaID,input,output,opacity,brightness,enabled,blendMode,feather,gamma,color,mask,meshColumns,meshRows,mesh,group,outputID,generator,shape
+        case id,name,mediaID,input,output,opacity,brightness,enabled,blendMode,feather,gamma,color,mask,meshColumns,meshRows,mesh,group,outputID,generator,shape,groupID
     }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -59,7 +60,8 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
                   group: try c.decodeIfPresent(String.self, forKey:.group) ?? "",
                   outputID: try c.decodeIfPresent(UUID.self, forKey:.outputID),
                   generator: try c.decodeIfPresent(String.self, forKey:.generator) ?? "checker",
-                  shape: try c.decodeIfPresent(SurfaceShape.self, forKey:.shape) ?? .quad)
+                  shape: try c.decodeIfPresent(SurfaceShape.self, forKey:.shape) ?? .quad,
+                  groupID: try c.decodeIfPresent(UUID.self, forKey:.groupID))
     }
 }
 
@@ -109,7 +111,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 2
+    public static let currentVersion = 3
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]
@@ -119,11 +121,12 @@ public struct Project: Codable, Equatable, Sendable {
     public var cues: [Cue]
     public var fixtures: [Fixture]
     public var timeline: [AutomationTrack]
+    public var groups: [SurfaceGroup]
     public init(version: Int = Project.currentVersion, name: String = "Untitled", assets: [MediaAsset] = [],
                 surfaces: [Surface] = [], outputs: [OutputConfig] = [], cues: [Cue] = [],
-                fixtures: [Fixture] = [], timeline: [AutomationTrack] = []) {
+                fixtures: [Fixture] = [], timeline: [AutomationTrack] = [], groups: [SurfaceGroup] = []) {
         self.version=version; self.name=name; self.assets=assets; self.surfaces=surfaces; self.outputs=outputs; self.cues=cues
-        self.fixtures=fixtures; self.timeline=timeline
+        self.fixtures=fixtures; self.timeline=timeline; self.groups=groups
     }
     public static func demo() -> Project {
         let output = OutputConfig(name:"Projector 1")
@@ -137,7 +140,7 @@ public struct Project: Codable, Equatable, Sendable {
             Cue(name:"Aligned", surfaces:cueSurfaces, duration:2)
         ])
     }
-    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline }
+    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy:CodingKeys.self)
         self.init(version: try c.decodeIfPresent(Int.self, forKey:.version) ?? 0,
@@ -147,6 +150,7 @@ public struct Project: Codable, Equatable, Sendable {
                   outputs: try c.decodeIfPresent([OutputConfig].self, forKey:.outputs) ?? [],
                   cues: try c.decodeIfPresent([Cue].self, forKey:.cues) ?? [],
                   fixtures: try c.decodeIfPresent([Fixture].self, forKey:.fixtures) ?? [],
-                  timeline: try c.decodeIfPresent([AutomationTrack].self, forKey:.timeline) ?? [])
+                  timeline: try c.decodeIfPresent([AutomationTrack].self, forKey:.timeline) ?? [],
+                  groups: try c.decodeIfPresent([SurfaceGroup].self, forKey:.groups) ?? [])
     }
 }

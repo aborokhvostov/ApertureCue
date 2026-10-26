@@ -84,8 +84,10 @@ public final class CueEngine {
         var s = u < 0.5 ? a : b
         func mix(_ x: Double, _ y: Double) -> Double { x+(y-x)*u }
         if a.input.count == b.input.count { s.input=zip(a.input,b.input).map { Point2.interpolate($0,$1,t:u) } }
-        if a.output.count == b.output.count { s.output=zip(a.output,b.output).map { Point2.interpolate($0,$1,t:u) } }
-        if a.meshColumns == b.meshColumns, a.meshRows == b.meshRows, a.mesh.count == b.mesh.count {
+        // Different parents define different local coordinate frames. Switch the
+        // parent and its geometry together rather than interpolating unlike units.
+        if a.groupID == b.groupID, a.output.count == b.output.count { s.output=zip(a.output,b.output).map { Point2.interpolate($0,$1,t:u) } }
+        if a.groupID == b.groupID, a.meshColumns == b.meshColumns, a.meshRows == b.meshRows, a.mesh.count == b.mesh.count {
             s.mesh=zip(a.mesh,b.mesh).map { Point2.interpolate($0,$1,t:u) }
         }
         s.opacity=mix(a.enabled ? a.opacity : 0,b.enabled ? b.opacity : 0)

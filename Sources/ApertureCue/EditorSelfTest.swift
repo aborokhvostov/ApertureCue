@@ -53,7 +53,14 @@ enum EditorSelfTest {
             e.window?.isReleasedWhenClosed=false; e.window?.orderOut(nil)
             e.metalView.isPaused=true; e.lightingView.isPaused=true
             try expect(e.renderer != nil,"Editor renderer initialization failed")
+            try expect(e.overlay.wantsLayer && e.overlay.wantsUpdateLayer && !e.overlay.isOpaque && e.overlay.layer?.isOpaque == false,"Editor overlay does not own a transparent layer above Metal")
             try expect(e.window?.isVisible == false,"Editor test window became visible")
+            let overlayFixture=Surface(output:[Point2(0.1,0.2),Point2(0.7,0.25),Point2(0.8,0.6),Point2(0.2,0.7)])
+            e.overlay.setFrameSize(NSSize(width:128,height:96)); e.overlay.surfaces=[overlayFixture]; e.overlay.selectedID=overlayFixture.id; e.overlay.updateLayer()
+            let selectedPath=e.overlay.layer?.sublayers?.compactMap {$0 as? CAShapeLayer}.first(where:{$0.lineWidth == 2 && $0.fillColor == nil})?.path
+            let pathBounds=try required(selectedPath,"Vector selection cage missing").boundingBoxOfPath
+            try expect(abs(pathBounds.minY-19.2)<1e-8 && abs(pathBounds.maxY-67.2)<1e-8,"Vector cage vertically differs from document/mouse coordinates")
+            e.updateRender()
             try ProjectStore.validate(e.project)
             passed("hidden editor startup with valid demo project")
 
@@ -228,10 +235,139 @@ enum EditorSelfTest {
             e.saveTo(shapeURL)
             let shaped=e.project
             e.newProject(); e.openProject(shapeURL)
-            try expect(e.project == shaped && e.project.version == 2,"Schema-2 shape document did not reopen through production controller")
+            try expect(e.project == shaped && e.project.version == Project.currentVersion,"Current-schema shape document did not reopen through production controller")
             try expect(e.project.surfaces.last?.shape == .ellipse && e.project.cues.last?.surfaces.last?.shape == .ellipse,"Reopen lost surface or snapshot shape")
             try ProjectStore.validate(e.project)
-            passed("schema-2 surface and scene shapes survive production save/new/open")
+            passed("current-schema surface and scene shapes survive production save/new/open")
+
+            let beforeInterrupted=e.project
+            e.history.clear(); e.dirty=false
+            var interruptedTarget=e.project.surfaces
+            interruptedTarget[0].opacity=0.2
+            let interruptedCue=Cue(name:"Interrupted fixture",surfaces:interruptedTarget,duration:2)
+            e.cueBefore=e.project; e.cueTarget=interruptedCue
+            e.cueEngine.begin(from:e.project.surfaces,cue:interruptedCue,at:0)
+            guard let midpoint=e.cueEngine.sample(at:1) else { throw Failure(message:"Cue interruption fixture did not sample") }
+            e.project.surfaces=midpoint
+            e.overlay.onBegin?(); e.overlay.onEnd?()
+            try expect(e.dirty && e.history.canUndo && e.cueTarget == nil && e.cueBefore == nil && !e.cueEngine.isTransitioning,"No-op handle click lost interrupted cue history/dirty state")
+            e.undoEdit(); try expect(e.project == beforeInterrupted,"Undo interrupted cue did not restore its starting document")
+            let afterInterruptedUndo=e.project
+            e.mutate("No-op after cue undo") {_ in}
+            try expect(e.project == afterInterruptedUndo && e.cueBefore == nil,"Stale cue snapshot changed a later no-op edit")
+            passed("no-op editing interrupts a scene with dirty/undo state and clears stale cue snapshots")
+
+            func pointsNear(_ a:[Point2],_ b:[Point2]) -> Bool {
+                a.count == b.count && zip(a,b).allSatisfy { hypot($0.x-$1.x,$0.y-$1.y) < 1e-9 }
+            }
+            e.selectedID=shapeID; e.refresh()
+            let originalWorld=try required(e.effectiveSurfaces.first { $0.id == shapeID },"Grouped fixture missing")
+            let rootGroup=try e.saveGroup(id:nil,name:"Stage",parentID:nil,opacity:0.8,enabled:true,assignSelected:true)
+            let childGroup=try e.saveGroup(id:nil,name:"Panel",parentID:rootGroup,opacity:0.5,enabled:true,assignSelected:true)
+            let localBefore=try required(e.project.surfaces.first { $0.id == shapeID },"Assigned child missing")
+            try expect(pointsNear(e.effectiveSurfaces.last!.output,originalWorld.output),"Assigning group moved the rendered geometry")
+            let delta=Affine2D.translation(x:0.03,y:0.02).concatenating(.rotation(degrees:11,around:Point2(0.5,0.5),aspectRatio:16.0/9.0)).concatenating(.scale(x:0.8,y:0.75))
+            let beforeTransform=e.project
+            try e.transformGroup(rootGroup,by:delta)
+            let moved=try required(e.effectiveSurfaces.first { $0.id == shapeID },"Transformed child missing")
+            try expect(pointsNear(moved.output,try originalWorld.output.map { try delta.applying($0) }),"Parent transform did not move the descendant in world space")
+            try expect(e.project.surfaces.last?.output == localBefore.output && e.project.surfaces.last?.input == localBefore.input,"Non-destructive group transform rewrote local output/input")
+            e.undoEdit(); try expect(e.project == beforeTransform,"Undo group transform did not restore the full document")
+            e.redoEdit()
+            passed("hierarchical group creation/assignment and non-destructive transform with undo/redo")
+
+            var worldQuad=try required(e.resolvedBaseSurfaces.first { $0.id == shapeID },"Resolved overlay child missing").output
+            worldQuad[0].x += 0.015; worldQuad[0].y += 0.01
+            let inverse=try GroupEngine.worldTransform(for:childGroup,groups:e.project.groups).inverse()
+            e.overlay.onBegin?(); e.overlay.onChange?(shapeID,worldQuad,false,false); e.overlay.onEnd?()
+            try expect(pointsNear(e.project.surfaces.last!.output,try worldQuad.map { try inverse.applying($0) }),"Grouped output drag stored world coordinates as local")
+            try expect(pointsNear(e.overlay.surfaces.last!.output,worldQuad),"Grouped overlay did not return to its dragged world cage")
+            e.editSurface("Test grouped mesh") { s in s.meshColumns=2; s.meshRows=2; s.mesh=(try? Geometry.regularMesh(quad:s.output,columns:2,rows:2)) ?? [] }
+            e.overlay.meshMode=true; e.updateRender()
+            let meshBefore=e.project.surfaces.last!.mesh
+            var worldMesh=e.overlay.surfaces.last!.mesh; worldMesh[4].x += 0.01
+            e.overlay.onBegin?(); e.overlay.onChange?(shapeID,worldMesh,false,true); e.overlay.onEnd?()
+            try expect(pointsNear(e.project.surfaces.last!.mesh,try worldMesh.map { try inverse.applying($0) }),"Grouped mesh drag did not invert parent mapping")
+            e.undoEdit(); try expect(e.project.surfaces.last!.mesh == meshBefore,"Undo grouped mesh drag did not preserve the mesh")
+            let sourceCrop=[Point2(0.1,0.15),Point2(0.9,0.15),Point2(0.9,0.85),Point2(0.1,0.85)]
+            e.modePicker.selectItem(at:1); e.overlay.meshMode=true; e.updateRender()
+            e.overlay.onBegin?(); e.overlay.onChange?(shapeID,sourceCrop,true,true); e.overlay.onEnd?()
+            try expect(e.project.surfaces.last!.input == sourceCrop && e.project.surfaces.last!.mesh == meshBefore,"Input/mesh flags corrupted local mesh or transformed source UV")
+            let sourceMask=[Point2(0.2,0.2),Point2(0.8,0.2),Point2(0.5,0.8)]
+            e.overlay.maskMode=true; e.overlay.onBegin?(); e.overlay.onChange?(shapeID,sourceMask,true,true); e.overlay.onEnd?()
+            try expect(e.project.surfaces.last!.mask == sourceMask,"Grouped source mask was transformed as output geometry")
+            e.overlay.maskMode=false; e.overlay.meshMode=false; e.modePicker.selectItem(at:0); e.refresh()
+            passed("grouped output/mesh drags invert parent frame; input and masks stay in source UV")
+
+            let other=try e.saveGroup(id:nil,name:"Alternate parent",parentID:nil,opacity:0.6,enabled:true,assignSelected:false)
+            try e.transformGroup(other,by:.translation(x:-0.1,y:0.04).concatenating(.scale(x:0.9,y:1.1)))
+            let beforeReparent=e.effectiveSurfaces.last!.output
+            _=try e.saveGroup(id:childGroup,name:"Panel",parentID:other,opacity:0.5,enabled:true,assignSelected:false)
+            try expect(pointsNear(e.effectiveSurfaces.last!.output,beforeReparent),"Reparent moved the world image")
+            let beforeCycle=e.project
+            do { _=try e.saveGroup(id:other,name:"Invalid cycle",parentID:childGroup,opacity:1,enabled:true,assignSelected:false); throw Failure(message:"Editor accepted a group parent cycle") }
+            catch is Failure { throw Failure(message:"Editor accepted a group parent cycle") }
+            catch { try expect(e.project == beforeCycle,"Rejected cycle partially changed the document") }
+            let ownFlags=e.project.surfaces.map(\.enabled)
+            e.toggleGroup(); try expect(e.project.surfaces.map(\.enabled) == ownFlags && !e.effectiveSurfaces.last!.enabled,"Group hide rewrote child visibility flags")
+            e.toggleGroup(); try expect(e.effectiveSurfaces.last!.enabled,"Group show did not restore ancestor visibility")
+            guard let parentPicker=e.inspector.arrangedSubviews.compactMap({$0 as? ActionPopUp}).first(where:{$0.itemTitles.first == "Root / no group"}),let parentAction=parentPicker.action else { throw Failure(message:"Working parent group selector missing") }
+            parentPicker.selectItem(at:0); app.sendAction(parentAction,to:parentPicker.target,from:parentPicker)
+            try expect(e.project.surfaces.last!.groupID == nil && pointsNear(e.effectiveSurfaces.last!.output,beforeReparent),"Root assignment picker lost output geometry")
+            e.undoEdit(); try expect(e.project.surfaces.last!.groupID == childGroup,"Undo parent assignment lost group membership")
+            passed("group reparent/visibility and real parent picker preserve geometry; cycles reject atomically")
+
+            let groupTrack=AutomationTrack(name:"Grouped opacity",surfaceID:shapeID,parameter:"opacity",keyframes:[AutomationKeyframe(time:0,value:0.4),AutomationKeyframe(time:1,value:0.4)])
+            e.mutate("Group automation fixture") {$0.timeline.append(groupTrack)}
+            try expect(abs(e.effectiveSurfaces.last!.opacity-0.12) < 1e-9,"Group opacity was applied before automation or applied twice")
+            let beforeUnsafe=e.project
+            do { try e.dissolveGroup(childGroup); throw Failure(message:"Unsafe animated opacity dissolve was accepted") }
+            catch is Failure { throw Failure(message:"Unsafe animated opacity dissolve was accepted") }
+            catch { try expect(e.project == beforeUnsafe,"Rejected dissolve changed groups or animation") }
+            e.mutate("Remove group opacity fixture") {$0.timeline.removeAll {$0.id == groupTrack.id}}
+            e.captureCue()
+            let beforeDissolve=e.project, renderBeforeDissolve=e.effectiveSurfaces.last!
+            try e.dissolveGroup(childGroup)
+            let afterDissolve=e.effectiveSurfaces.last!
+            try expect(pointsNear(afterDissolve.output,renderBeforeDissolve.output) && pointsNear(afterDissolve.mesh,renderBeforeDissolve.mesh) && abs(afterDissolve.opacity-renderBeforeDissolve.opacity)<1e-9,"Dissolve changed current rendered state")
+            try expect(e.project.cues.last!.surfaces.last!.groupID == other && !e.project.groups.contains {$0.id == childGroup},"Dissolve left a dangling scene group reference")
+            e.undoEdit(); try expect(e.project == beforeDissolve,"Undo dissolve did not restore hierarchy and scenes")
+            e.redoEdit(); try ProjectStore.validate(e.project)
+            passed("group opacity follows automation; dissolve preserves scene references and rejects unsafe tracks")
+
+            e.openOutput(config,fullscreen:false,showWindow:false)
+            let groupedOutput=try required(e.outputWindows[config.id],"Grouped output missing").1
+            try expect(groupedOutput.surfaces == e.effectiveSurfaces && groupedOutput.media === e.media,"Independent output received local rather than resolved group geometry")
+            e.lighting.isSampling=true; e.lighting.isSending=false
+            e.mutate("Grouped sampling fixture") {$0.fixtures=[Fixture(name:"Group sampling",universe:1,address:1,points:[Point2(0.5,0.5)],channelOrder:"RGB")]}
+            e.lastLighting=0; e.tick()
+            try expect(e.lighting.renderer.surfaces == e.effectiveSurfaces,"Lighting renderer did not receive the same flattened effective hierarchy")
+            try expect(pump(timeout:5) {!e.lighting.lastUniverses.isEmpty},"Grouped local light sampling did not complete")
+            e.lighting.stop(); e.closeOutputs()
+            let groupURL=directory.appendingPathComponent("groups.aperturecue.json")
+            e.saveTo(groupURL); let groupSaved=e.project
+            e.newProject(); try expect(e.selectedGroupID == nil && e.project.groups.isEmpty,"New retained old group selection/definitions")
+            e.openProject(groupURL)
+            try expect(e.project == groupSaved && e.project.version == 3,"Schema-3 groups did not survive production save/new/open")
+            report["groupCount"]=e.project.groups.count
+            passed("group output/light composition and schema-3 save/new/open share resolved geometry")
+
+            let pixelParent=SurfaceGroup(name:"Pixel parent",transform:Affine2D(a:0.8314254606237348,b:0.31417766612461406,c:-0.10525529347649067,d:0.8803328406604252,tx:0.17312406516308548,ty:-0.07650681991806495))
+            let pixelChild=SurfaceGroup(name:"Pixel child",parentID:pixelParent.id)
+            let pixelSurface=Surface(name:"Checker",output:[Point2(0.09441550974712976,0.1637106255209871),Point2(0.4900000000000001,0.22999999999999998),Point2(0.45999999999999996,0.8800000000000001),Point2(0.08999999999999997,0.8000000000000002)],generator:"checker",groupID:pixelChild.id)
+            e.mutate("Pixel fixture") {$0=Project(surfaces:[pixelSurface],groups:[pixelParent,pixelChild])}
+            e.selectedID=pixelSurface.id; e.refresh()
+            func editorPixels() throws -> [UInt8] {
+                guard let bitmap=e.renderer.snapshot(width:128,height:96),let bytes=bitmap.bitmapData else { throw Failure(message:"Editor pixel regression readback failed") }
+                return Array(UnsafeBufferPointer(start:bytes,count:bitmap.bytesPerRow*bitmap.pixelsHigh))
+            }
+            let baselinePixels=try editorPixels()
+            try expect(stride(from:0,to:baselinePixels.count,by:4).filter {baselinePixels[$0] > 150}.count > 400,"Editor baseline checker was not visible")
+            try e.dissolveGroup(pixelChild.id)
+            try expect(try editorPixels() == baselinePixels,"Production editor dissolve changed checker pixels")
+            e.undoEdit(); try expect(try editorPixels() == baselinePixels,"Editor undo changed checker pixels")
+            e.redoEdit(); try expect(try editorPixels() == baselinePixels,"Editor redo changed checker pixels")
+            passed("production editor dissolve/undo/redo preserve exact visible checker pixels")
 
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count

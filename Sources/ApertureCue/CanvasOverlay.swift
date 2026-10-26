@@ -1,5 +1,6 @@
 #if os(macOS)
 import AppKit
+import QuartzCore
 import MappingCore
 
 final class CanvasOverlay: NSView {
@@ -14,6 +15,7 @@ final class CanvasOverlay: NSView {
     var onEnd: (() -> Void)?
     private var dragging: Int?
     private var original: [Point2] = []
+    override var isOpaque: Bool { false }
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
     private func point(_ p: Point2) -> NSPoint { NSPoint(x: p.x * bounds.width, y: p.y * bounds.height) }
@@ -30,45 +32,64 @@ final class CanvasOverlay: NSView {
         if meshMode && !s.mesh.isEmpty { return s.mesh }
         return s.output
     }
-    override func draw(_ dirtyRect: NSRect) {
+    override var wantsUpdateLayer: Bool { true }
+    override func setFrameSize(_ newSize:NSSize) { super.setFrameSize(newSize); needsDisplay = true }
+    override func updateLayer() {
+        guard let backing = layer else { return }
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        defer { CATransaction.commit() }
+        backing.contents = nil; backing.backgroundColor = NSColor.clear.cgColor
+        backing.sublayers?.forEach { $0.removeFromSuperlayer() }
+        let muted = CGMutablePath(), contours = CGMutablePath(), selectedPath = CGMutablePath(), mask = CGMutablePath(), handles = CGMutablePath()
+        // The flipped backing view supplies the same y-down convention as the
+        // document and mouse events. Do not apply a second vertical flip.
+        func cg(_ p:Point2) -> CGPoint { CGPoint(x:p.x*bounds.width,y:p.y*bounds.height) }
+        func polygon(_ points:[Point2],into path:CGMutablePath) {
+            guard let first = points.first else { return }
+            path.move(to:cg(first)); points.dropFirst().forEach { path.addLine(to:cg($0)) }; path.closeSubpath()
+        }
+        let scale = window?.backingScaleFactor ?? 2
+        func stroke(_ path:CGPath,color:NSColor,width:CGFloat,fill:NSColor? = nil) {
+            let shape = CAShapeLayer(); shape.frame = bounds; shape.contentsScale = scale
+            shape.path = path; shape.strokeColor = color.cgColor; shape.fillColor = fill?.cgColor
+            shape.lineWidth = width; shape.lineJoin = .round; backing.addSublayer(shape)
+        }
+        func text(_ string:String,at p:NSPoint,fontSize:CGFloat,bold:Bool) {
+            let title = CATextLayer(); title.contentsScale = scale; title.string = string
+            title.font = (bold ? NSFont.boldSystemFont(ofSize:fontSize) : NSFont.monospacedSystemFont(ofSize:fontSize,weight:.bold)).fontName as CFString
+            title.fontSize = fontSize; title.foregroundColor = NSColor.systemCyan.cgColor
+            let y = backing.isGeometryFlipped ? p.y : bounds.height-p.y-fontSize-5
+            title.frame = CGRect(x:p.x,y:y,width:max(20,bounds.width-p.x),height:fontSize+5)
+            backing.addSublayer(title)
+        }
+        var numberLabels:[(String,NSPoint)] = []
+        var selectedTitle:String?
         for surface in surfaces where !inputMode || surface.id == selectedID {
             let selected = surface.id == selectedID
-            let pts = inputMode ? surface.input : surface.output
-            guard pts.count == 4 else { continue }
-            let path = NSBezierPath(); path.move(to: point(pts[0]))
-            pts.dropFirst().forEach { path.line(to: point($0)) }; path.close()
+            let points = inputMode ? surface.input : surface.output
+            guard points.count == 4 else { continue }
             let shaped = !inputMode && surface.shape != .quad
-            (selected ? NSColor.systemCyan.withAlphaComponent(shaped ? 0.35 : 1) : NSColor.white.withAlphaComponent(0.35)).setStroke()
-            path.lineWidth = selected ? 2 : 1; path.stroke()
-            if !inputMode && (shaped || !surface.mesh.isEmpty) {
-                let points = (try? SurfaceGeometry.outputOutline(surface:surface)) ?? []
-                let contour = NSBezierPath()
-                if let first = points.first { contour.move(to:point(first)) }
-                points.dropFirst().forEach { contour.line(to:point($0)) }
-                contour.close()
-                (selected ? NSColor.systemCyan : NSColor.white.withAlphaComponent(0.6)).setStroke()
-                contour.lineWidth = selected ? 2 : 1; contour.stroke()
+            polygon(points,into:selected && !shaped ? selectedPath : muted)
+            if !inputMode && (shaped || !surface.mesh.isEmpty),let outline = try? SurfaceGeometry.outputOutline(surface:surface) {
+                polygon(outline,into:selected ? selectedPath : contours)
             }
             if selected {
-                let handles = vertices(surface)
-                if maskMode && handles.count > 1 {
-                    let m = NSBezierPath(); m.move(to: point(handles[0]))
-                    handles.dropFirst().forEach { m.line(to: point($0)) }; m.close()
-                    NSColor.systemOrange.setStroke(); m.stroke()
+                let vertices = vertices(surface)
+                if maskMode && vertices.count > 1 { polygon(vertices,into:mask) }
+                for (index,p) in vertices.enumerated() {
+                    let q = cg(p); handles.addEllipse(in:CGRect(x:q.x-5,y:q.y-5,width:10,height:10))
+                    if vertices.count <= 4 { numberLabels.append((String(index+1),NSPoint(x:p.x*bounds.width+8,y:p.y*bounds.height+3))) }
                 }
-                for (index, vertex) in handles.enumerated() {
-                    let p = point(vertex)
-                    let r = NSRect(x: p.x - 5, y: p.y - 5, width: 10, height: 10)
-                    NSColor.black.setFill(); NSBezierPath(ovalIn: r.insetBy(dx: -1, dy: -1)).fill()
-                    NSColor.systemCyan.setFill(); NSBezierPath(ovalIn: r).fill()
-                    if handles.count <= 4 {
-                        ("\(index + 1)" as NSString).draw(at: NSPoint(x: p.x + 8, y: p.y + 3), withAttributes: [.foregroundColor: NSColor.white, .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .bold)])
-                    }
-                }
-                let title = surface.name + (inputMode ? " · INPUT" : " · OUTPUT")
-                (title as NSString).draw(at: NSPoint(x: 12, y: 12), withAttributes: [.foregroundColor: NSColor.systemCyan, .font: NSFont.boldSystemFont(ofSize: 13)])
+                selectedTitle = surface.name + (inputMode ? " · INPUT" : " · OUTPUT")
             }
         }
+        stroke(muted,color:NSColor.white.withAlphaComponent(0.35),width:1)
+        stroke(contours,color:NSColor.white.withAlphaComponent(0.6),width:1)
+        stroke(selectedPath,color:.systemCyan,width:2)
+        stroke(mask,color:.systemOrange,width:1)
+        stroke(handles,color:.black,width:2,fill:.systemCyan)
+        for (value,position) in numberLabels { text(value,at:position,fontSize:11,bold:false) }
+        if let selectedTitle { text(selectedTitle,at:NSPoint(x:12,y:12),fontSize:13,bold:true) }
     }
     override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)

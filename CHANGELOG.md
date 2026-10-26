@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.4 candidate — hierarchical groups, 2026-10-27
+
+- Add UUID group hierarchies with affine/shear transforms, inherited per-layer opacity/visibility, numeric world-space translate/scale/mirror/rotation and pivots. Assign/reparent preserve world geometry; Dissolve preserves surfaces, media and scene references with Undo/Redo. A guard prevents losing direct opacity automation when dissolving non-unit-opacity groups.
+- Add working group dialogs and surface parent selection; grouped world handles map back into local geometry while input/masks stay in source UV. Source/mesh mode priority is consistent, and inactive lighting no longer recomputes the hierarchy.
+- Introduce schema 3 with legacy label migration across current surfaces and cues. Group setup is shared project state; surface-only scenes do not capture it. Different group frames switch with their output/mesh at the cue midpoint.
+- Preserve dirty/history when a running scene is interrupted by a no-op edit or Undo; reject cycles, missing refs, invalid transforms and out-of-range geometry atomically. Identity/same-parent operations are exact no-ops.
+- Add original Groups demo. Core: 50 assertion methods; production GPU/media: 39 checks; editor: 20 checks. Vector overlay fixes black preview regions after group dialogs and keeps cages aligned with mouse coordinates; native Dissolve/Undo/Redo/save/relaunch/open passed. Remote CI is pending.
+
+
 ## 0.1.0-alpha.3 — perspective primitive surfaces, 2026-10-26
 
 - Add triangle and ellipse primitives in the existing four-corner perspective cage, with shape-aware selection/contours, independent source crop, mesh, source-mask intersection and local edge feather. Signed-distance clipping includes derivative antialiasing. Free three-vertex UV editing remains outside this subset.

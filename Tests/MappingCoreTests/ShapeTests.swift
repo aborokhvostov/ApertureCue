@@ -111,7 +111,7 @@ final class ShapeTests: XCTestCase {
             project.cues=[Cue(name:"Old snapshot",surfaces:[Surface(shape:.triangle)])]
             try JSONEncoder().encode(project).write(to:url)
             let loaded=try ProjectStore.load(from:url)
-            XCTAssertEqual(loaded.version,2)
+            XCTAssertEqual(loaded.version,Project.currentVersion)
             XCTAssertEqual(loaded.surfaces[0].shape,.quad)
             XCTAssertEqual(loaded.cues[0].surfaces[0].shape,.quad)
         }
@@ -119,9 +119,9 @@ final class ShapeTests: XCTestCase {
         XCTAssertEqual(try ProjectStore.load(from:url).surfaces[0].shape,.quad)
         try Data("{\"version\":2,\"surfaces\":[{\"shape\":\"unsupported\"}]}".utf8).write(to:url)
         XCTAssertThrowsError(try ProjectStore.load(from:url))
-        try Data("{\"version\":3}".utf8).write(to:url)
-        XCTAssertThrowsError(try ProjectStore.load(from:url)) { XCTAssertEqual($0 as? ProjectError,.unsupportedVersion(3)) }
-        XCTAssertTrue(ProjectError.unsupportedVersion(3).localizedDescription.contains("0 through 2"))
+        try Data("{\"version\":999}".utf8).write(to:url)
+        XCTAssertThrowsError(try ProjectStore.load(from:url)) { XCTAssertEqual($0 as? ProjectError,.unsupportedVersion(999)) }
+        XCTAssertTrue(ProjectError.unsupportedVersion(999).localizedDescription.contains("0 through 3"))
     }
 
     func testShapesRoundTripCuesCollectAndHistory() throws {

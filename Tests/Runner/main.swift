@@ -44,4 +44,11 @@ runCase("Shape.projective hit input independence", ShapeTests.self) { try $0.tes
 runCase("Shape.mesh fold hit", ShapeTests.self) { try $0.testMeshInterpolationAndFoldedPrimitiveHitTesting() }
 runCase("Shape.legacy future migration", ShapeTests.self) { try $0.testLegacyQuadMigrationAndFutureShapeRejection() }
 runCase("Shape.cue collect history roundtrip", ShapeTests.self) { try $0.testShapesRoundTripCuesCollectAndHistory() }
+runCase("Group.affine inverse aspect", GroupTests.self) { try $0.testAffineCompositionInverseReflectionAndAspectRotation() }
+runCase("Group.hierarchy mesh appearance", GroupTests.self) { try $0.testHierarchyResolvesMeshAppearanceAndIndependentSource() }
+runCase("Group.assign reparent world delta", GroupTests.self) { try $0.testAssignReparentAndWorldDeltaPreserveLocalGeometry() }
+runCase("Group.dissolve appearance", GroupTests.self) { try $0.testDissolvePreservesCurrentAndCueGeometryOpacityAndVisibility() }
+runCase("Group.malformed atomic bounds", GroupTests.self) { try $0.testMalformedTreesDepthOverflowAndAtomicCommandRejection() }
+runCase("Group.migration persistence history", GroupTests.self) { try $0.testLegacyMigrationSchemaRoundTripCollectAndHistory() }
+runCase("Group.cue local frames", GroupTests.self) { try $0.testCueCoordinatesSwitchFramesDiscretelyAndStaySavable() }
 exit(finishTests())

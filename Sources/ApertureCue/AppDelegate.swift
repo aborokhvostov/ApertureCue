@@ -65,6 +65,10 @@ import MappingCore
     var workMessage = ""
     var selectedID: UUID?
     var selectedMediaID: UUID?
+    var selectedGroupID: UUID?
+    var resolvedBaseSurfaces: [Surface] = []
+    var renderError = ""
+    var editError = ""
     var dirty = false
     let history = EditHistory()
     var media: MediaPool!
@@ -92,7 +96,14 @@ import MappingCore
     var lightingView: MTKView!
     var lastLighting: Double = 0
     var effectiveSurfaces: [Surface] {
-        (try? TimelineEngine.apply(tracks:project.timeline,time:media.currentTime,surfaces:project.surfaces)) ?? project.surfaces
+        do {
+            let timed = try TimelineEngine.apply(tracks:project.timeline,time:media.currentTime,surfaces:project.surfaces)
+            let resolved = try GroupEngine.resolve(surfaces:timed,groups:project.groups)
+            renderError = ""; return resolved
+        } catch {
+            renderError = "Group/automation: \(error.localizedDescription)"
+            return []
+        }
     }
     var blackout = false
     var baseURL: URL { projectURL?.deletingLastPathComponent() ?? URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true) }
@@ -124,6 +135,7 @@ import MappingCore
             ActionButton("Redo") { [weak self] in self?.redoEdit() },
             ActionButton("Outputs…") { [weak self] in self?.configureOutputs() },
             ActionButton("Camera…") { [weak self] in self?.addCamera() },
+            ActionButton("Groups…") { [weak self] in self?.configureGroups() },
             ActionButton("Animate…") { [weak self] in self?.configureAutomation() },
             ActionButton("LED…") { [weak self] in self?.configureLighting() },
             ActionButton("Blackout") { [weak self] in self?.toggleBlackout() }], vertical: false)
@@ -133,6 +145,9 @@ import MappingCore
         let inspectorScroll = scroll(inspector); inspectorScroll.widthAnchor.constraint(equalToConstant: 265).isActive = true
         inspector.widthAnchor.constraint(equalTo: inspectorScroll.widthAnchor).isActive = true
         let canvas = NSView(); canvas.wantsLayer = true; canvas.layer?.backgroundColor = NSColor.black.cgColor
+        // Keep AppKit's drawing cache out of the CAMetalLayer's backing surface.
+        // A shared implicit backing can leave black holes after a modal closes.
+        overlay.wantsLayer = true; overlay.layer?.backgroundColor = NSColor.clear.cgColor; overlay.layer?.isOpaque = false
         fill(metalView, in: canvas); fill(overlay, in: canvas)
         modePicker = ActionPopUp(items:["Output geometry", "Input region"], action: { [weak self] _ in self?.overlay.maskMode = false; self?.overlay.meshMode = false; self?.updateRender(); self?.refreshInspector() })
         let help = label("Drag corners · Shift: snap 5% · Layer order: back → front", size: 11)
@@ -195,7 +210,12 @@ import MappingCore
     }
     func numberOfRows(in tableView:NSTableView) -> Int { tableView === layerTable ? project.surfaces.count : project.assets.count }
     func tableView(_ tableView:NSTableView,viewFor tableColumn:NSTableColumn?,row:Int) -> NSView? {
-        if tableView === layerTable { return label((project.surfaces[row].enabled ? "◈ " : "○ ") + project.surfaces[row].name) }
+        if tableView === layerTable {
+            let s = project.surfaces[row]
+            let visible = resolvedBaseSurfaces.first(where:{$0.id == s.id})?.enabled ?? s.enabled
+            let prefix = s.groupID.flatMap { id in project.groups.first(where:{$0.id == id})?.name }.map { "[\($0)] " } ?? ""
+            return label((visible ? "◈ " : "○ ") + prefix + s.name)
+        }
         let a = project.assets[row]; return label((a.kind == "video" ? "▶ " : "▧ ") + a.name)
     }
     func tableViewSelectionDidChange(_ notification:Notification) {
@@ -206,22 +226,48 @@ import MappingCore
     }
     private func bindOverlay() {
         overlay.onSelect = { [weak self] id in self?.selectedID = id; self?.refresh() }
-        overlay.onBegin = { [weak self] in guard let self else { return }; self.cueTarget = nil; self.dragBefore = self.project }
+        overlay.onBegin = { [weak self] in guard let self else { return }; self.commitInterruptedCue(); self.dragBefore = self.project }
         overlay.onChange = { [weak self] id,points,input,mesh in
             guard let self, let i = self.project.surfaces.firstIndex(where:{$0.id == id}) else { return }
-            if self.overlay.maskMode { self.project.surfaces[i].mask = points }
-            else if mesh { self.project.surfaces[i].mesh = points }
-            else if input { self.project.surfaces[i].input = points }
-            else { self.project.surfaces[i].output = points; if !self.project.surfaces[i].mesh.isEmpty { self.project.surfaces[i].mesh = []; self.project.surfaces[i].meshRows = 0; self.project.surfaces[i].meshColumns = 0 } }
+            do {
+                var edited = self.project.surfaces[i]
+                if self.overlay.maskMode { edited.mask = points }
+                else if input { try Geometry.validateQuad(points); edited.input = points }
+                else {
+                    let inverse = try GroupEngine.worldTransform(for:edited.groupID,groups:self.project.groups).inverse()
+                    let local = try points.map { try inverse.applying($0) }
+                    guard local.allSatisfy({ abs($0.x) <= 10000 && abs($0.y) <= 10000 }) else { throw ProjectError.invalid("grouped edit exceeds the finite local working range") }
+                    if mesh {
+                        guard local.count == edited.mesh.count else { throw ProjectError.invalid("mesh edit has a different vertex count") }
+                        edited.mesh = local
+                    } else {
+                        try Geometry.validateQuad(local); edited.output = local
+                        edited.mesh = []; edited.meshRows = 0; edited.meshColumns = 0
+                    }
+                }
+                self.project.surfaces[i] = edited; self.editError = ""
+            } catch { self.editError = error.localizedDescription; return }
             self.updateRender()
         }
         overlay.onEnd = { [weak self] in
             guard let self, let before = self.dragBefore else { return }
-            self.history.commit(before:before,after:self.project,label:"Move control point"); self.dragBefore = nil; self.dirty = true; self.refresh()
+            self.dragBefore = nil
+            do {
+                try ProjectStore.validate(self.project)
+                if before != self.project { self.history.commit(before:before,after:self.project,label:"Move control point"); self.dirty = true }
+            } catch { self.project = before; self.editError = error.localizedDescription }
+            self.refresh()
         }
     }
+    func commitInterruptedCue() {
+        if let before = cueBefore, before != project {
+            history.commit(before:before,after:project,label:"Recall scene")
+            dirty = true; window?.isDocumentEdited = true
+        }
+        cueTarget = nil; cueBefore = nil; cueEngine.cancel()
+    }
     func mutate(_ name:String,_ body:(inout Project)->Void) {
-        cueTarget = nil; cueEngine.cancel(); let before = project; body(&project)
+        commitInterruptedCue(); let before = project; body(&project)
         guard before != project else { return }
         history.commit(before:before,after:project,label:name); dirty = true; reconcile(); refresh()
     }
@@ -230,21 +276,25 @@ import MappingCore
     }
     func reconcile() { media.reconcile(assets:project.assets,baseURL:baseURL) }
     func refresh() {
+        updateRender()
         layerTable.reloadData(); mediaTable.reloadData()
         if let i = selectedIndex { layerTable.selectRowIndexes(IndexSet(integer:i),byExtendingSelection:false) }
         cuePicker.removeAllItems(); cuePicker.addItems(withTitles:project.cues.map(\.name))
         window?.title = "\(project.name)\(dirty ? " •" : "") — ApertureCue 0.1"
-        window?.isDocumentEdited = dirty; refreshInspector(); updateRender()
+        window?.isDocumentEdited = dirty; refreshInspector()
     }
     func updateRender() {
+        let effective = effectiveSurfaces
+        do { resolvedBaseSurfaces = try GroupEngine.resolve(surfaces:project.surfaces,groups:project.groups) }
+        catch { resolvedBaseSurfaces = []; renderError = error.localizedDescription }
         if inputMode, let i = selectedIndex {
             var s = project.surfaces[i]; s.input = Point2.unitQuad; s.output = Point2.unitQuad
             s.shape = .quad; s.mesh = []; s.meshColumns = 0; s.meshRows = 0; s.mask = []; s.feather = 0; s.opacity = 1; s.brightness = 1; s.gamma = 1; s.color = [1,1,1]; s.enabled = true
             renderer.surfaces = [s]
-        } else { renderer.surfaces = effectiveSurfaces }
-        overlay.inputMode = inputMode; overlay.selectedID = selectedID; overlay.surfaces = project.surfaces
+        } else { renderer.surfaces = effective }
+        overlay.inputMode = inputMode; overlay.selectedID = selectedID; overlay.surfaces = resolvedBaseSurfaces
         renderer.blackout = false
-        for (_, value) in outputWindows { value.1.surfaces = effectiveSurfaces; value.1.blackout = blackout }
+        for (_, value) in outputWindows { value.1.surfaces = effective; value.1.blackout = blackout }
     }
     func refreshInspector() {
         inspector.arrangedSubviews.forEach { inspector.removeArrangedSubview($0); $0.removeFromSuperview() }
@@ -270,9 +320,16 @@ import MappingCore
         property("Gamma",surface.gamma,0.1,4) { $0.gamma = $1 }
         property("Edge feather",surface.feather,0,0.5) { $0.feather = $1 }
         for (c,name) in ["Red","Green","Blue"].enumerated() { property(name,surface.color[c],0,1) { $0.color[c] = $1 } }
-        add(label("Group (selection / visibility)",size:11))
-        add(ActionField(surface.group) { [weak self] v in self?.editSurface("Group") { $0.group = v } })
-        add(ActionButton("Toggle entire group") { [weak self] in self?.toggleGroup() })
+        add(label("Parent group",size:11))
+        let groupIDs = project.groups.map(\.id), groupNames = groupLabels()
+        let groupIndex = surface.groupID.flatMap { groupIDs.firstIndex(of:$0).map { $0+1 } } ?? 0
+        add(ActionPopUp(items:["Root / no group"] + project.groups.map { groupNames[$0.id] ?? "Missing group" },selected:groupIndex) { [weak self] index in
+            guard let self else { return }
+            do { try self.assignSelectedGroup(index == 0 ? nil : groupIDs[index-1]) } catch { self.showError(error) }
+        })
+        add(ActionButton("Group controls…") { [weak self] in self?.selectedGroupID = surface.groupID; self?.configureGroups() })
+        let groupToggle = ActionButton("Toggle entire group") { [weak self] in self?.toggleGroup() }
+        groupToggle.isEnabled = surface.groupID != nil; add(groupToggle)
         let outputNames = ["All outputs"] + project.outputs.map(\.name)
         let outIndex = surface.outputID.flatMap { id in project.outputs.firstIndex(where:{$0.id == id}).map { $0 + 1 } } ?? 0
         add(ActionPopUp(items:outputNames,selected:outIndex) { [weak self] v in
@@ -287,9 +344,9 @@ import MappingCore
         })
         add(ActionButton("Create 4 × 4 warp mesh") { [weak self] in
             self?.editSurface("Create mesh") { s in s.meshColumns = 4; s.meshRows = 4; s.mesh = (try? Geometry.regularMesh(quad:s.output,columns:4,rows:4)) ?? [] }
-            self?.overlay.meshMode = true; self?.overlay.maskMode = false
+            self?.modePicker.selectItem(at:0); self?.overlay.meshMode = true; self?.overlay.maskMode = false; self?.updateRender()
         })
-        add(ActionButton(overlay.meshMode ? "Edit quad corners" : "Edit mesh points") { [weak self] in self?.overlay.meshMode.toggle(); self?.overlay.maskMode = false; self?.overlay.needsDisplay = true; self?.refreshInspector() })
+        add(ActionButton(overlay.meshMode ? "Edit quad corners" : "Edit mesh points") { [weak self] in self?.overlay.meshMode.toggle(); if self?.overlay.meshMode == true { self?.modePicker.selectItem(at:0) }; self?.overlay.maskMode = false; self?.updateRender(); self?.refreshInspector() })
         add(ActionButton(surface.mask.isEmpty ? "Add polygon mask" : "Edit polygon mask") { [weak self] in
             self?.editSurface("Mask") { s in if s.mask.isEmpty { s.mask = [Point2(0.1,0.1),Point2(0.9,0.1),Point2(0.8,0.9),Point2(0.2,0.9)] } }
             self?.modePicker.selectItem(at:1); self?.overlay.maskMode = true; self?.overlay.meshMode = false; self?.updateRender()
@@ -304,7 +361,7 @@ import MappingCore
     }
     @objc func newProject() {
         guard confirmDiscard() else { return }; closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil
-        history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; overlay.maskMode = false; overlay.meshMode = false; documentGeneration = UUID()
+        history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; documentGeneration = UUID()
         lighting?.stop(); selectedID = project.surfaces.first?.id; dirty = false; media.pause(); media.seek(to:0); reconcile(); refresh()
     }
     @objc func openDialog() {
@@ -315,7 +372,7 @@ import MappingCore
         guard confirmDiscard() else { return }
         do {
             let loaded = try ProjectStore.load(from:url)
-            closeOutputs(); lighting?.stop(); media.pause(); media.seek(to:0); history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; overlay.maskMode = false; overlay.meshMode = false; documentGeneration = UUID(); project = loaded; projectURL = url; dirty = false; selectedID = loaded.surfaces.first?.id
+            closeOutputs(); lighting?.stop(); media.pause(); media.seek(to:0); history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; documentGeneration = UUID(); project = loaded; projectURL = url; dirty = false; selectedID = loaded.surfaces.first?.id
             if FileManager.default.fileExists(atPath:ProjectStore.recoveryURL(for:url).path) {
                 let alert = NSAlert(); alert.messageText = "Recovery snapshot found"; alert.informativeText = "Restore the autosaved state for this project?"; alert.addButton(withTitle:"Restore"); alert.addButton(withTitle:"Use saved project")
                 if alert.runModal() == .alertFirstButtonReturn, let recovered = try? ProjectStore.loadRecovery(for:url) { project = recovered; dirty = true }
@@ -337,8 +394,8 @@ import MappingCore
         switch a.runModal() { case .alertFirstButtonReturn: save(); return !dirty; case .alertSecondButtonReturn: return false; default: return true }
     }
     func windowShouldClose(_ sender:NSWindow) -> Bool { if sender === window { return confirmDiscard() }; return true }
-    @objc func undoEdit() { if let p = history.undo(current:project) { cueTarget = nil; project = p; dirty = true; reconcile(); refresh() } }
-    @objc func redoEdit() { if let p = history.redo(current:project) { cueTarget = nil; project = p; dirty = true; reconcile(); refresh() } }
+    @objc func undoEdit() { commitInterruptedCue(); if let p = history.undo(current:project) { project = p; dirty = true; reconcile(); refresh() } }
+    @objc func redoEdit() { commitInterruptedCue(); if let p = history.redo(current:project) { project = p; dirty = true; reconcile(); refresh() } }
     @objc func importMedia() {
         let p = NSOpenPanel(); p.allowsMultipleSelection = true; p.allowedContentTypes = [.image,.movie,.video]
         guard p.runModal() == .OK else { return }
@@ -370,8 +427,8 @@ import MappingCore
     func deleteSurface() { guard let i = selectedIndex else { return }; mutate("Delete surface") { p in let id = p.surfaces[i].id; p.surfaces.remove(at:i); p.timeline.removeAll { $0.surfaceID == id }; selectedID = p.surfaces.last?.id } }
     func moveLayer(_ delta:Int) { guard let i = selectedIndex, project.surfaces.indices.contains(i+delta) else { return }; mutate("Reorder layers") { $0.surfaces.swapAt(i,i+delta) } }
     func toggleGroup() {
-        guard let i = selectedIndex else { return }; let group = project.surfaces[i].group; guard !group.isEmpty else { return }; let enabled = !project.surfaces[i].enabled
-        mutate("Toggle group") { p in for j in p.surfaces.indices where p.surfaces[j].group == group { p.surfaces[j].enabled = enabled } }
+        guard let i = selectedIndex,let id = project.surfaces[i].groupID,let g = project.groups.firstIndex(where:{$0.id == id}) else { return }
+        mutate("Toggle group") { $0.groups[g].enabled.toggle() }
     }
     func togglePlayback() { if media.isPlaying { media.pause() } else { media.play() }; playButton.title = media.isPlaying ? "Ⅱ Pause" : "▶ Play" }
     func captureCue() { mutate("Capture scene") { $0.cues.append(Cue(name:"Scene \($0.cues.count+1)",surfaces:$0.surfaces,duration:1)) } }
@@ -387,6 +444,7 @@ import MappingCore
         }
         var destination = project; destination.surfaces = target.surfaces
         do { try ProjectStore.validate(destination) } catch { showError(error); return }
+        commitInterruptedCue()
         cueBefore = project; cueFrom = project.surfaces; cueTarget = target; cueStart = ProcessInfo.processInfo.systemUptime
         cueEngine.begin(from:project.surfaces,cue:target,at:cueStart)
     }
@@ -398,7 +456,7 @@ import MappingCore
     func tick() {
         let now = ProcessInfo.processInfo.systemUptime
         if let cue = cueTarget {
-            if let sampled = cueEngine.sample(at:now) { project.surfaces = sampled }
+            if let sampled = cueEngine.sample(at:now),sampled != project.surfaces { project.surfaces = sampled; dirty = true; window?.isDocumentEdited = true }
             if !cueEngine.isTransitioning {
                 if cueEngine.shouldFollow(at:now), let i = project.cues.firstIndex(where:{$0.id == cue.id}), i+1 < project.cues.count { goCue(index:i+1) }
                 else if cue.followAfter == nil || (cueEngine.shouldFollow(at:now) && project.cues.last?.id == cue.id) {
@@ -409,7 +467,7 @@ import MappingCore
             updateRender()
         }
         if !project.timeline.isEmpty { updateRender() }
-        if now-lastLighting >= 1.0/30 {
+        if lighting?.isSampling == true, now-lastLighting >= 1.0/30 {
             lighting?.fixtures = project.fixtures
             lighting?.renderer.blackout = blackout
             lighting?.update(surfaces:effectiveSurfaces); lastLighting = now
@@ -421,7 +479,7 @@ import MappingCore
         timeLabel.stringValue = "\(time(playhead)) / \(time(media.duration))"
         playButton.title = media.isPlaying ? "Ⅱ Pause" : "▶ Play"
         let error = media.errorMessages.values.first.map { " · \($0)" } ?? ""
-        status.stringValue = "\(renderer.statistics) · \(project.surfaces.count) surfaces · \(outputWindows.count) output windows\(blackout ? " · BLACKOUT" : "")\(error)\(workMessage.isEmpty ? "" : " · " + workMessage)"
+        status.stringValue = "\(renderer.statistics) · \(project.surfaces.count) surfaces · \(outputWindows.count) output windows\(blackout ? " · BLACKOUT" : "")\(error)\(renderer.errorDescription.isEmpty ? "" : " · Last render error: " + renderer.errorDescription)\(renderError.isEmpty ? "" : " · " + renderError)\(editError.isEmpty ? "" : " · " + editError)\(workMessage.isEmpty ? "" : " · " + workMessage)"
         if dirty, now-lastRecovery > 10, let url = projectURL { try? ProjectStore.saveRecovery(project,for:url); lastRecovery = now }
     }
     func configureOutputs() {
