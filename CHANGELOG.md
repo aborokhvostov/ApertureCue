@@ -1,11 +1,11 @@
 # Changelog
 
-## 0.1.0-alpha.5 candidate — textured line and Bezier paths, 2026-10-27
+## 0.1.0-alpha.5 — textured line and Bezier paths, 2026-10-27
 
 - Add round-cap/round-join textured polyline and cubic Bezier surfaces inside projective/mesh cages, with bounded adaptive flattening and single coverage at self-crossings.
 - Add working path creation, canvas anchors/tangents, numeric node/width/closed editing, shape-preserving cubic insertion, removal and Undo/Redo. World edits invert group and warp frames; shape changes reject invalid geometry atomically.
 - Add schema 4 path persistence/migration and compatible scene interpolation. Keep local tolerance, cage clipping, 16:9 width metric and nearest-segment UV seams explicit.
-- Local verification: 57 standalone core methods, 46 GPU/media checks, 23 editor checks and 11 lighting/UDP checks passed; native path editing/save/relaunch/open passed. Remote CI/release are pending; see status.
+- Local verification: 57 standalone core methods, 46 GPU/media checks, 23 editor checks and 11 lighting/UDP checks passed; native path editing/save/relaunch/open passed. Exact-source CI passed 57 XCTest on macOS and 57 on Linux, plus macOS release/native build/signature/archive/artifact; see status.
 
 ## 0.1.0-alpha.4 — hierarchical groups, 2026-10-27
 

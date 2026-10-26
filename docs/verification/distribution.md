@@ -42,9 +42,9 @@ Same signing/runtime/hardware limitations as earlier archives. Group opacity is 
 
 [Alpha 4 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.4) is a prerelease with both ZIP (842,915 bytes) and SHA256SUMS assets confirmed `uploaded`. GitHub reported the same ZIP SHA-256 as above; its tag resolves to the source revision above. Earlier releases remain available.
 
-## Alpha 5 candidate
+## Alpha 5
 
-27 October 2026, Apple M2 / arm64 / macOS 26.6.2. Adds textured polyline/cubic stroke surfaces and schema 4. Exact source revision and remote CI are recorded after those gates finish.
+27 October 2026, Apple M2 / arm64 / macOS 26.6.2. Adds textured polyline/cubic stroke surfaces and schema 4. The `v0.1.0-alpha.5` tag identifies source `3677a3b98ed3525c03d434ed902f1077e2b560a9`. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/40422000377) passed 57 XCTest on macOS and 57 on Linux, plus macOS SwiftPM release/native bundle/signature/archive/artifact.
 
 - Archive `ApertureCue-macOS-arm64.zip`, 908,240 bytes, SHA-256 `736863d32709c9ca26f9822e8037cb34a7c308eec99fb73346037c0080cef623`.
 - Fresh package contains the original `Demo/Strokes.aperturecue.json` with two path surfaces and compatible curve scenes, previous demos, license and notices.
@@ -53,3 +53,5 @@ Same signing/runtime/hardware limitations as earlier archives. Group opacity is 
 - Final optimized production binary also passed **46 GPU/media** and **11 lighting/UDP** checks. Local portable core passed **57 assertion methods** with zero failures through the standalone harness. [Native GUI path workflow](stroke-workflow.md) passed separately.
 
 Ad hoc signing only, not notarized or universal; macOS 13+ target, runtime tested on macOS 26.6.2. No new stroke throughput/4K/soak or hardware compatibility claim. Local-width/cage clipping, round joins/caps, accepted nearest-segment UV seams and bounded local cubic tolerance are specified in the user guide. Freehand drawing, alternate join/cap modes, filled FreeDraw and Bezier mesh/masks remain open. Alpha 1–4 reject schema 4; retain an older project copy when downgrading.
+
+[Alpha 5 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.5) is a prerelease. Both ZIP and SHA256SUMS assets were confirmed `uploaded`; GitHub ZIP size/digest match the values above. The release tag resolves to the exact source above. Earlier release assets/tags remain available.
