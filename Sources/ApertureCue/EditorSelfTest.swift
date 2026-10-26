@@ -202,6 +202,37 @@ enum EditorSelfTest {
             report["fullscreenPresentationVerified"]=false
             passed("hidden production fullscreen frame, borderless style, menu-level coverage and Escape cleanup")
 
+            e.addSurface(shape:.triangle)
+            let shapeID=try required(e.selectedID,"Shape creation lost selection")
+            try expect(e.project.surfaces.last?.shape == .triangle,"Triangle button path did not create a triangle")
+            guard let shapePicker=e.inspector.arrangedSubviews.compactMap({ $0 as? ActionPopUp }).first(where:{ $0.itemTitles == ["Quad","Triangle","Ellipse"] }),let action=shapePicker.action else { throw Failure(message:"Working inspector shape selector missing") }
+            shapePicker.selectItem(at:2)
+            app.sendAction(action,to:shapePicker.target,from:shapePicker)
+            try expect(e.project.surfaces.last?.shape == .ellipse,"Shape selector did not edit the selected surface")
+            e.undoEdit(); try expect(e.project.surfaces.last?.shape == .triangle,"Undo did not restore triangle shape")
+            e.redoEdit(); try expect(e.project.surfaces.last?.shape == .ellipse,"Redo did not restore ellipse shape")
+            e.modePicker.selectItem(at:1); e.updateRender()
+            try expect(e.renderer.surfaces.first?.shape == .quad,"Input preview was clipped by output surface shape")
+            e.modePicker.selectItem(at:0); e.updateRender()
+            var picking=try required(e.project.surfaces.last,"Shape picking fixture missing")
+            picking.output=Point2.unitQuad
+            let lower=Surface(name:"Lower picking layer",output:Point2.unitQuad)
+            e.overlay.surfaces=[lower,picking]
+            try expect(e.overlay.hitSurface(at:Point2(0.02,0.02)) == lower.id,"Ellipse empty corner captured selection of lower layer")
+            try expect(e.overlay.hitSurface(at:Point2(0.5,0.5)) == shapeID,"Ellipse interior was not selectable")
+            e.updateRender()
+            passed("triangle creation, actual shape selector, undo/redo, unclipped input and shape-aware selection")
+
+            e.mutate("Shape snapshot") { $0.cues.append(Cue(name:"Shape snapshot",surfaces:$0.surfaces,duration:0)) }
+            let shapeURL=directory.appendingPathComponent("shapes.aperturecue.json")
+            e.saveTo(shapeURL)
+            let shaped=e.project
+            e.newProject(); e.openProject(shapeURL)
+            try expect(e.project == shaped && e.project.version == 2,"Schema-2 shape document did not reopen through production controller")
+            try expect(e.project.surfaces.last?.shape == .ellipse && e.project.cues.last?.surfaces.last?.shape == .ellipse,"Reopen lost surface or snapshot shape")
+            try ProjectStore.validate(e.project)
+            passed("schema-2 surface and scene shapes survive production save/new/open")
+
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count
             try writeReport()

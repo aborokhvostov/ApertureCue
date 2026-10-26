@@ -1,5 +1,5 @@
 {
-  "checkCount" : 11,
+  "checkCount" : 13,
   "checks" : [
     "hidden editor startup with valid demo project",
     "add, duplicate, delete and controller undo\/redo",
@@ -11,7 +11,9 @@
     "new document clears media, playback time, history, URL and selection",
     "open document restores resources and title while resetting history, selection and transport",
     "production hidden output constructor shares media, receives blackout and closes",
-    "hidden production fullscreen frame, borderless style, menu-level coverage and Escape cleanup"
+    "hidden production fullscreen frame, borderless style, menu-level coverage and Escape cleanup",
+    "triangle creation, actual shape selector, undo\/redo, unclipped input and shape-aware selection",
+    "schema-2 surface and scene shapes survive production save\/new\/open"
   ],
   "documentAssetCount" : 1,
   "documentSurfaceCount" : 2,
@@ -25,6 +27,6 @@
   "platform" : "Version 26.6.2 (Build 25G83)",
   "schemaVersion" : 1,
   "scope" : "Production EditorController and hidden output renderer integration; no external application, visible output, or hardware interaction.",
-  "timestampUTC" : "2026-10-26T07:33:41Z",
+  "timestampUTC" : "2026-10-26T13:24:55Z",
   "windowsShown" : false
 }

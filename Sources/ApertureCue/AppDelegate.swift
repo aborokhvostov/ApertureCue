@@ -187,6 +187,7 @@ import MappingCore
             ActionButton("Assign to surface") { [weak self] in self?.assignMedia() },
             label("SURFACES · back → front",bold:true),layers,
             stack([ActionButton("+ Quad") { [weak self] in self?.addSurface() },ActionButton("Duplicate") { [weak self] in self?.duplicateSurface() }],vertical:false),
+            stack([ActionButton("+ Triangle") { [weak self] in self?.addSurface(shape:.triangle) },ActionButton("+ Ellipse") { [weak self] in self?.addSurface(shape:.ellipse) }],vertical:false),
             stack([ActionButton("↓") { [weak self] in self?.moveLayer(-1) },ActionButton("↑") { [weak self] in self?.moveLayer(1) },ActionButton("Delete") { [weak self] in self?.deleteSurface() }],vertical:false)])
         for v in [assets,layers] { v.widthAnchor.constraint(equalTo:s.widthAnchor).isActive = true }
         layers.heightAnchor.constraint(greaterThanOrEqualToConstant:120).isActive = true
@@ -238,7 +239,7 @@ import MappingCore
     func updateRender() {
         if inputMode, let i = selectedIndex {
             var s = project.surfaces[i]; s.input = Point2.unitQuad; s.output = Point2.unitQuad
-            s.mesh = []; s.meshColumns = 0; s.meshRows = 0; s.mask = []; s.feather = 0; s.opacity = 1; s.brightness = 1; s.gamma = 1; s.color = [1,1,1]; s.enabled = true
+            s.shape = .quad; s.mesh = []; s.meshColumns = 0; s.meshRows = 0; s.mask = []; s.feather = 0; s.opacity = 1; s.brightness = 1; s.gamma = 1; s.color = [1,1,1]; s.enabled = true
             renderer.surfaces = [s]
         } else { renderer.surfaces = effectiveSurfaces }
         overlay.inputMode = inputMode; overlay.selectedID = selectedID; overlay.surfaces = project.surfaces
@@ -256,6 +257,9 @@ import MappingCore
         }
         add(label("SURFACE",bold:true)); add(ActionField(surface.name) { [weak self] v in self?.editSurface("Rename") { $0.name = v } })
         add(ActionButton(surface.enabled ? "Hide surface" : "Show surface") { [weak self] in self?.editSurface("Visibility") { $0.enabled.toggle() } })
+        add(label("Shape · four-corner frame",size:11))
+        let shapes: [SurfaceShape] = [.quad,.triangle,.ellipse]
+        add(ActionPopUp(items:["Quad","Triangle","Ellipse"],selected:shapes.firstIndex(of:surface.shape) ?? 0) { [weak self] v in self?.setSurfaceShape(shapes[v]) })
         add(label("Generator / fallback",size:11))
         let generators = ["checker","gradient","solid","grid"]
         add(ActionPopUp(items:generators,selected:generators.firstIndex(of:surface.generator) ?? 0) { [weak self] v in self?.editSurface("Generator") { $0.generator = generators[v]; $0.mediaID = nil } })
@@ -355,7 +359,13 @@ import MappingCore
         if previousPath == url.path { media.reloadAsset(id:id,assets:project.assets,baseURL:baseURL); refresh() }
     }
     func assignMedia() { guard let id = selectedMediaID else { return }; editSurface("Assign media") { $0.mediaID = id } }
-    func addSurface() { mutate("Add surface") { p in let s = Surface(name:"Surface \(p.surfaces.count+1)"); p.surfaces.append(s); selectedID = s.id } }
+    func addSurface(shape:SurfaceShape = .quad) {
+        mutate("Add surface") { p in
+            var s = Surface(name:"\(shape == .quad ? "Surface" : shape.rawValue.capitalized) \(p.surfaces.count+1)")
+            s.shape = shape; p.surfaces.append(s); selectedID = s.id
+        }
+    }
+    func setSurfaceShape(_ shape:SurfaceShape) { editSurface("Surface shape") { $0.shape = shape } }
     func duplicateSurface() { guard let i = selectedIndex else { return }; mutate("Duplicate surface") { p in var s = p.surfaces[i]; s.id = UUID(); s.name += " copy"; p.surfaces.append(s); selectedID = s.id } }
     func deleteSurface() { guard let i = selectedIndex else { return }; mutate("Delete surface") { p in let id = p.surfaces[i].id; p.surfaces.remove(at:i); p.timeline.removeAll { $0.surfaceID == id }; selectedID = p.surfaces.last?.id } }
     func moveLayer(_ delta:Int) { guard let i = selectedIndex, project.surfaces.indices.contains(i+delta) else { return }; mutate("Reorder layers") { $0.surfaces.swapAt(i,i+delta) } }

@@ -112,6 +112,60 @@ enum SelfTest {
             }
             checks.append("projective UV GPU vs CPU homography, four pixel centers, ±2/255 tolerance")
 
+            for shape in [SurfaceShape.triangle, .ellipse] {
+                var primitive = red; primitive.shape = shape
+                image = try frame([primitive], width:128, height:128)
+                try expect(pixel(image,64,64)[0] == 255 && pixel(image,3,3)[0] == 0,
+                           "Shape interior/exterior differs: \(shape.rawValue)")
+                var coverage = 0.0; var fractional = 0
+                for y in 0..<128 { for x in 0..<128 {
+                    let value = pixel(image,x,y)[0]; coverage += Double(value)/255
+                    if value > 0 && value < 255 { fractional += 1 }
+                } }
+                let expectedArea = shape == .triangle ? 0.5 : Double.pi/4
+                try expect(abs(coverage/(128*128)-expectedArea) < 0.003 && fractional > 20,
+                           "Shape area/antialias coverage differs: \(shape.rawValue)")
+                if shape == .triangle {
+                    try expect(abs(pixel(image,31,64)[0]-85) <= 3 && abs(pixel(image,32,63)[0]-170) <= 3,
+                               "Triangle derivative-based edge coverage differs")
+                }
+                let original = image
+                primitive.input = [Point2(0.2,0.3),Point2(0.7,0.3),Point2(0.7,0.9),Point2(0.2,0.9)]
+                image = try frame([primitive],width:128,height:128)
+                for y in stride(from:0,to:128,by:7) { for x in stride(from:0,to:128,by:7) {
+                    try expect(pixel(image,x,y) == pixel(original,x,y),"Input crop shifted local shape coverage")
+                } }
+                checks.append("\(shape.rawValue) local coverage, area, antialias and crop independence")
+
+                primitive.input = unit; primitive.output = quad
+                image = try frame([primitive])
+                for y in stride(from:12,to:80,by:6) { for x in stride(from:15,to:112,by:6) {
+                    let local = try homography.applying(Point2((Double(x)+0.5)/128,(Double(y)+0.5)/96))
+                    let distance = shape.signedDistance(at:local)
+                    if abs(distance) > 0.035 {
+                        try expect(pixel(image,x,y)[0] == (distance > 0 ? 255 : 0),"Projective shape coverage differs from CPU halfplanes/radius")
+                    }
+                } }
+                primitive.output = unit; primitive.meshColumns = 2; primitive.meshRows = 2
+                primitive.mesh = try Geometry.regularMesh(quad:unit,columns:2,rows:2)
+                primitive.mesh[4] = Point2(0.65,0.5)
+                image = try frame([primitive])
+                try expect(pixel(image,82,48)[0] == 255 && pixel(image,2,2)[0] == 0,"Warped shape local coverage differs")
+                primitive.mask = [Point2(0,0),Point2(0.5,0),Point2(0.5,1),Point2(0,1)]
+                image = try frame([primitive])
+                try expect(pixel(image,45,55)[0] == 255 && pixel(image,96,55)[0] == 0,"Local shape and source-UV mask intersection differs")
+                checks.append("\(shape.rawValue) perspective, displaced mesh and UV-mask intersection")
+
+                primitive.mask = []; primitive.mesh = []; primitive.meshColumns = 0; primitive.meshRows = 0; primitive.feather = 0.15
+                image = try frame([primitive],width:128,height:128)
+                for (x,y) in [(64,64),(32,80),(64,120)] {
+                    let distance = shape.signedDistance(at:Point2((Double(x)+0.5)/128,(Double(y)+0.5)/128))
+                    let t = max(0,min(1,distance/0.15)); let expected = Int((t*t*(3-2*t)*255).rounded())
+                    try expect(abs(pixel(image,x,y)[0]-expected) <= 2,"Shape feather distance differs from CPU oracle")
+                }
+                checks.append("\(shape.rawValue) shape-aware feather numerical oracle")
+            }
+
             var cropped = Surface(name: "Input crop", output: unit, generator: "gradient")
             cropped.input = [Point2(0.25, 0.25), Point2(0.75, 0.25), Point2(0.75, 0.75), Point2(0.25, 0.75)]
             image = try frame([cropped])

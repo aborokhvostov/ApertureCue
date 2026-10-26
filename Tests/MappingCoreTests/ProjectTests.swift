@@ -50,7 +50,7 @@ final class ProjectTests: XCTestCase {
         let url=scratch.appendingPathComponent("legacy.aperturecue")
         try Data("{\"name\":\"Legacy\",\"surfaces\":[{\"name\":\"Quad\"}]}".utf8).write(to:url)
         let p=try ProjectStore.load(from:url)
-        XCTAssertEqual(p.version,1); XCTAssertEqual(p.surfaces[0].opacity,1)
+        XCTAssertEqual(p.version,Project.currentVersion); XCTAssertEqual(p.surfaces[0].opacity,1)
         try Data("{\"version\":999,\"name\":\"Future\"}".utf8).write(to:url)
         XCTAssertThrowsError(try ProjectStore.load(from:url)) { XCTAssertEqual($0 as? ProjectError,.unsupportedVersion(999)) }
     }

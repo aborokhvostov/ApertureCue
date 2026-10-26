@@ -15,6 +15,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         var sourceX: SIMD4<Float>; var sourceY: SIMD4<Float>; var sourceW: SIMD4<Float>
         var localX: SIMD4<Float>; var localY: SIMD4<Float>; var localW: SIMD4<Float>
         var properties: SIMD4<Float>; var tint: SIMD4<Float>; var misc: SIMD4<Float>
+        var shape: SIMD4<Float>
     }
 
     let device: MTLDevice
@@ -273,7 +274,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             properties: SIMD4(Float(max(0, min(1, surface.opacity))), Float(max(0, surface.brightness)),
                               Float(max(0.01, surface.gamma)), Float(max(0, min(0.5, surface.feather)))),
             tint: SIMD4(Float(tint[0]), Float(tint[1]), Float(tint[2]), 1),
-            misc: SIMD4(generator, Float(polygon.count), hasMesh ? 1 : 0, Float(media.currentTime)))
+            misc: SIMD4(generator, Float(polygon.count), hasMesh ? 1 : 0, Float(media.currentTime)),
+            shape: SIMD4(surface.shape == .triangle ? 1 : (surface.shape == .ellipse ? 2 : 0), 0, 0, 0))
         guard let pipeline = pipelines[surface.blendMode] ?? pipelines["normal"] else { return }
         encoder.setRenderPipelineState(pipeline)
         // set*Bytes is limited to 4 KiB; a dense mesh gets an ordinary buffer.
@@ -304,6 +306,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         float4 sourceX; float4 sourceY; float4 sourceW;
         float4 localX; float4 localY; float4 localW;
         float4 properties; float4 tint; float4 misc;
+        float4 shape;
     };
     vertex Raster mappingVertex(const device Vertex* vertices [[buffer(0)]], uint id [[vertex_id]]) {
         Raster out;
@@ -319,6 +322,17 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     fragment float4 mappingFragment(Raster in [[stage_in]], constant Uniforms& u [[buffer(0)]],
                                     constant float2* mask [[buffer(1)]], texture2d<float> image [[texture(0)]]) {
         float2 local = u.misc.z > 0.5 ? in.local : project(in.screen, u.localX, u.localY, u.localW);
+        // Shape is defined in local surface space, independent of source UV crop.
+        float edge = min(min(local.x, 1.0 - local.x), min(local.y, 1.0 - local.y));
+        float coverage = 1.0;
+        if (u.shape.x > 0.5) {
+            if (u.shape.x < 1.5) {
+                edge = min(min((local.y - 2.0 * local.x + 1.0) / sqrt(5.0),
+                               (local.y + 2.0 * local.x - 1.0) / sqrt(5.0)), 1.0 - local.y);
+            } else { edge = 0.5 - length(local - float2(0.5)); }
+            // One fragment footprint at the boundary; no fixed-resolution tessellation.
+            coverage = clamp(edge / max(fwidth(edge), 1e-7) + 0.5, 0.0, 1.0);
+        }
         float2 uv = project(u.misc.z > 0.5 ? local : in.screen, u.sourceX, u.sourceY, u.sourceW);
         if (!all(isfinite(uv)) || any(uv < float2(0.0)) || any(uv > float2(1.0))) discard_fragment();
         int count = int(u.misc.y);
@@ -351,9 +365,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             if (uv.x < 0.055 && uv.y > 0.945) rgb = float3(1, 1, 0.03);
             color = float4(rgb, 1.0);
         }
-        float edge = min(min(local.x, 1.0 - local.x), min(local.y, 1.0 - local.y));
         float feather = u.properties.w > 0.0 ? smoothstep(0.0, u.properties.w, edge) : 1.0;
-        float alpha = clamp(color.a * u.properties.x * feather, 0.0, 1.0);
+        float alpha = clamp(color.a * u.properties.x * feather * coverage, 0.0, 1.0);
         float3 rgb = pow(max(color.rgb * u.tint.rgb * u.properties.y, float3(0.0)), float3(1.0 / u.properties.z));
         return float4(rgb * alpha, alpha);
     }

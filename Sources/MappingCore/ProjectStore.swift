@@ -6,7 +6,7 @@ public enum ProjectError: Error, LocalizedError, Equatable {
     case invalid(String)
     public var errorDescription: String? {
         switch self {
-        case .unsupportedVersion(let v): return "Project version \(v) is unsupported. This build supports versions 0 and 1."
+        case .unsupportedVersion(let v): return "Project version \(v) is unsupported. This build supports versions 0 through 2."
         case .tooLarge: return "The project exceeds the 16 MiB document limit."
         case .invalid(let reason): return "Invalid project: \(reason)"
         }
@@ -97,7 +97,14 @@ public enum ProjectStore {
         guard data.count <= maximumFileSize else { throw ProjectError.tooLarge }
         var p = try JSONDecoder().decode(Project.self, from:data)
         guard p.version >= 0, p.version <= Project.currentVersion else { throw ProjectError.unsupportedVersion(p.version) }
-        // Version 0 was the initial unversioned JSON format. Optional fields acquire model defaults.
+        // Legacy projects always described quad cages. Do not reinterpret an unknown
+        // extension named "shape" when migrating a version that did not define it.
+        if p.version < 2 {
+            for index in p.surfaces.indices { p.surfaces[index].shape = .quad }
+            for cueIndex in p.cues.indices {
+                for surfaceIndex in p.cues[cueIndex].surfaces.indices { p.cues[cueIndex].surfaces[surfaceIndex].shape = .quad }
+            }
+        }
         p.version = Project.currentVersion
         try validate(p)
         let base = url.deletingLastPathComponent()

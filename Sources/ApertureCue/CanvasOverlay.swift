@@ -37,8 +37,18 @@ final class CanvasOverlay: NSView {
             guard pts.count == 4 else { continue }
             let path = NSBezierPath(); path.move(to: point(pts[0]))
             pts.dropFirst().forEach { path.line(to: point($0)) }; path.close()
-            (selected ? NSColor.systemCyan : NSColor.white.withAlphaComponent(0.35)).setStroke()
+            let shaped = !inputMode && surface.shape != .quad
+            (selected ? NSColor.systemCyan.withAlphaComponent(shaped ? 0.35 : 1) : NSColor.white.withAlphaComponent(0.35)).setStroke()
             path.lineWidth = selected ? 2 : 1; path.stroke()
+            if !inputMode && (shaped || !surface.mesh.isEmpty) {
+                let points = (try? SurfaceGeometry.outputOutline(surface:surface)) ?? []
+                let contour = NSBezierPath()
+                if let first = points.first { contour.move(to:point(first)) }
+                points.dropFirst().forEach { contour.line(to:point($0)) }
+                contour.close()
+                (selected ? NSColor.systemCyan : NSColor.white.withAlphaComponent(0.6)).setStroke()
+                contour.lineWidth = selected ? 2 : 1; contour.stroke()
+            }
             if selected {
                 let handles = vertices(surface)
                 if maskMode && handles.count > 1 {
@@ -70,12 +80,14 @@ final class CanvasOverlay: NSView {
             }
         }
         if !inputMode {
-            for s in surfaces.reversed() {
-                guard s.output.count == 4 else { continue }
-                let path = NSBezierPath(); path.move(to: point(s.output[0])); s.output.dropFirst().forEach { path.line(to: point($0)) }; path.close()
-                if path.contains(p) { onSelect?(s.id); return }
-            }
+            let output = Point2(p.x/max(1,bounds.width),p.y/max(1,bounds.height))
+            if let id = hitSurface(at:output) { onSelect?(id) }
         }
+    }
+    /// Geometry picking uses the same local shape/mesh as the compositor.
+    /// Source masks are edited independently and do not change selection bounds.
+    func hitSurface(at output:Point2) -> UUID? {
+        surfaces.reversed().first { $0.enabled && $0.opacity > 0 && SurfaceGeometry.contains(output:output,surface:$0) }?.id
     }
     override func mouseDragged(with event: NSEvent) {
         guard let i = dragging, let id = selectedID else { return }

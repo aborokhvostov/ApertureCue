@@ -39,4 +39,9 @@ runCase("OBJ.projection depth clipping", Scene3DTests.self) { try $0.testProject
 runCase("Collect.independent media copy", CollectTests.self) { try $0.testCollectedProjectSurvivesOriginalDeletionAndDuplicateNames() }
 runCase("Collect.rollback no overwrite", CollectTests.self) { try $0.testMissingMediaRollsBackAndExistingDestinationIsUntouched() }
 runCase("Collect.camera symlink", CollectTests.self) { try $0.testCameraIdentitiesAndSymlinkMediaRemainPortable() }
+runCase("Shape.distances bounded outline", ShapeTests.self) { try $0.testPrimitiveDistancesBoundariesAndBoundedOutlines() }
+runCase("Shape.projective hit input independence", ShapeTests.self) { try $0.testProjectivePrimitiveHitTestingAndIndependentInput() }
+runCase("Shape.mesh fold hit", ShapeTests.self) { try $0.testMeshInterpolationAndFoldedPrimitiveHitTesting() }
+runCase("Shape.legacy future migration", ShapeTests.self) { try $0.testLegacyQuadMigrationAndFutureShapeRejection() }
+runCase("Shape.cue collect history roundtrip", ShapeTests.self) { try $0.testShapesRoundTripCuesCollectAndHistory() }
 exit(finishTests())

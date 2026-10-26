@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-alpha.3 candidate — perspective primitive surfaces, 2026-10-26
+
+- Add triangle and ellipse primitives in the existing four-corner perspective cage, with shape-aware selection/contours, independent source crop, mesh, source-mask intersection and local edge feather. Signed-distance clipping includes derivative antialiasing. Free three-vertex UV editing remains outside this subset.
+- Add working creation buttons and inspector shape control with undo/redo; Input mode previews the complete source. Include an original procedural Shapes demo.
+- Introduce project schema 2 with v0/v1 quad migration, explicit shape persistence in scenes/portable collection, unknown-shape rejection and future-version protection for older builds.
+- Local verification: 43 core assertion methods, 35 production GPU/media checks, 13 editor integration checks and 11 GPU-to-UDP lighting checks. Native GUI creation, cage editing, full source preview, built-in fullscreen and save/relaunch/open passed; remote CI for this change is pending.
+
+
 ## 0.1.0-alpha.2 — SDK compatibility and frame ownership, 2026-10-26
 
 - Use stable Objective-C camera-disconnect and session-error notification names across Apple SDKs; macOS CI exposed Swift API renames that the newer local SDK accepted. The entire application also passes local type-checking against macOS 15.4 SDK.

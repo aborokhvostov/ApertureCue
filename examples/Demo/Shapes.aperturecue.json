@@ -1,0 +1,135 @@
+{
+  "version": 2,
+  "name": "ApertureCue Primitive Shapes",
+  "surfaces": [
+    {
+      "blendMode": "normal",
+      "brightness": 1,
+      "color": [
+        1,
+        1,
+        1
+      ],
+      "enabled": true,
+      "feather": 0.025,
+      "gamma": 1,
+      "generator": "checker",
+      "group": "",
+      "id": "1A9DF1A6-4D70-458D-BAD8-0CF4846CE53D",
+      "input": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "mask": [],
+      "mesh": [],
+      "meshColumns": 0,
+      "meshRows": 0,
+      "name": "Perspective triangle",
+      "opacity": 1,
+      "output": [
+        {
+          "x": 0.04,
+          "y": 0.12
+        },
+        {
+          "x": 0.49,
+          "y": 0.23
+        },
+        {
+          "x": 0.46,
+          "y": 0.88
+        },
+        {
+          "x": 0.09,
+          "y": 0.8
+        }
+      ],
+      "shape": "triangle"
+    },
+    {
+      "blendMode": "normal",
+      "brightness": 1,
+      "color": [
+        1,
+        1,
+        1
+      ],
+      "enabled": true,
+      "feather": 0.025,
+      "gamma": 1,
+      "generator": "gradient",
+      "group": "",
+      "id": "9EED18E1-2900-4D7E-B4A6-7AD0462A60AB",
+      "input": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "mask": [],
+      "mesh": [],
+      "meshColumns": 0,
+      "meshRows": 0,
+      "name": "Perspective ellipse",
+      "opacity": 1,
+      "output": [
+        {
+          "x": 0.54,
+          "y": 0.16
+        },
+        {
+          "x": 0.94,
+          "y": 0.08
+        },
+        {
+          "x": 0.91,
+          "y": 0.88
+        },
+        {
+          "x": 0.56,
+          "y": 0.82
+        }
+      ],
+      "shape": "ellipse"
+    }
+  ],
+  "assets": [],
+  "outputs": [
+    {
+      "height": 1080,
+      "id": "CF282A6C-990E-4B16-97F0-E45142B0E40A",
+      "name": "Projector 1",
+      "screenIndex": 0,
+      "width": 1920
+    }
+  ],
+  "cues": [],
+  "fixtures": [],
+  "timeline": []
+}
