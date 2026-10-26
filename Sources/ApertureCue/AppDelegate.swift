@@ -350,7 +350,9 @@ import MappingCore
     }
     func relink(_ id:UUID) {
         let p = NSOpenPanel(); guard p.runModal() == .OK, let url = p.url else { return }
+        let previousPath = project.assets.first(where: { $0.id == id })?.path
         mutate("Relink media") { state in if let i = state.assets.firstIndex(where:{$0.id == id}) { state.assets[i].path = url.path; state.assets[i].name = url.lastPathComponent } }
+        if previousPath == url.path { media.reloadAsset(id:id,assets:project.assets,baseURL:baseURL); refresh() }
     }
     func assignMedia() { guard let id = selectedMediaID else { return }; editSurface("Assign media") { $0.mediaID = id } }
     func addSurface() { mutate("Add surface") { p in let s = Surface(name:"Surface \(p.surfaces.count+1)"); p.surfaces.append(s); selectedID = s.id } }
@@ -366,8 +368,17 @@ import MappingCore
     func deleteCue() { let i = cuePicker.indexOfSelectedItem; guard project.cues.indices.contains(i) else { return }; mutate("Delete scene") { $0.cues.remove(at:i) } }
     func goCue(index:Int? = nil) {
         let i = index ?? cuePicker.indexOfSelectedItem; guard project.cues.indices.contains(i) else { return }
-        cueBefore = project; cueFrom = project.surfaces; cueTarget = project.cues[i]; cueStart = ProcessInfo.processInfo.systemUptime
-        cueEngine.begin(from:project.surfaces,cue:project.cues[i],at:cueStart)
+        var target = project.cues[i]
+        let targetIDs = Set(target.surfaces.map(\.id))
+        // Scene absence hides a definition; it must not orphan automation or
+        // silently discard a surface created after that scene was captured.
+        target.surfaces += project.surfaces.filter { !targetIDs.contains($0.id) }.map { surface in
+            var inactive = surface; inactive.enabled = false; return inactive
+        }
+        var destination = project; destination.surfaces = target.surfaces
+        do { try ProjectStore.validate(destination) } catch { showError(error); return }
+        cueBefore = project; cueFrom = project.surfaces; cueTarget = target; cueStart = ProcessInfo.processInfo.systemUptime
+        cueEngine.begin(from:project.surfaces,cue:target,at:cueStart)
     }
     func startTick() {
         timer = Timer.scheduledTimer(withTimeInterval:1.0/30,repeats:true) { [weak self] _ in
@@ -416,7 +427,7 @@ import MappingCore
             openOutput(config!,fullscreen:response == .alertFirstButtonReturn)
         } else if response == .alertThirdButtonReturn { closeOutputs() }
     }
-    func openOutput(_ config:OutputConfig,fullscreen:Bool) {
+    func openOutput(_ config:OutputConfig,fullscreen:Bool,showWindow:Bool = true) {
         if let old = outputWindows[config.id] { old.0.close(); outputWindows.removeValue(forKey:config.id) }
         let screen = NSScreen.screens.indices.contains(config.screenIndex) ? NSScreen.screens[config.screenIndex] : NSScreen.main!
         let w = ProjectionWindow(contentRect:NSRect(x:screen.frame.minX+60,y:screen.frame.minY+60,width:960,height:540),styleMask:fullscreen ? [.borderless] : [.titled,.closable,.resizable],backing:.buffered,defer:false,screen:screen)
@@ -425,8 +436,12 @@ import MappingCore
         guard let r = MetalRenderer(view:v,media:media) else { return }; r.outputID = config.id; r.surfaces = effectiveSurfaces; r.blackout = blackout
         fill(v,in:w.contentView!); outputWindows[config.id] = (w,r)
         w.onClose = { [weak self] in self?.outputWindows.removeValue(forKey:config.id) }
-        if fullscreen { w.setFrame(screen.frame,display:true); w.level = .floating; w.collectionBehavior = [.canJoinAllSpaces,.fullScreenAuxiliary] }
-        w.makeKeyAndOrderFront(nil)
+        if fullscreen {
+            w.setFrame(screen.frame,display:true)
+            w.level = NSWindow.Level(rawValue:NSWindow.Level.mainMenu.rawValue+1)
+            w.collectionBehavior = [.canJoinAllSpaces,.fullScreenAuxiliary]
+        }
+        if showWindow { w.makeKeyAndOrderFront(nil) }
     }
     func closeOutputs() { let windows = Array(outputWindows.values); outputWindows.removeAll(); windows.forEach { $0.0.close() } }
     func toggleBlackout() { blackout.toggle(); updateRender() }

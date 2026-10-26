@@ -2,7 +2,7 @@
 
 Референс: официальная документация **MadMapper 6**, срез 25.10.2026. Источники Rxx раскрыты ссылками в [research.md](research.md). Все строки имеют источник D (документация), а критерии — самостоятельные требования A. Источник не подтверждает идентичность поведения реализации.
 
-Статусы независимы: **D** исследовано по документации; **I** реализовано; **A** автоматическая проверка; **M** ручная проверка; **H** проверка с реальным устройством; **—** не подтверждено. I partial обозначает работающий заявленный subset, а не выполнение всего критерия строки. Доказательства A и точные ограничения собраны в [status.md](status.md), [core tests](../Tests/MappingCoreTests/) и [GPU report](verification/self-test.json). Ни simulation, ни loopback не дают H. Актуальная проверенная сборка и ограничения — в [status.md](status.md).
+Статусы независимы: **D** исследовано по документации; **I** реализовано; **A** автоматическая проверка; **M** пошаговая GUI-проверка агентом (см. [журнал](verification/gui-workflow.md)); **H** проверка с реальным устройством; **—** не подтверждено. I partial обозначает работающий заявленный subset, а не выполнение всего критерия строки. Доказательства A и точные ограничения собраны в [status.md](status.md), [core tests](../Tests/MappingCoreTests/) и [GPU report](verification/self-test.json). Ни simulation, ни loopback не дают H. Актуальная проверенная сборка и ограничения — в [status.md](status.md).
 
 Во всех строках версия источника — 6, кроме R01 (актуальная страница без patch-привязки). «ПК» означает текущий компьютер без дополнительного оборудования; GPU, дисплеи и устройства требуют отдельного учёта в отчёте производительности.
 
@@ -10,16 +10,16 @@
 
 | ID / функция / источник | Сценарий; вход → результат | Границы | Платформа / оборудование | Приёмка собственной реализации | Статус |
 |---|---|---|---|---|---|
-| G01 Quad, R03/R04 | Подогнать изображение; 4 вершины → поверхность | Совпавшие, вогнутые, пересечённые точки | ПК/GPU | Сохранённый quad повторно открывается с теми же вершинами | D · I · A (core) · M pending |
-| G02 Input/output, R04/R09 | Выбрать фрагмент; UV и output → crop без сдвига формы | UV вне [0,1], flip, aspect ratio | ПК/GPU | Изменение UV не меняет output и наоборот | D · I · A (GPU) |
-| G03 Perspective, R04 | Подогнать плоскость; прямоугольник → проективный quad | Нулевая площадь, горизонт w=0 | ПК/GPU | Контрольная сетка совпадает с эталонной homography; singular отклоняется | D · I · A (GPU ±2/255) |
+| G01 Quad, R03/R04 | Подогнать изображение; 4 вершины → поверхность | Совпавшие, вогнутые, пересечённые точки | ПК/GPU | Сохранённый quad повторно открывается с теми же вершинами | D · I · A (core) · M (GUI) |
+| G02 Input/output, R04/R09 | Выбрать фрагмент; UV и output → crop без сдвига формы | UV вне [0,1], flip, aspect ratio | ПК/GPU | Изменение UV не меняет output и наоборот | D · I · A (GPU) · M (GUI) |
+| G03 Perspective, R04 | Подогнать плоскость; прямоугольник → проективный quad | Нулевая площадь, горизонт w=0 | ПК/GPU | Контрольная сетка совпадает с эталонной homography; singular отклоняется | D · I · A (GPU ±2/255) · M (GUI) |
 | G04 Triangle/circle, R03 | Геометрическая маска; точки/радиус → покрытие | Нулевой радиус, граница, AA | ПК/GPU | Центр/углы/внешние пиксели имеют ожидаемую alpha | D |
 | G05 Lines/FreeDraw, R07 | Обвести контур; polyline/Bézier → текстурная полоса | Острые стыки, caps, самопересечение | ПК/GPU | Тесты толщины и стыков на фиксированном разрешении | D |
 | G06 Transform/snapping, R01/R03 | Точная раскладка; drag/nudge → translation/scale/rotation | Отрицательный масштаб, zoom, DPI | ПК | Обратная команда восстанавливает координаты; snapping имеет явный допуск | D · I partial: corner drag + 5% snap |
 | G07 Selection/lock, R06/R24 | Не сдвинуть готовую сцену; selection/lock → ограничение редактирования | Группы, скрытые объекты | ПК | Заблокированный объект не меняется drag/nudge; unlock обратим | D · I partial: selection; lock absent |
 | G08 Groups, R05 | Перемещать набор; hierarchy → общий transform/opacity | Цикл, вложение, reparent | ПК/GPU | Relative positions сохраняются; циклический parent запрещён | D · I partial: label + visibility; hierarchy absent |
 | G09 Layer order, R05 | Составить изображение; stack → предсказуемое перекрытие | Alpha=0/1, одинаковые геометрии | ПК/GPU | Два тестовых цвета дают вычисленную композицию в нужном порядке | D · I · A (GPU) |
-| G10 Undo/redo, R01 | Исправить правку; command → прежнее/новое состояние | Drag coalescing, branch after undo | ПК | Серия edit/undo/redo и save/reopen сохраняет документ | D · I · A (core) |
+| G10 Undo/redo, R01 | Исправить правку; command → прежнее/новое состояние | Drag coalescing, branch after undo | ПК | Серия edit/undo/redo и save/reopen сохраняет документ | D · I · A (core) · M (GUI) |
 | G11 Mesh, R04 | Искривить плоскость; grid → деформированная поверхность | Foldovers, UV continuity, subdivision | ПК/GPU | Контрольные узлы попадают в эталон; нет трещин между ячейками | D · I partial: regular mesh · A (GPU) |
 | G12 Bézier mesh, R04 | Сгладить арку; tangents/precision → кривая | Unlinked tangents, экстремальная кривизна | ПК/GPU | Погрешность tessellation ниже 0.5 px при заданном масштабе | D |
 | G13 Mesh link, R04 | Согласовать сетки; link toggle → связанное/раздельное редактирование | Link после разных сеток | ПК | Смена output меняет input только в явно включённом режиме | D |
@@ -34,12 +34,12 @@
 
 | ID / функция / источник | Сценарий; вход → результат | Границы | Платформа / оборудование | Приёмка собственной реализации | Статус |
 |---|---|---|---|---|---|
-| V01 Images, R12/R13 | Импорт тестовой картинки; файл → texture | Alpha, EXIF, HDR, повреждение | ПК/GPU; codecs зависят от сборки | Собственные RGB/alpha patterns дают ожидаемые пиксели | D · I · A (PNG alpha/orientation) |
-| V02 Video decode, R13 | Проиграть клип; container/codec → кадры PTS | VFR, rotation, EOF, decoder failure | ПК; acceleration платформенная | Локальный тестовый клип декодируется; фактические codecs перечислены | D · I · A (H.264/MOV only) |
-| V03 Transport, R12 | Play/pause/seek/loop; time → нужный кадр | Seek до/после duration, pause seek | ПК | Clock и PTS укладываются в один frame interval; pause стабилен | D · I partial · A (seek tolerance 80 ms; no frame-lock claim) |
+| V01 Images, R12/R13 | Импорт тестовой картинки; файл → texture | Alpha, EXIF, HDR, повреждение | ПК/GPU; codecs зависят от сборки | Собственные RGB/alpha patterns дают ожидаемые пиксели | D · I · A (PNG alpha/orientation) · M (GUI import) |
+| V02 Video decode, R13 | Проиграть клип; container/codec → кадры PTS | VFR, rotation, EOF, decoder failure | ПК; acceleration платформенная | Локальный тестовый клип декодируется; фактические codecs перечислены | D · I · A (H.264/MOV) · M (GUI import/play) |
+| V03 Transport, R12 | Play/pause/seek/loop; time → нужный кадр | Seek до/после duration, pause seek | ПК | Clock и PTS укладываются в один frame interval; pause стабилен | D · I partial · A (80 ms seek) · M (GUI play/pause/seek); no frame lock |
 | V04 Modes/speed, R12 | Hold/ping-pong/random/in-out; mode → последовательность кадров | Reverse, zero speed, узкий loop | ПК | Детерминированный PTS trace соответствует выбранному режиму | D |
 | V05 Image sequence, R12/R13 | Проиграть folder; сортировка/FPS/cache → video | Нули в имени, gaps, добавление файла | ПК/SSD | Порядок и пропуски определены; cache ограничен | D |
-| V06 Media bin/relink, R12/R41 | Найти/заменить ресурс; path → назначенный source | Missing file, одинаковые имена | ПК | Missing media видимо; relink сохраняет назначения и геометрию | D · I · A (missing media); relink M pending |
+| V06 Media bin/relink, R12/R41 | Найти/заменить ресурс; path → назначенный source | Missing file, одинаковые имена | ПК | Missing media видимо; relink сохраняет назначения и геометрию | D · I · A (missing/same-path relink) · M (GUI import/assignment) |
 | V07 Color/opacity/blend, R06 | Изменить вид слоя; RGBA/FX → composition | Premultiplication, linear/sRGB | ПК/GPU | Golden tests normal/add/multiply и alpha с оговорённым color space | D · I · A (normal/add/multiply/screen, 8-bit unorm) |
 | V08 Key/FX, R01/R06 | Удалить фон; threshold/effect → обработанный слой | Spill, threshold edges, precision | ПК/GPU | Chroma/luma и поддерживаемые FX имеют численный pixel oracle | D |
 | V09 Generators, R12 | Тестировать без media; time/params → grid/color/text/pattern | Pause, resize, одинаковое время | ПК/GPU | Одинаковые seed/time/params дают одинаковый кадр | D · I partial: checker/grid/gradient/solid · A (GPU) |
@@ -56,9 +56,9 @@
 
 | ID / функция / источник | Сценарий; вход → результат | Границы | Платформа / оборудование | Приёмка собственной реализации | Статус |
 |---|---|---|---|---|---|
-| O01 Output window, R01/R11 | Вывести проектор; screen/mode → clean fullscreen | Retina, смена layout, один display | macOS сначала; внешний экран для H | Editor и output отдельны; Escape закрывает output; screen назначается явно | D · I; M pending; H absent |
+| O01 Output window, R01/R11 | Вывести проектор; screen/mode → clean fullscreen | Retina, смена layout, один display | macOS сначала; внешний экран для H | Editor и output отдельны; Escape закрывает output; screen назначается явно | D · I · A (hidden constructor/Escape) · M (native built-in display); projector H absent |
 | O02 Multiple outputs, R01 | Разные области; routes → независимые окна | Разные FPS/DPI, hotplug | GPU/дисплеи | Два окна имеют разные content/routes; disconnect не теряет проект | D · I · A (route filtering); multiwindow M pending; H absent |
-| O03 Preview/test pattern, R01/R11 | Настроить без проектора; selection/view → preview | Aspect ratio, overlays, output resolution | ПК/GPU | Preview соответствует output render без editor handles | D · I · A (production renderer) |
+| O03 Preview/test pattern, R01/R11 | Настроить без проектора; selection/view → preview | Aspect ratio, overlays, output resolution | ПК/GPU | Preview соответствует output render без editor handles | D · I · A (production renderer) · M (GUI) |
 | O04 Loopback/buffers, R15 | Повторно обработать результат; output → source | Цикл, feedback history | ПК/GPU | Цикл либо явно one-frame delayed, либо запрещён; нет deadlock | D |
 | O05 Master/freeze/blackout, R23 | Быстро управлять шоу; level/freeze → состояние выхода | Продолжение audio/time, recover | ПК | Семантика freeze определена; blackout даёт чёрный и возвращается обратимо | D · I partial: blackout · A (GPU) |
 | S01 Scene snapshot, R16 | Восстановить сцену; whole state → scene | Missing resource, transport restart | ПК | Snapshot восстанавливает все заявленные поля без утечки ссылок | D · I partial: surfaces only · A (core) |
@@ -111,8 +111,8 @@
 | E01 Offline render, R33 | Экспортировать show; duration/FPS → frames/video/audio | VFR, missing sources, cancel, disk full | Codec backend/SSD | Deterministic frame count, timestamps и own golden frames | D |
 | E02 Light/ILDA export, R33/R34 | Передать standalone data; timeline → open files | Unsupported effects, sample rate | ПК; optional player | Документированный собственный формат и roundtrip; MiniMad не подразумевается | D |
 | E03 MiniMad/standalone, R35 | Автономное шоу; export → external player | Unsupported surfaces/FX, media count | MiniMad для его H | Свой player имеет собственную спецификацию; vendor protocol не заявляется | D |
-| P01 Versioned project, R40 (сценарий) | Сохранить show; model → own file → model | Future version, corrupt data, relative paths | ПК | Atomic save, schema/migration tests; unsupported version не перезаписывается | D · I · A (core roundtrip/migration/validation) |
-| P02 Recovery/backups, R41 | Восстановить после crash; autosave → recovered document | Disk full, interrupted save, stale recovery | ПК | Kill/restart test; основной сохранённый файл остаётся валиден | D · I partial: named project sidecar · A (core); process-kill pending |
+| P01 Versioned project, R40 (сценарий) | Сохранить show; model → own file → model | Future version, corrupt data, relative paths | ПК | Atomic save, schema/migration tests; unsupported version не перезаписывается | D · I · A (core) · M (GUI save/quit/reopen) |
+| P02 Recovery/backups, R41 | Восстановить после crash; autosave → recovered document | Disk full, interrupted save, stale recovery | ПК | Kill/restart test; основной сохранённый файл остаётся валиден | D · I partial: named sidecar · A · M (GUI SIGKILL/restore/save); power-loss untested |
 | P03 Resource collect, R40/R41 | Перенести шоу; references → portable folder | Colliding names, symlink, absent resource | ПК/SSD | Копия открывается после перемещения без обращения к исходной папке | D · I · A (collect rollback/no-overwrite/independent copy) |
 
 ## Неизвестное и правила покрытия

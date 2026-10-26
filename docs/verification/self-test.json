@@ -5,18 +5,18 @@
     "frameCount" : 300,
     "gpuUtilizationPercent" : null,
     "height" : 360,
-    "maxGPUExecutionMilliseconds" : 1.1875000200234354,
-    "meanGPUExecutionMilliseconds" : 0.11059263934536527,
-    "meanWallMilliseconds" : 1.9782261109988515,
+    "maxGPUExecutionMilliseconds" : 1.0153750190511346,
+    "meanGPUExecutionMilliseconds" : 0.13431777750762799,
+    "meanWallMilliseconds" : 1.0061381943523884,
     "method" : "300 sequential offscreen frames including GPU wait, BGRA readback and RGBA swizzle; does not measure live drawable FPS",
     "outputCount" : 1,
-    "readbackFramesPerSecond" : 505.50338732263378,
-    "residentMemoryAfterBytes" : 45809664,
-    "residentMemoryBeforeBytes" : 47218688,
+    "readbackFramesPerSecond" : 993.89925321706005,
+    "residentMemoryAfterBytes" : 42713088,
+    "residentMemoryBeforeBytes" : 43941888,
     "source" : "procedural gradient and grid; no media decoder in benchmark",
     "surfaceCount" : 2,
     "unmeasuredMetrics" : "GPU\/CPU utilization and decoder frame drops require separate profiling; Metal command times exclude CPU work.",
-    "wallSeconds" : 0.59346783329965547,
+    "wallSeconds" : 0.30184145830571651,
     "width" : 640
   },
   "cameraHardware" : "Not verified; failure-path test only",
@@ -47,6 +47,7 @@
     "frame-accurate seek within 80 ms",
     "loop wrap",
     "missing media diagnostic and deterministic fallback",
+    "same-path relink restores missing media and replaces fallback pixels",
     "unavailable\/unauthorized camera diagnostic; no privacy request",
     "300 consecutive offscreen frames without command failure"
   ],
@@ -67,5 +68,5 @@
   "platform" : "Version 26.6.2 (Build 25G83)",
   "schemaVersion" : 1,
   "scope" : "Local offscreen Metal and AVFoundation checks; external displays, projectors and lighting hardware are not verified.",
-  "timestampUTC" : "2026-10-25T21:16:30Z"
+  "timestampUTC" : "2026-10-26T07:33:41Z"
 }

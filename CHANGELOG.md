@@ -5,7 +5,9 @@
 - Use stable Objective-C camera-disconnect and session-error notification names across Apple SDKs; macOS CI exposed Swift API renames that the newer local SDK accepted. The entire application also passes local type-checking against macOS 15.4 SDK.
 - Acquire each media source once per composition and retain exactly its CoreVideo frame wrappers until GPU completion, including asynchronous sampling. Repeated video surfaces now have a dedicated frame-consistency check.
 - Capture immutable UDP packet/error snapshots and explicit main-actor sendable shutdown completion.
-- Verified Linux XCTest: 38 tests, zero failures. Local GPU/media suite: 28 checks; lighting pipeline: 11 checks. macOS CI is rerun on this revision; see status for its result.
+- Keep fullscreen output above the menu level and verify the real output constructor/Escape path. Native GUI import, geometry edits, save/reopen and forced-termination recovery were exercised in an isolated copy.
+- Keep surfaces absent from a recalled scene disabled so automation targets remain valid and the recalled document stays savable/undoable. Same-path relink reloads a restored resource instead of reusing a failed cache entry.
+- Verified Linux XCTest: 38 tests, zero failures. Local GPU/media suite: 29 checks; editor integration: 11 checks; lighting pipeline: 11 checks. macOS CI is rerun on this revision; see status for its result.
 
 ## 0.1.0 — initial development stage, 2026-10-25
 

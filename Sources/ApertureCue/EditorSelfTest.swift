@@ -5,8 +5,8 @@ import QuartzCore
 import MappingCore
 
 /// Integration checks through the production editor controller and document methods.
-/// All windows belong to this test process and remain hidden. No dialogs, fullscreen
-/// output, camera authorization, network start, or interaction with another app occurs.
+/// All windows belong to this test process and remain hidden. No dialogs, visible
+/// fullscreen presentation, camera authorization, network start, or interaction with another app occurs.
 @MainActor
 enum EditorSelfTest {
     private struct Failure:LocalizedError {
@@ -98,6 +98,19 @@ enum EditorSelfTest {
             e.media.seek(to:5)
             let effective=try required(e.effectiveSurfaces.first { $0.id == addedID },"Automated surface missing")
             try expect(abs(effective.opacity-0.5)<1e-12,"Controller did not apply timeline at current seek time")
+            e.project.cues[0].duration=0
+            let beforeRecall=e.project
+            e.goCue(index:0); e.tick()
+            let inactive=try required(e.project.surfaces.first { $0.id == addedID },"Scene recall discarded an uncaptured surface definition")
+            try expect(!inactive.enabled && e.project.timeline == [track],"Scene absence did not preserve a dormant automation target")
+            try ProjectStore.validate(e.project)
+            let recalledURL=directory.appendingPathComponent("recalled.aperturecue.json")
+            try ProjectStore.save(e.project,to:recalledURL)
+            try expect(try ProjectStore.load(from:recalledURL) == e.project,"Scene recall with dormant automation could not round-trip")
+            e.undoEdit()
+            try expect(e.project == beforeRecall,"Undo scene recall did not restore the full surface/track state")
+            e.selectedID=addedID
+            passed("scene recall hides uncaptured surfaces, preserves automation targets and remains savable/undoable")
             e.deleteSurface()
             try expect(e.project.timeline.isEmpty && !e.project.surfaces.contains { $0.id == addedID },"Surface deletion retained its automation track")
             e.undoEdit(); try expect(e.project.timeline == [track],"Undo did not restore the deleted surface's track")
@@ -155,23 +168,39 @@ enum EditorSelfTest {
             passed("open document restores resources and title while resetting history, selection and transport")
 
             let config=try required(e.project.outputs.first,"Output fixture configuration is missing")
-            let outputWindow=NSWindow(contentRect:NSRect(x:0,y:0,width:256,height:144),styleMask:[.titled],backing:.buffered,defer:false)
-            outputWindow.isReleasedWhenClosed=false
-            let view=MTKView(frame:NSRect(x:0,y:0,width:256,height:144),device:device)
-            guard let output=MetalRenderer(view:view,media:e.media) else { throw Failure(message:MetalRenderer.lastInitializationError) }
-            view.isPaused=true; outputWindow.contentView=view; output.outputID=config.id
-            e.outputWindows[config.id]=(outputWindow,output)
+            e.openOutput(config,fullscreen:false,showWindow:false)
+            let constructed=try required(e.outputWindows[config.id],"Production output constructor did not register its window")
+            let outputWindow=constructed.0,outputRenderer=constructed.1
+            (outputWindow.contentView?.subviews.first { $0 is MTKView } as? MTKView)?.isPaused=true
             e.toggleBlackout()
-            try expect(output.blackout && !e.renderer.blackout && output.surfaces == e.effectiveSurfaces,"Editor did not propagate blackout/effective surfaces to its independent output")
-            try expect(output.media === e.media && !outputWindow.isVisible,"Hidden output did not share the editor media pool or became visible")
-            guard let black=output.snapshot(width:32,height:18),let pixels=black.bitmapData else { throw Failure(message:"Hidden output blackout snapshot failed") }
+            try expect(outputRenderer.blackout && !e.renderer.blackout && outputRenderer.surfaces == e.effectiveSurfaces,"Editor did not propagate blackout/effective surfaces to its independent output")
+            try expect(outputRenderer.media === e.media && !outputWindow.isVisible,"Hidden output did not share the editor media pool or became visible")
+            guard let black=outputRenderer.snapshot(width:32,height:18),let pixels=black.bitmapData else { throw Failure(message:"Hidden output blackout snapshot failed") }
             let offset=9*black.bytesPerRow+16*4
             try expect(pixels[offset] == 0 && pixels[offset+1] == 0 && pixels[offset+2] == 0,"Output blackout did not reach the production Metal render")
             e.toggleBlackout(); e.closeOutputs()
             try expect(e.outputWindows.isEmpty && !outputWindow.isVisible,"closeOutputs retained an output window")
             try expect(e.window?.isVisible == false,"Editor test showed its window during document operations")
             try ProjectStore.validate(e.project)
-            passed("hidden independent output shares media, receives blackout and closes without fullscreen")
+            passed("production hidden output constructor shares media, receives blackout and closes")
+
+            e.openOutput(config,fullscreen:true,showWindow:false)
+            let fullscreen=try required(e.outputWindows[config.id],"Production fullscreen constructor did not register its hidden window")
+            guard let projection=fullscreen.0 as? ProjectionWindow else { throw Failure(message:"Fullscreen output is not a ProjectionWindow") }
+            let targetScreen:NSScreen
+            if NSScreen.screens.indices.contains(config.screenIndex) { targetScreen=NSScreen.screens[config.screenIndex] }
+            else { targetScreen=try required(NSScreen.main,"No selected screen is available") }
+            try expect(projection.styleMask == .borderless,"Fullscreen output retained a window border or title bar")
+            try expect(projection.frame == targetScreen.frame,"Fullscreen output does not cover the selected screen's full frame")
+            try expect(projection.level.rawValue > NSWindow.Level.mainMenu.rawValue,"Fullscreen output remains below the system menu level")
+            try expect(!projection.isVisible && !projection.isKeyWindow,"Hidden fullscreen construction presented or activated the window")
+            guard let escape=NSEvent.keyEvent(with:.keyDown,location:.zero,modifierFlags:[],timestamp:ProcessInfo.processInfo.systemUptime,windowNumber:projection.windowNumber,context:nil,characters:"\u{1b}",charactersIgnoringModifiers:"\u{1b}",isARepeat:false,keyCode:53) else { throw Failure(message:"Cannot create the local Escape test event") }
+            projection.keyDown(with:escape)
+            try expect(e.outputWindows.isEmpty && !projection.isVisible,"Escape did not close and unregister the projection window")
+            try expect(e.window?.isVisible == false,"Hidden output constructor activated the editor")
+            report["hiddenFullscreenConfigurationVerified"]=true
+            report["fullscreenPresentationVerified"]=false
+            passed("hidden production fullscreen frame, borderless style, menu-level coverage and Escape cleanup")
 
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count

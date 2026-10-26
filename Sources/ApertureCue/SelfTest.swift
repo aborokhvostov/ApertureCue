@@ -234,13 +234,21 @@ enum SelfTest {
             report["mediaTest"] = ["codec": "H.264", "container": "MOV", "width": 160, "height": 90,
                                    "fps": 30, "durationSeconds": 2, "seekToleranceSeconds": 0.08]
 
-            let missing = MediaAsset(name: "Missing", path: mediaDirectory.appendingPathComponent("does-not-exist.png").path, kind: "image")
+            let restoredURL = mediaDirectory.appendingPathComponent("restored-\(UUID().uuidString).png")
+            let missing = MediaAsset(name: "Missing", path: restoredURL.path, kind: "image")
             media.reconcile(assets: [missing], baseURL: mediaDirectory)
             try expect(media.errorMessages[missing.id] != nil, "Missing media was not diagnosed")
             videoSurface.mediaID = missing.id
             image = try frame([videoSurface])
             try expect(!pixel(image, 20, 20).isEmpty, "Missing media fallback failed to render")
             checks.append("missing media diagnostic and deterministic fallback")
+            try makeImage(at:restoredURL)
+            media.reloadAsset(id:missing.id,assets:[missing],baseURL:mediaDirectory)
+            try expect(pump(timeout:8) { media.texture(for:missing.id) != nil }, "Restored media did not reload at its original path")
+            try expect(media.errorMessages[missing.id] == nil, "Relink retained a stale missing-media error")
+            image = try frame([videoSurface])
+            try expect(near(pixel(image,16,12),[255,0,0,255]), "Reloaded same-path media did not replace fallback pixels")
+            checks.append("same-path relink restores missing media and replaces fallback pixels")
 
             let absentCamera = MediaAsset(name: "Unavailable camera test", path: "org.aperturecue.nonexistent-test-camera", kind: "camera")
             media.reconcile(assets: [absentCamera], baseURL: mediaDirectory)

@@ -156,6 +156,14 @@ final class MediaPool {
         return (textures, retained)
     }
 
+    /// Explicit relink can restore a file at the same path as a failed entry.
+    func reloadAsset(id: UUID, assets: [MediaAsset], baseURL: URL) {
+        precondition(Thread.isMainThread)
+        entries.removeValue(forKey: id)
+        errorMessages.removeValue(forKey: id)
+        reconcile(assets: assets, baseURL: baseURL)
+    }
+
     func reconcile(assets: [MediaAsset], baseURL: URL) {
         precondition(Thread.isMainThread)
         let ids = Set(assets.map(\.id))

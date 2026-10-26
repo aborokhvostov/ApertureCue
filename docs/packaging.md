@@ -12,7 +12,7 @@ dist/ApertureCue.app/Contents/MacOS/ApertureCue --generate-demo examples/Demo
 ./scripts/package.sh
 ```
 
-The build script compiles the executable and original `MappingCore` library, copies license/notices into the generated app, clears extended attributes on that generated bundle and signs it locally. The package script expects the app and demo to exist; it does not rebuild or rerun tests.
+The build script compiles the executable and original `MappingCore` library, stages the bundle in a fresh system temporary folder, copies license/notices, clears extended attributes and signs it locally before moving it into `dist`. The previous app is retained under the ignored native build folder so rebuilding does not truncate files mapped by a running process. The package script expects the app and demo to exist; it does not rebuild or rerun tests.
 
 `package.sh` creates this layout and archives it as `dist/ApertureCue-macOS-arm64.zip`:
 
