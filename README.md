@@ -4,6 +4,8 @@ Independent, open source projection mapping for macOS, with a portable Swift cor
 
 The current application contains a Metal compositor, editable perspective quads with separate input and output geometry, image/video import through macOS media frameworks, transport controls, separate display outputs, project saving and undo/redo. Further implemented layers include polygon masks, a regular warp mesh, color controls, surface snapshots, linear parameter automation, a live camera adapter, local OSC/MIDI controls and basic LED strip mapping with a simulator and opt-in UDP output. OBJ import bakes a static pinhole projection into editable quad patches; it is not a depth-buffered 3D scene. Exact verification and remaining limitations are recorded in [status](docs/status.md), with an [84-function research matrix](docs/feature-matrix.md).
 
+[Download the Apple Silicon development build (alpha 2)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.2). It includes the original demo and is ad hoc signed, without notarization. [Archive verification and checksum](docs/verification/distribution.md).
+
 ## Build and launch
 
 Requirements: macOS 13 or later, a Metal-capable Mac, and Xcode Command Line Tools or Xcode with Swift 5.9 or later. The native build uses only the installed Apple SDK and Swift toolchain; it downloads no application dependencies.

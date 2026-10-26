@@ -18,7 +18,7 @@ The end goal remains the complete independently authored projection/video/light/
 
 ## Next engineering sequence
 
-1. Publish the verified stage-1 software report and alpha 2: native GUI workflow, forced-termination recovery and built-in fullscreen are recorded. Keep local direct-compiler results separate from remote SwiftPM/XCTest outcomes; external-display hardware and long-show checks remain open.
+1. Stage-1 software report and alpha 2 are published: native GUI workflow, forced-termination recovery and built-in fullscreen are recorded. Keep local direct-compiler results separate from remote SwiftPM/XCTest outcomes; external-display hardware and long-show checks remain open.
 2. Preserve history/transport/lighting reset, recovery cleanup, atomic media collection, background OBJ generation guards and bounded-mailbox fixes with document-switch/crash/flood regressions, then finish recovery freshness, shared media-clock semantics, generation-tagged seek and stable display identity. Keep network-host exposure scoped to a separately validated feature.
 3. Complete the already started geometry pieces: make mask scope/feather explicit, preserve UV under mesh edits, add a proper group model, then triangle/circle/line and Bézier editing. Use generated golden frames; do not add nonfunctional control panels.
 4. Extract show runtime/editor boundaries and implement the timeline as an end-to-end feature. A pure interpolation helper is useful but does not complete S04.

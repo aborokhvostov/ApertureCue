@@ -7,7 +7,7 @@
 - Capture immutable UDP packet/error snapshots and explicit main-actor sendable shutdown completion.
 - Keep fullscreen output above the menu level and verify the real output constructor/Escape path. Native GUI import, geometry edits, save/reopen and forced-termination recovery were exercised in an isolated copy.
 - Keep surfaces absent from a recalled scene disabled so automation targets remain valid and the recalled document stays savable/undoable. Same-path relink reloads a restored resource instead of reusing a failed cache entry.
-- Verified Linux XCTest: 38 tests, zero failures. Local GPU/media suite: 29 checks; editor integration: 11 checks; lighting pipeline: 11 checks. macOS CI is rerun on this revision; see status for its result.
+- Verified Linux XCTest: 38 tests, zero failures. Local GPU/media suite: 29 checks; editor integration: 11 checks; lighting pipeline: 11 checks. macOS CI passed SwiftPM release build, XCTest, native packaging and artifact upload on `12a2356`; see status for the verified run.
 
 ## 0.1.0 — initial development stage, 2026-10-25
 
