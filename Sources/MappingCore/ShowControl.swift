@@ -44,13 +44,17 @@ public final class CueEngine {
     private var target: [Surface] = []
     private var start: Double = 0
     private var duration: Double = 0
+    private var selectiveBindings:[UUID:[CueParameter]]?
     public private(set) var activeCueID: UUID?
     public private(set) var isTransitioning = false
     public private(set) var completedAt: Double?
     public private(set) var followAfter: Double?
     public init() {}
     public func begin(from surfaces: [Surface], cue: Cue, at hostTime: Double = ProcessInfo.processInfo.systemUptime) {
-        source=surfaces; target=cue.surfaces; start=hostTime; duration=max(0,cue.duration)
+        guard hostTime.isFinite,let destination=try? CueSelection.destination(from:surfaces,cue:cue),
+              Set(surfaces.map(\.id)).count == surfaces.count else { cancel(); return }
+        source=surfaces; target=destination; start=hostTime; duration=max(0,cue.duration)
+        selectiveBindings=cue.scope == .selective ? Dictionary(uniqueKeysWithValues:cue.bindings.map { ($0.surfaceID,$0.parameters) }) : nil
         activeCueID=cue.id; isTransitioning=true; completedAt=nil; followAfter=cue.followAfter
     }
     public func sample(at hostTime: Double = ProcessInfo.processInfo.systemUptime) -> [Surface]? {
@@ -61,6 +65,12 @@ public final class CueEngine {
             return target
         }
         let sourceByID = Dictionary(uniqueKeysWithValues:source.map { ($0.id,$0) })
+        if let bindings=selectiveBindings {
+            return target.map { b in
+                guard let a=sourceByID[b.id],let parameters=bindings[b.id] else { return b }
+                return CueSelection.interpolate(a,b,parameters:parameters,t:t)
+            }
+        }
         let targetIDs = Set(target.map(\.id))
         var result: [Surface] = []
         // Preserve outgoing-only layers until the transition ends, fading them out.
@@ -77,7 +87,7 @@ public final class CueEngine {
         guard !isTransitioning, let end=completedAt, let delay=followAfter else { return false }
         return hostTime >= end+delay
     }
-    public func cancel() { isTransitioning=false; completedAt=nil; activeCueID=nil; followAfter=nil }
+    public func cancel() { isTransitioning=false; completedAt=nil; activeCueID=nil; followAfter=nil; selectiveBindings=nil }
     public static func interpolate(_ a: Surface, _ b: Surface, t: Double) -> Surface {
         let u = min(1,max(0,t))
         if u >= 1 { return b }; if u <= 0 { return a }

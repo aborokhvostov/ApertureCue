@@ -107,13 +107,30 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
     public var duration: Double
     /// If set, trigger the next cue this many seconds after this cue's transition completes.
     public var followAfter: Double?
-    public init(id: UUID = UUID(), name: String, surfaces: [Surface], duration: Double = 1, followAfter: Double? = nil) {
+    public var scope: CueScope
+    public var bindings: [CueBinding]
+    public init(id: UUID = UUID(), name: String, surfaces: [Surface], duration: Double = 1, followAfter: Double? = nil,
+                scope: CueScope = .full, bindings: [CueBinding] = []) {
         self.id=id; self.name=name; self.surfaces=surfaces; self.duration=duration; self.followAfter=followAfter
+        self.scope=scope; self.bindings=bindings
+    }
+    private enum CodingKeys:String,CodingKey { case id,name,surfaces,duration,followAfter,scope,bindings }
+    public init(from decoder:Decoder) throws { try self.init(from:decoder,legacy:false) }
+    /// Extension keys in older schemas have no selective-cue meaning, even when
+    /// their values cannot be decoded as the schema-6 types.
+    init(from decoder:Decoder,legacy:Bool) throws {
+        let c=try decoder.container(keyedBy:CodingKeys.self)
+        self.init(id:try c.decode(UUID.self,forKey:.id),name:try c.decode(String.self,forKey:.name),
+                  surfaces:try c.decode([Surface].self,forKey:.surfaces),
+                  duration:try c.decode(Double.self,forKey:.duration),
+                  followAfter:try c.decodeIfPresent(Double.self,forKey:.followAfter),
+                  scope:legacy ? .full : try c.decode(CueScope.self,forKey:.scope),
+                  bindings:legacy ? [] : try c.decode([CueBinding].self,forKey:.bindings))
     }
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 5
+    public static let currentVersion = 6
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]
@@ -147,12 +164,18 @@ public struct Project: Codable, Equatable, Sendable {
     private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups,timelineSettings }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy:CodingKeys.self)
-        self.init(version: try c.decodeIfPresent(Int.self, forKey:.version) ?? 0,
+        let version=try c.decodeIfPresent(Int.self,forKey:.version) ?? 0
+        var cues:[Cue]=[]
+        if c.contains(.cues) {
+            var entries=try c.nestedUnkeyedContainer(forKey:.cues)
+            while !entries.isAtEnd { cues.append(try Cue(from:entries.superDecoder(),legacy:version < 6)) }
+        }
+        self.init(version: version,
                   name: try c.decodeIfPresent(String.self, forKey:.name) ?? "Untitled",
                   assets: try c.decodeIfPresent([MediaAsset].self, forKey:.assets) ?? [],
                   surfaces: try c.decodeIfPresent([Surface].self, forKey:.surfaces) ?? [],
                   outputs: try c.decodeIfPresent([OutputConfig].self, forKey:.outputs) ?? [],
-                  cues: try c.decodeIfPresent([Cue].self, forKey:.cues) ?? [],
+                  cues: cues,
                   fixtures: try c.decodeIfPresent([Fixture].self, forKey:.fixtures) ?? [],
                   timeline: try c.decodeIfPresent([AutomationTrack].self, forKey:.timeline) ?? [],
                   groups: try c.decodeIfPresent([SurfaceGroup].self, forKey:.groups) ?? [],

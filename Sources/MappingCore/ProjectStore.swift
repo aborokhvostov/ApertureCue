@@ -75,6 +75,7 @@ public enum ProjectStore {
         var portable = project.version < 3 ? GroupEngine.migrateLegacyLabels(project) : project
         if portable.version < 4 { clearLegacyStrokeExtensions(&portable) }
         if portable.version < 5 { migrateLegacyTimeline(&portable) }
+        if portable.version < 6 { clearLegacyCueExtensions(&portable) }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
@@ -111,6 +112,7 @@ public enum ProjectStore {
         if p.version < 3 { p = GroupEngine.migrateLegacyLabels(p) }
         if p.version < 4 { clearLegacyStrokeExtensions(&p) }
         if p.version < 5 { migrateLegacyTimeline(&p) }
+        if p.version < 6 { clearLegacyCueExtensions(&p) }
         p.version = Project.currentVersion
         try validate(p)
         let base = url.deletingLastPathComponent()
@@ -118,6 +120,10 @@ public enum ProjectStore {
             p.assets[index].path = absoluteURL(path:p.assets[index].path, base:base).path
         }
         return p
+    }
+
+    private static func clearLegacyCueExtensions(_ project:inout Project) {
+        for i in project.cues.indices { project.cues[i].scope = .full; project.cues[i].bindings = [] }
     }
 
     /// Stroke payloads and these two enum values had no meaning in schemas 0...3.
@@ -173,6 +179,7 @@ public enum ProjectStore {
         if project.version >= 3, (project.surfaces + project.cues.flatMap(\.surfaces)).contains(where:{ !$0.group.isEmpty }) {
             throw ProjectError.invalid("schema 3 uses groupID references; legacy group labels must be migrated from a version 0...2 document")
         }
+        for cue in project.cues { try CueSelection.validate(cue) }
         try GroupEngine.validate(project)
         try validateSurfaces(project.surfaces, mediaIDs:mediaIDs, outputIDs:outputIDs)
         try FixtureSampler.validate(fixtures:project.fixtures)
@@ -182,11 +189,11 @@ public enum ProjectStore {
             guard totalCueSurfaces <= 65536 else { throw ProjectError.invalid("too many cue surface snapshots") }
             guard cue.duration.isFinite, (0...86400).contains(cue.duration) else { throw ProjectError.invalid("invalid cue duration") }
             if let follow = cue.followAfter { guard follow.isFinite, (0...86400).contains(follow) else { throw ProjectError.invalid("invalid cue follow time") } }
-            try validateSurfaces(cue.surfaces, mediaIDs:mediaIDs, outputIDs:outputIDs)
+            try validateSurfaces(CueSelection.validationSurfaces(cue), mediaIDs:mediaIDs, outputIDs:outputIDs)
         }
-        // A cue may temporarily remove an automated surface. Its stable ID remains a valid
-        // target while any saved cue snapshot can bring that surface back.
-        try TimelineEngine.validate(tracks:project.timeline,surfaces:project.surfaces+project.cues.flatMap(\.surfaces))
+        // Only a full cue can restore an absent layer. A partial cue skips missing
+        // targets, so its dormant snapshot cannot keep an orphan track alive.
+        try TimelineEngine.validate(tracks:project.timeline,surfaces:project.surfaces+project.cues.filter { $0.scope == .full }.flatMap(\.surfaces))
         try TimelineSettings.validate(project.timelineSettings,tracks:project.timeline,cueIDs:Set(project.cues.map(\.id)))
     }
 

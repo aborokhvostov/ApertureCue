@@ -12,7 +12,7 @@ extension EditorController {
         let beforeTime=showRuntime.time, beforePlaying=showRuntime.isPlaying
         do {
             try showRuntime.configure(settings:project.timelineSettings,tracks:project.timeline,
-                                      surfaces:project.surfaces+project.cues.flatMap(\.surfaces),cueIDs:Set(project.cues.map(\.id)),at:hostTime)
+                                      surfaces:project.surfaces+project.cues.filter {$0.scope == .full}.flatMap(\.surfaces),cueIDs:Set(project.cues.map(\.id)),at:hostTime)
             showConfigurationError=""
             if beforePlaying && !showRuntime.isPlaying { media.pause() }
             if abs(showRuntime.time-beforeTime)>1e-9 { media.seek(to:showRuntime.time) }
@@ -56,7 +56,7 @@ extension EditorController {
     }
     @discardableResult
     func timelineAddTrack(surfaceID:UUID,parameter:String) throws -> UUID {
-        guard TimelineEngine.parameters.contains(parameter),let surface=(project.surfaces+project.cues.flatMap(\.surfaces)).first(where:{$0.id==surfaceID}) else { throw ProjectError.invalid("select an existing surface and parameter") }
+        guard TimelineEngine.parameters.contains(parameter),let surface=(project.surfaces+project.cues.filter {$0.scope == .full}.flatMap(\.surfaces)).first(where:{$0.id==surfaceID}) else { throw ProjectError.invalid("select an existing surface and parameter") }
         if let existing=project.timeline.first(where:{$0.surfaceID==surfaceID && $0.parameter==parameter}) { return existing.id }
         let value:Double
         switch parameter {

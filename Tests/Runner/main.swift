@@ -66,4 +66,13 @@ runCase("TimelineRuntime.loop event budget", TimelineRuntimeTests.self) { try $0
 runCase("TimelineRuntime.pause budget configure", TimelineRuntimeTests.self) { try $0.testEventBudgetStillHonorsPauseAndAtomicConfiguration() }
 runCase("TimelineRuntime.settings validation", TimelineRuntimeTests.self) { try $0.testSettingsAndMarkerReferenceValidation() }
 runCase("TimelineRuntime.migration persistence", TimelineRuntimeTests.self) { try $0.testLegacyLinearNormalizationSchemaFiveHistoryAndPortableRoundTrip() }
+runCase("SelectiveCue.atomic parameter masks", SelectiveCueTests.self) { try $0.testEveryMaskCopiesOnlyItsAtomicFieldsAndPreservesCurrentLayers() }
+runCase("SelectiveCue.hidden missing layers", SelectiveCueTests.self) { try $0.testHiddenVisibilityAndMissingTargetsNeverFadeOrRestoreUnselectedLayers() }
+runCase("SelectiveCue.numeric discrete follow", SelectiveCueTests.self) { try $0.testSelectedNumericAndDiscreteInterpolationEndpointsAndInstantFollow() }
+runCase("SelectiveCue.geometry path masks", SelectiveCueTests.self) { try $0.testGeometryFramesQuadCollapseStrokeAndMaskCompatibility() }
+runCase("SelectiveCue.interruption clock", SelectiveCueTests.self) { try $0.testInterruptionUsesActualCurrentStateAndPreservesShowAndMediaClock() }
+runCase("SelectiveCue.capture rejection", SelectiveCueTests.self) { try $0.testCaptureAndMaskValidationRejectMalformedSelections() }
+runCase("SelectiveCue.schema migration strictness", SelectiveCueTests.self) { try $0.testLegacySchemasIgnoreExtensionsAndSchemaSixIsStrict() }
+runCase("SelectiveCue.persistence resource references", SelectiveCueTests.self) { try $0.testPersistenceHistoryCollectionAndDormantResourceReferenceValidation() }
+runCase("SelectiveCue.group dissolve masks", SelectiveCueTests.self) { try $0.testGroupDissolveIgnoresUnselectedFramesAndGuardsPartialAppearance() }
 exit(finishTests())

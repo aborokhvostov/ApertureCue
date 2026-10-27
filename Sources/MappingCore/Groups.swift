@@ -132,7 +132,10 @@ public enum GroupEngine {
     public static func validate(_ project:Project) throws {
         let inherited=try context(project.groups)
         _=try resolve(project.surfaces,context:inherited)
-        for cue in project.cues { _=try resolve(cue.surfaces,context:inherited) }
+        for cue in project.cues {
+            try CueSelection.validate(cue)
+            _=try resolve(CueSelection.validationSurfaces(cue),context:inherited)
+        }
     }
     public static func assign(surfaceID:UUID,to groupID:UUID?,in project:Project) throws -> Project {
         try ProjectStore.validate(project)
@@ -175,9 +178,42 @@ public enum GroupEngine {
     public static func dissolve(groupID:UUID,in project:Project) throws -> Project {
         try ProjectStore.validate(project)
         guard let group=project.groups.first(where:{$0.id==groupID}) else { throw ProjectError.invalid("group to dissolve does not exist") }
-        let directIDs=Set((project.surfaces+project.cues.flatMap(\.surfaces)).filter { $0.groupID==groupID }.map(\.id))
+        // A partial appearance recall uses whichever frame is current at GO.
+        // Include every stored frame that another cue can select; dormant
+        // unselected snapshot parents never describe a possible frame.
+        var frames=project.surfaces+project.cues.filter { $0.scope == .full }.flatMap(\.surfaces)
+        for cue in project.cues where cue.scope == .selective {
+            let geometryIDs=Set(cue.bindings.filter { $0.parameters.contains(.outputGeometry) }.map(\.surfaceID))
+            frames += cue.surfaces.filter { geometryIDs.contains($0.id) }
+        }
+        let directIDs=Set(frames.filter { $0.groupID == groupID }.map(\.id))
+        let outsideIDs=Set(frames.filter { $0.groupID != groupID }.map(\.id))
         if group.opacity != 1, project.timeline.contains(where: { $0.parameter == "opacity" && directIDs.contains($0.surfaceID) }) {
             throw ProjectError.invalid("cannot dissolve a non-unit-opacity group while a directly assigned surface has an opacity track; remove its track or set group opacity to 1 first")
+        }
+        for cue in project.cues where cue.scope == .selective {
+            let snapshots=Dictionary(uniqueKeysWithValues:cue.surfaces.map { ($0.id,$0) })
+            for binding in cue.bindings {
+                if binding.parameters.contains(.outputGeometry) {
+                    // A cue leaving this frame can expose local appearance just
+                    // as a cue entering it can add inherited appearance.
+                    if directIDs.contains(binding.surfaceID) || snapshots[binding.surfaceID]?.groupID == groupID {
+                        if group.opacity != 1 && !binding.parameters.contains(.opacity) {
+                            throw ProjectError.invalid("cannot dissolve a non-unit-opacity group used by a geometry cue without opacity; include opacity or set group opacity to 1 first")
+                        }
+                        if !group.enabled && !binding.parameters.contains(.visibility) {
+                            throw ProjectError.invalid("cannot dissolve a hidden group used by a geometry cue without visibility; include visibility or enable the group first")
+                        }
+                    }
+                } else if directIDs.contains(binding.surfaceID) && outsideIDs.contains(binding.surfaceID) {
+                    if group.opacity != 1 && binding.parameters.contains(.opacity) {
+                        throw ProjectError.invalid("cannot dissolve a non-unit-opacity group while an appearance-only cue can target both its frame and an outside frame; include output geometry or set group opacity to 1 first")
+                    }
+                    if !group.enabled && binding.parameters.contains(.visibility) {
+                        throw ProjectError.invalid("cannot dissolve a hidden group while an appearance-only cue can target both its frame and an outside frame; include output geometry or enable the group first")
+                    }
+                }
+            }
         }
         var candidate=project
         for i in candidate.groups.indices where candidate.groups[i].parentID==groupID {
@@ -196,7 +232,29 @@ public enum GroupEngine {
             }
         }
         candidate.surfaces=try detached(candidate.surfaces)
-        for i in candidate.cues.indices { candidate.cues[i].surfaces=try detached(candidate.cues[i].surfaces) }
+        for i in candidate.cues.indices {
+            if candidate.cues[i].scope == .full { candidate.cues[i].surfaces=try detached(candidate.cues[i].surfaces);continue }
+            let parameters=Dictionary(uniqueKeysWithValues:candidate.cues[i].bindings.map { ($0.surfaceID,Set($0.parameters)) })
+            candidate.cues[i].surfaces=try candidate.cues[i].surfaces.map { surface in
+                guard let mask=parameters[surface.id] else { return surface }
+                if !mask.contains(.outputGeometry) {
+                    // Without a recalled frame, appearance is evaluated in the
+                    // current target's frame. The guard above ensures every
+                    // stored possible frame agrees on direct membership.
+                    guard directIDs.contains(surface.id) else { return surface }
+                    var result=surface
+                    if mask.contains(.opacity) { result.opacity *= group.opacity }
+                    if mask.contains(.visibility) { result.enabled = result.enabled && group.enabled }
+                    return result
+                }
+                guard surface.groupID == groupID else { return surface }
+                var result=try geometry(surface,by:group.transform)
+                result.groupID=group.parentID
+                if mask.contains(.opacity) { result.opacity *= group.opacity }
+                if mask.contains(.visibility) { result.enabled = result.enabled && group.enabled }
+                return result
+            }
+        }
         candidate.groups.removeAll { $0.id==groupID }
         try ProjectStore.validate(candidate)
         return candidate

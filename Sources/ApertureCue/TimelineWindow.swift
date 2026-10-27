@@ -141,7 +141,7 @@ import MappingCore
         refreshing=true;defer {refreshing=false}
         let oldSurface=surfaceIDs.indices.contains(surfacePicker.indexOfSelectedItem) ? surfaceIDs[surfacePicker.indexOfSelectedItem] : editor.selectedID
         var surfaces=editor.project.surfaces,known=Set(surfaces.map(\.id))
-        for surface in editor.project.cues.flatMap(\.surfaces) where known.insert(surface.id).inserted {surfaces.append(surface)}
+        for surface in editor.project.cues.filter({$0.scope == .full}).flatMap(\.surfaces) where known.insert(surface.id).inserted {surfaces.append(surface)}
         surfaceIDs=surfaces.map(\.id);surfacePicker.removeAllItems();surfacePicker.addItems(withTitles:surfaces.map {String($0.name.prefix(40))+" · "+$0.id.uuidString.prefix(6)})
         surfacePicker.selectItem(at:oldSurface.flatMap {surfaceIDs.firstIndex(of:$0)} ?? 0)
         let oldCue=cueIDs.indices.contains(markerCue.indexOfSelectedItem) ? cueIDs[markerCue.indexOfSelectedItem] : nil

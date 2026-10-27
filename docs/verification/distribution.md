@@ -69,3 +69,15 @@ Ad hoc signing only, not notarized or universal; macOS 13+ target, runtime teste
 Same signing/runtime/hardware limitations as earlier releases: ad hoc arm64, not notarized/universal, macOS 13 target but runtime tested on macOS 26.6.2. Six scalar parameter lanes are implemented; clip/audio/MIDI/OSC montage, recording, Auto Curve, marker jump chains, external clock and Conductor banks remain open. Marker/UI sampling is timer-driven, not physical latency/frame-lock certification. Legacy v0-v4 migrate to continuing transport; new shows stop at Duration by default. Alpha 1-5 reject schema 5; keep an older project copy for downgrade.
 
 [Alpha 6 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.6) is a prerelease. ZIP and SHA256SUMS assets were confirmed `uploaded`; server ZIP size/SHA-256 match the values above, and its tag resolves to the exact source above. Earlier releases remain available independently.
+
+## Alpha 7 candidate
+
+27 October 2026, Apple M2 / arm64 / macOS 26.6.2. Selective surface cues, native Scenes editor and schema 6. Publication awaits exact-source remote CI; no alpha7 release is asserted yet.
+
+- Archive `ApertureCue-macOS-arm64.zip`, 1,110,016 bytes; SHA-256 `c78bf200fe65ec6d52b9661f023618316ceab02795eec06ab2fcf405b51c6392`.
+- Includes original `Demo/SelectiveCues.aperturecue.json`: four full/selective scenes and one independent brightness track, previous generated demos, license and notices.
+- Fresh extraction passed ZIP CRC/entry checks (no absolute/traversal/AppleDouble entries) and `codesign --verify --deep --strict`.
+- The executable from the extracted archive passed **36 production editor checks**, including actual checkbox/capture/save/recapture/GO callbacks, layout width, missing-only no-op, full-owner orphan cleanup, and selective recall during a running generated H.264 decode.
+- Final optimized production app passed **46 GPU/media** and **11 lighting/UDP** checks. Portable core passed **74 standalone methods**, zero failed assertions. Actual remote XCTest is a separate gate. [Native selective GUI workflow](selective-workflow.md) passed.
+
+Ad hoc arm64 signing only; not notarized/universal. macOS13 target, runtime observed on macOS26.6.2. No new throughput/frame-lock/long-show or physical hardware claim. Full snapshots remain surface-only; group definitions are shared, timeline can override recalled base parameters, and source-excluding cues keep current clocks. Recorded automation/montage/external clocks remain open. Alpha1...6 reject schema6; keep an older copy when downgrading.

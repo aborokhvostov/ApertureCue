@@ -542,6 +542,8 @@ enum EditorSelfTest {
             e.pauseShow(at:101);e.stopShow()
             passed("legacy projects retain continuing master playback and seek beyond the default graph horizon")
 
+            for name in try SelectiveCueEditorTest.run(editor:e,directory:directory) { passed(name) }
+
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count
             try writeReport()

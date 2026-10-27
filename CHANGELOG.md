@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-alpha.7 — selective surface cues, 2026-10-27
+
+- Add UUID-bound selective surface cues with 13 atomic field masks, numeric/discrete transitions, missing-target diagnostics and current layer/order preservation. Recall retains running show/media clocks and active parameter automation.
+- Add a native Scenes editor with per-surface fields, stored/current values, explicit Capture / Save properties / Recapture, timing/follow and complete history. Saved scope is fixed; new capture chooses scope.
+- Add schema 6, legacy full-snapshot migration, dormant excluded resource references, group Dissolve guards and atomic orphan-track/marker cleanup on scene deletion. Include an original SelectiveCues demo.
+- Local checks passed: 74 standalone core methods, 46 GPU/media, 36 editor and 11 lighting/UDP. Native selective Capture/Save/Recapture/GO/Undo/save/relaunch/reopen and layout regression passed. Fresh archive extraction/signature and all 36 editor checks from the ZIP passed. Exact-source remote CI remains the publication gate.
+
 ## 0.1.0-alpha.6 — graphical parameter timeline, 2026-10-27
 
 - Add a separate graphical parameter timeline with multi-track bindings, key insertion/drag/numeric editing, Hold/Linear/Bezier easing and curve handles, enable/delete/history and view zoom.
@@ -67,4 +74,4 @@
 
 ### Known scope
 
-This is a development implementation, not a confirmed complete MadMapper alternative. Full selective cues/timeline, advanced Bézier/groups/masks/blending/FX, general fixture definitions/moving lights/advanced protocol behavior, external video SDKs, live 3D/depth/calibration/scanning, multichannel routing, offline show export, standalone playback and Windows/Linux desktop ports remain open. Art-Net credit is documented; OEM registration is pending. Verification results are recorded in [status](docs/status.md); this change log does not assert unobserved test passes, remote CI success or hardware compatibility.
+This is a development implementation, not a confirmed complete MadMapper alternative. Recorded automation/montage, advanced Bézier/groups/masks/blending/FX, general fixture definitions/moving lights/advanced protocol behavior, external video SDKs, live 3D/depth/calibration/scanning, multichannel routing, offline show export, standalone playback and Windows/Linux desktop ports remain open. Art-Net credit is documented; OEM registration is pending. Verification results are recorded in [status](docs/status.md); this change log does not assert unobserved test passes, remote CI success or hardware compatibility.

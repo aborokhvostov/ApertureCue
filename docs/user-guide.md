@@ -88,9 +88,43 @@ File → **Import projected OBJ…** читает polygonal Wavefront OBJ и п�
 
 ## Снимки и управление шоу
 
-В строке **SCENES** кнопка **Capture** сохраняет текущий набор поверхностей с переходом 1 секунда; выберите снимок и нажмите **GO**. Эти снимки включают surface state, а не полный transport/audio/network state. Selective cues, clip montage и calendar scheduler остаются в roadmap. Графический parameter timeline и Pause/Scene markers описаны ниже.
+В строке **SCENES** кнопка **Capture** сохраняет полный снимок текущих поверхностей с переходом 1 секунда; выберите его и нажмите **GO**. **Scenes…** открывает редактор полных снимков и selective cues. Оба режима сохраняют только surface state: определения групп, assets, fixtures, output configuration, timeline и transport не входят в снимок. Это более узкая область, чем полный проект Scene в документации референса.
 
-Поверхности, которых нет в вызываемом снимке, скрываются, сохраняя определения и привязки automation. Undo возвращает состояние до GO. Схема проекта позволяет задать snapshot `duration` и необязательный `followAfter` в секундах: время перехода и задержку до следующего снимка. JSON редактируйте на закрытой копии с backup; некорректные значения отклоняются.
+### Создание и изменение Cue
+
+Нажмите **New draft**, задайте **Name**, **Transition s** (0…86400) и **Follow s** (пусто — без продолжения; иначе 0…86400 секунд после конца перехода). Выберите поверхность в **SURFACE FIELDS**, отметьте нужные поля и повторите для других поверхностей. **All fields on surface**, **Clear surface** и **Clear all fields** меняют draft. **Capture selective** создаёт новый Cue с текущими значениями отмеченных полей; нужен хотя бы один target и одно поле. **Capture full** всегда создаёт новый снимок всех текущих поверхностей и их порядка.
+
+У сохранённого Cue scope фиксирован. Для другого scope создайте новый Capture. **Save cue properties / fields** сохраняет имя, timing и выбор полей, оставляя захваченные значения прежними. Включение другого поля уже сохранённой поверхности использует его значение из сохранённого snapshot; Save не читает текущий inspector. При снятии всех полей поверхность исключается из этого Cue. Строки сохранённого Cue ограничены его snapshot: для других текущих поверхностей используйте **New draft**. **Recapture values** явно заменяет захваченные значения текущими для выбранных targets/полей, сохраняя имя и timing. Если изменены имя или timing, сначала сохраните их отдельной кнопкой. **Stored snapshot** и **Current surface** помогают сравнить значения; длинный текст доступен в tooltip. **GO selected** вызывает сохранённый Cue и его сохранённую маску, а не несохранённый draft.
+
+### Поля selective Cue
+
+Каждый target привязан по UUID. Поля ниже — атомарные единицы: связанные payload/селектор сохраняются вместе.
+
+| Поле | Что восстанавливает |
+|---|---|
+| Opacity | Собственную прозрачность поверхности |
+| Brightness | Яркость |
+| Gamma | Гамму |
+| RGB color | Все три RGB-множителя |
+| Feather | Local edge feather |
+| Blend mode | Режим композиции |
+| Visibility | Собственный enabled-флаг |
+| Media / generator | Media UUID и procedural fallback selector вместе |
+| Input UV | Четыре input-вершины |
+| Output / mesh / parent | Output-рамку, mesh vertices/dimensions и group UUID вместе |
+| Shape / stroke | Тип формы и весь payload пути вместе |
+| Source UV mask | Полигон источника |
+| Output routing | Output UUID либо All outputs |
+
+Selective recall сохраняет текущие имена/UUID, порядок слоёв, новые и невыбранные поверхности, а также все исключённые поля. Удалённый target пропускается с предупреждением; Cue не создаёт его заново. Capture/Recapture требует текущих targets. Неиспользуемые resource references в исключённых полях могут оставаться dormant snapshot data; при включении такого поля его ссылки должны снова быть действительны. Невалидное объединение выбранных и текущих полей отклоняется целиком.
+
+Выбранные числовые поля интерполируются линейно. Visibility, blend/source/routing и несовместимые геометрические/shape payload переключаются в середине; visibility-only Cue не меняет opacity. Input/output quads и совместимые пути интерполируются, если промежуточная геометрия допустима; при схлопывании используется соответствующее допустимое endpoint-состояние. Разные parent frames переключаются вместе с output/mesh. Нулевая длительность применяет конечные значения при обработке recall. Новая команда GO начинает переход от фактического текущего состояния. Редактирование и Undo прерывают fade, сохраняя промежуточное изменение в истории.
+
+Full recall сохраняет прежнее поведение surface snapshot: восстанавливает сохранённые поля и порядок, скрывает более поздние поверхности, сохраняя их определения и automation bindings. Оба режима используют текущие общие определения групп; pose/opacity/visibility группы не захватываются. Dissolve запекает поддерживаемые изменения в текущие слои и применимые Cue fields; неоднозначные изменения appearance или конфликт с opacity automation отклоняются с пояснением.
+
+Recall сам по себе не останавливает и не перематывает media/show clocks. Fades идут по host clock даже при Pause параметрического timeline. Активная timeline automation продолжает перекрывать соответствующие базовые поля Cue; её Pause/loop/seek/end остаются отдельными transport-событиями. Это не frame lock между декодерами. Undo возвращает сохранённое состояние документа до GO. Delete удаляет связанные Scene markers и tracks, потерявшие последний target в текущих поверхностях или оставшихся full snapshots.
+
+Проект сохраняется в schema 6: старые версии 0…5 мигрируют как full surface snapshots. Старые binaries, не поддерживающие schema 6, отклонят такой проект; сохраняйте отдельную копию. Clip montage, cue-owned timelines, quantized launch и calendar scheduler остаются следующими этапами. Текущий журнал ручных проверок selective workflow: [checklist](verification/selective-workflow.md).
 
 ### Графический Parameter Timeline
 

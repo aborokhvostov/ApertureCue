@@ -1,5 +1,5 @@
 {
-  "checkCount" : 29,
+  "checkCount" : 36,
   "checks" : [
     "hidden editor startup with valid demo project",
     "add, duplicate, delete and controller undo\/redo",
@@ -29,7 +29,14 @@
     "hidden graphical timeline binds track and production insert\/drag\/ruler callbacks with one-command history",
     "natural pause\/scene markers, seek suppression and loop overshoot synchronize production show\/media adapters",
     "timeline scene references, loop\/settings\/curves persist and new\/open reset window\/playhead\/runtime",
-    "legacy projects retain continuing master playback and seek beyond the default graph horizon"
+    "legacy projects retain continuing master playback and seek beyond the default graph horizon",
+    "hidden native selective cue capture and stable per-surface checkbox callbacks",
+    "cue mask Save keeps captured values, rejects scope conversion and has complete undo\/redo",
+    "explicit native Recapture replaces stored values separately from mask Save with undo\/redo",
+    "selective GO preserves hidden targets, current order, later layers, running clocks and active timeline overrides",
+    "missing-only selective recall skips targets without resurrection, history entry or dirty state",
+    "full-cue deletion retains other owners then atomically prunes orphan tracks and markers with undo\/redo",
+    "source-excluding selective recall preserves a running generated H.264 decoder and show clock"
   ],
   "documentAssetCount" : 1,
   "documentSurfaceCount" : 2,
@@ -44,6 +51,6 @@
   "platform" : "Version 26.6.2 (Build 25G83)",
   "schemaVersion" : 1,
   "scope" : "Production EditorController and hidden output renderer integration; no external application, visible output, or hardware interaction.",
-  "timestampUTC" : "2026-10-27T12:10:08Z",
+  "timestampUTC" : "2026-10-27T13:07:17Z",
   "windowsShown" : false
 }
