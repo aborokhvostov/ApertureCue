@@ -56,9 +56,9 @@ Ad hoc signing only, not notarized or universal; macOS 13+ target, runtime teste
 
 [Alpha 5 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.5) is a prerelease. Both ZIP and SHA256SUMS assets were confirmed `uploaded`; GitHub ZIP size/digest match the values above. The release tag resolves to the exact source above. Earlier release assets/tags remain available.
 
-## Alpha 6 candidate
+## Alpha 6
 
-27 October 2026, Apple M2 / arm64 / macOS 26.6.2. Adds graphical scalar timeline and independent show runtime, schema 5. Exact source and CI are recorded after publication gates finish.
+27 October 2026, Apple M2 / arm64 / macOS 26.6.2. Adds graphical scalar timeline and independent show runtime, schema 5. The `v0.1.0-alpha.6` tag identifies source `99ea8de94ff26b88622a2d5492acd3ec000580f7`. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/40501836787) passed 65 XCTest on macOS and 65 on Linux, plus macOS SwiftPM release/native bundle/signature/archive/artifact.
 
 - Archive `ApertureCue-macOS-arm64.zip`, 1,015,096 bytes; SHA-256 `2c1378ebf3347234e86e85b15f5d525f6203ccabb5222495eaedb62fea4389e7`.
 - Includes original `Demo/Timeline.aperturecue.json`: three scalar tracks, Hold/Linear/Bezier, pause/scene markers, explicit finite duration; previous original demos/license/notices retained.
@@ -67,3 +67,5 @@ Ad hoc signing only, not notarized or universal; macOS 13+ target, runtime teste
 - Final optimized production app passed **46 GPU/media** and **11 lighting/UDP** checks. Portable core passed **65 standalone methods**, zero failed assertions; actual XCTest CI is separate. Native GUI verification: [timeline-workflow.md](timeline-workflow.md).
 
 Same signing/runtime/hardware limitations as earlier releases: ad hoc arm64, not notarized/universal, macOS 13 target but runtime tested on macOS 26.6.2. Six scalar parameter lanes are implemented; clip/audio/MIDI/OSC montage, recording, Auto Curve, marker jump chains, external clock and Conductor banks remain open. Marker/UI sampling is timer-driven, not physical latency/frame-lock certification. Legacy v0-v4 migrate to continuing transport; new shows stop at Duration by default. Alpha 1-5 reject schema 5; keep an older project copy for downgrade.
+
+[Alpha 6 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.6) is a prerelease. ZIP and SHA256SUMS assets were confirmed `uploaded`; server ZIP size/SHA-256 match the values above, and its tag resolves to the exact source above. Earlier releases remain available independently.
