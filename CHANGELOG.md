@@ -5,7 +5,7 @@
 - Add UUID-bound selective surface cues with 13 atomic field masks, numeric/discrete transitions, missing-target diagnostics and current layer/order preservation. Recall retains running show/media clocks and active parameter automation.
 - Add a native Scenes editor with per-surface fields, stored/current values, explicit Capture / Save properties / Recapture, timing/follow and complete history. Saved scope is fixed; new capture chooses scope.
 - Add schema 6, legacy full-snapshot migration, dormant excluded resource references, group Dissolve guards and atomic orphan-track/marker cleanup on scene deletion. Include an original SelectiveCues demo.
-- Local checks passed: 74 standalone core methods, 46 GPU/media, 36 editor and 11 lighting/UDP. Native selective Capture/Save/Recapture/GO/Undo/save/relaunch/reopen and layout regression passed. Fresh archive extraction/signature and all 36 editor checks from the ZIP passed. Exact-source remote CI remains the publication gate.
+- Local checks passed: 74 standalone core methods, 46 GPU/media, 36 editor and 11 lighting/UDP. Native selective Capture/Save/Recapture/GO/Undo/save/relaunch/reopen and layout regression passed. Fresh archive extraction/signature and all 36 editor checks from the ZIP passed. Exact-source [CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/40509423121) passed 74 XCTest on macOS and 74 on Linux, plus macOS SwiftPM release/native bundle/signature/archive/artifact.
 
 ## 0.1.0-alpha.6 — graphical parameter timeline, 2026-10-27
 
