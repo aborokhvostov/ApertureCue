@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-alpha.6 candidate — graphical parameter timeline, 2026-10-27
+
+- Add a separate graphical parameter timeline with multi-track bindings, key insertion/drag/numeric editing, Hold/Linear/Bezier easing and curve handles, enable/delete/history and view zoom.
+- Add independent compiled show runtime, duration/continuation, loop range, pause/scene markers and a bounded exactly-once event queue across edits. Existing scenes keep host-clock fades; movie seek/loop synchronization remains independent from decoder frame lock.
+- Add schema 5 with legacy linear/continuation migration, preserving long playback beyond the default graph horizon. Time-zero markers reject; deleting scenes cleans marker references.
+- Local checks passed: 65 standalone core methods, 46 GPU/media, 29 editor and 11 lighting/UDP. Native key/curve/marker/loop/save/reopen GUI passed. Exact-source CI/release gates are pending.
+
 ## 0.1.0-alpha.5 — textured line and Bezier paths, 2026-10-27
 
 - Add round-cap/round-join textured polyline and cubic Bezier surfaces inside projective/mesh cages, with bounded adaptive flattening and single coverage at self-crossings.

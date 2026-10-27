@@ -55,3 +55,15 @@ Same signing/runtime/hardware limitations as earlier archives. Group opacity is 
 Ad hoc signing only, not notarized or universal; macOS 13+ target, runtime tested on macOS 26.6.2. No new stroke throughput/4K/soak or hardware compatibility claim. Local-width/cage clipping, round joins/caps, accepted nearest-segment UV seams and bounded local cubic tolerance are specified in the user guide. Freehand drawing, alternate join/cap modes, filled FreeDraw and Bezier mesh/masks remain open. Alpha 1–4 reject schema 4; retain an older project copy when downgrading.
 
 [Alpha 5 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.5) is a prerelease. Both ZIP and SHA256SUMS assets were confirmed `uploaded`; GitHub ZIP size/digest match the values above. The release tag resolves to the exact source above. Earlier release assets/tags remain available.
+
+## Alpha 6 candidate
+
+27 October 2026, Apple M2 / arm64 / macOS 26.6.2. Adds graphical scalar timeline and independent show runtime, schema 5. Exact source and CI are recorded after publication gates finish.
+
+- Archive `ApertureCue-macOS-arm64.zip`, 1,015,096 bytes; SHA-256 `2c1378ebf3347234e86e85b15f5d525f6203ccabb5222495eaedb62fea4389e7`.
+- Includes original `Demo/Timeline.aperturecue.json`: three scalar tracks, Hold/Linear/Bezier, pause/scene markers, explicit finite duration; previous original demos/license/notices retained.
+- Fresh ZIP extraction passed entry validation (no absolute/traversal/AppleDouble entries) and `codesign --verify --deep --strict`.
+- Executable directly from this extracted ZIP passed **29 production editor checks**, including master sampling shared by editor/output/light, graph callbacks/history/layout, markers/loop, legacy continuation and schema-5 save/new/open.
+- Final optimized production app passed **46 GPU/media** and **11 lighting/UDP** checks. Portable core passed **65 standalone methods**, zero failed assertions; actual XCTest CI is separate. Native GUI verification: [timeline-workflow.md](timeline-workflow.md).
+
+Same signing/runtime/hardware limitations as earlier releases: ad hoc arm64, not notarized/universal, macOS 13 target but runtime tested on macOS 26.6.2. Six scalar parameter lanes are implemented; clip/audio/MIDI/OSC montage, recording, Auto Curve, marker jump chains, external clock and Conductor banks remain open. Marker/UI sampling is timer-driven, not physical latency/frame-lock certification. Legacy v0-v4 migrate to continuing transport; new shows stop at Duration by default. Alpha 1-5 reject schema 5; keep an older project copy for downgrade.

@@ -71,31 +71,7 @@ extension EditorController {
         }
     }
 
-    func configureAutomation() {
-        guard let index = selectedIndex else { return }; let surface = project.surfaces[index]
-        let a = NSAlert(); a.messageText = "Animate \(surface.name)"
-        a.informativeText = "Linear keyframes use show transport seconds. Example: 0:0, 2:1, 5:0. Seek updates every enabled track. Each surface parameter has one track."
-        let properties = ["opacity","brightness","gamma","red","green","blue"]
-        let property = ActionPopUp(items:properties,action:{_ in})
-        let keyframes = ActionField("0:0, 2:1, 5:0",action:{_ in})
-        let view = stack([label("Parameter"),property,label("time:value, time:value …"),keyframes]); view.frame = NSRect(x:0,y:0,width:380,height:110)
-        a.accessoryView = view; property.widthAnchor.constraint(equalToConstant:350).isActive = true; keyframes.widthAnchor.constraint(equalToConstant:350).isActive = true
-        a.addButton(withTitle:"Save track"); a.addButton(withTitle:"Remove tracks"); a.addButton(withTitle:"Cancel")
-        let result = a.runModal()
-        if result == .alertSecondButtonReturn { mutate("Remove automation") { $0.timeline.removeAll { $0.surfaceID == surface.id } }; return }
-        guard result == .alertFirstButtonReturn else { return }
-        do {
-            let keys = try keyframes.stringValue.split(separator:",").map { item -> AutomationKeyframe in
-                let parts = item.split(separator:":").map { $0.trimmingCharacters(in:.whitespaces) }
-                guard parts.count == 2,let time = Double(parts[0]),let value = Double(parts[1]) else { throw SystemFailure(message:"Use time:value pairs, such as 0:0, 2:1") }
-                return AutomationKeyframe(time:time,value:value)
-            }
-            let parameter = properties[property.indexOfSelectedItem]
-            let track = AutomationTrack(name:"\(surface.name) · \(parameter)",surfaceID:surface.id,parameter:parameter,keyframes:keys)
-            var candidate = project; candidate.timeline.removeAll { $0.surfaceID == surface.id && $0.parameter == parameter }; candidate.timeline.append(track)
-            try ProjectStore.validate(candidate); mutate("Save automation") { $0 = candidate }
-        } catch { showError(error) }
-    }
+    func configureAutomation() { showTimelineWindow() }
 
     func configureLighting() {
         let a = NSAlert(); a.messageText = "LED mapping · output composition"

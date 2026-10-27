@@ -20,7 +20,7 @@ import MappingCore
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard editor.confirmDiscard() else { return .terminateCancel }
-        editor.media.pause(); editor.network?.stop(); editor.midi?.stop()
+        editor.showRuntime.pause(); editor.media.pause(); editor.network?.stop(); editor.midi?.stop()
         waitingForTermination = true
         let finish: @MainActor @Sendable () -> Void = { [weak self] in
             guard let self, self.waitingForTermination else { return }
@@ -71,6 +71,10 @@ import MappingCore
     var editError = ""
     var dirty = false
     let history = EditHistory()
+    let showRuntime = ShowRuntime()
+    var timelineWindow: TimelineWindowController?
+    var showConfigurationError = ""
+    var timelineEventWarning = ""
     var media: MediaPool!
     var renderer: MetalRenderer!
     let metalView = MTKView()
@@ -97,7 +101,8 @@ import MappingCore
     var lastLighting: Double = 0
     var effectiveSurfaces: [Surface] {
         do {
-            let timed = try TimelineEngine.apply(tracks:project.timeline,time:media.currentTime,surfaces:project.surfaces)
+            guard showConfigurationError.isEmpty else { throw ProjectError.invalid(showConfigurationError) }
+            let timed = try showRuntime.apply(surfaces:project.surfaces)
             let resolved = try GroupEngine.resolve(surfaces:timed,groups:project.groups)
             renderError = ""; return resolved
         } catch {
@@ -136,7 +141,7 @@ import MappingCore
             ActionButton("Outputs…") { [weak self] in self?.configureOutputs() },
             ActionButton("Camera…") { [weak self] in self?.addCamera() },
             ActionButton("Groups…") { [weak self] in self?.configureGroups() },
-            ActionButton("Animate…") { [weak self] in self?.configureAutomation() },
+            ActionButton("Timeline…") { [weak self] in self?.showTimelineWindow() },
             ActionButton("LED…") { [weak self] in self?.configureLighting() },
             ActionButton("Blackout") { [weak self] in self?.toggleBlackout() }], vertical: false)
         let left = makeLibrary(); left.widthAnchor.constraint(equalToConstant: 210).isActive = true
@@ -168,9 +173,9 @@ import MappingCore
         center.heightAnchor.constraint(equalTo:work.heightAnchor).isActive = true
         inspectorScroll.heightAnchor.constraint(equalTo:work.heightAnchor).isActive = true
         playButton = ActionButton("▶ Play") { [weak self] in self?.togglePlayback() }
-        seekSlider = ActionSlider(value: 0,min:0,max:1) { [weak self] value in self?.media.seek(to:value) }
+        seekSlider = ActionSlider(value: 0,min:0,max:1) { [weak self] value in self?.seekShow(to:value) }
         seekSlider.widthAnchor.constraint(greaterThanOrEqualToConstant:150).isActive = true
-        let transport = stack([playButton,ActionButton("Stop") { [weak self] in self?.media.pause(); self?.media.seek(to:0) },seekSlider,timeLabel],vertical:false)
+        let transport = stack([playButton,ActionButton("Stop") { [weak self] in self?.stopShow() },seekSlider,timeLabel],vertical:false)
         let cueRow = stack([label("SCENES",bold:true),ActionButton("Capture") { [weak self] in self?.captureCue() }],vertical:false)
         let cuesContainer = NSView(); cuePicker = ActionPopUp(items:[], action:{ _ in })
         fill(cuePicker,in:cuesContainer)
@@ -278,12 +283,12 @@ import MappingCore
     }
     func reconcile() { media.reconcile(assets:project.assets,baseURL:baseURL) }
     func refresh() {
-        updateRender()
+        configureShow(); updateRender()
         layerTable.reloadData(); mediaTable.reloadData()
         if let i = selectedIndex { layerTable.selectRowIndexes(IndexSet(integer:i),byExtendingSelection:false) }
         cuePicker.removeAllItems(); cuePicker.addItems(withTitles:project.cues.map(\.name))
         window?.title = "\(project.name)\(dirty ? " •" : "") — ApertureCue 0.1"
-        window?.isDocumentEdited = dirty; refreshInspector()
+        window?.isDocumentEdited = dirty; refreshInspector(); timelineWindow?.refresh()
     }
     func updateRender() {
         let effective = effectiveSurfaces
@@ -370,7 +375,7 @@ import MappingCore
     @objc func newProject() {
         guard confirmDiscard() else { return }; closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil
         history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false; documentGeneration = UUID()
-        lighting?.stop(); selectedID = project.surfaces.first?.id; dirty = false; media.pause(); media.seek(to:0); reconcile(); refresh()
+        lighting?.stop(); selectedID = project.surfaces.first?.id; dirty = false; showRuntime.stop(); media.pause(); media.seek(to:0); timelineWindow?.close(); timelineWindow=nil; reconcile(); refresh()
     }
     @objc func openDialog() {
         let p = NSOpenPanel(); p.allowedContentTypes = [.json]; p.allowsMultipleSelection = false
@@ -380,7 +385,7 @@ import MappingCore
         guard confirmDiscard() else { return }
         do {
             let loaded = try ProjectStore.load(from:url)
-            closeOutputs(); lighting?.stop(); media.pause(); media.seek(to:0); history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false; documentGeneration = UUID(); project = loaded; projectURL = url; dirty = false; selectedID = loaded.surfaces.first?.id
+            closeOutputs(); lighting?.stop(); showRuntime.stop(); media.pause(); media.seek(to:0); timelineWindow?.close(); timelineWindow=nil; history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false; documentGeneration = UUID(); project = loaded; projectURL = url; dirty = false; selectedID = loaded.surfaces.first?.id
             if FileManager.default.fileExists(atPath:ProjectStore.recoveryURL(for:url).path) {
                 let alert = NSAlert(); alert.messageText = "Recovery snapshot found"; alert.informativeText = "Restore the autosaved state for this project?"; alert.addButton(withTitle:"Restore"); alert.addButton(withTitle:"Use saved project")
                 if alert.runModal() == .alertFirstButtonReturn, let recovered = try? ProjectStore.loadRecovery(for:url) { project = recovered; dirty = true }
@@ -450,9 +455,9 @@ import MappingCore
         guard let i = selectedIndex,let id = project.surfaces[i].groupID,let g = project.groups.firstIndex(where:{$0.id == id}) else { return }
         mutate("Toggle group") { $0.groups[g].enabled.toggle() }
     }
-    func togglePlayback() { if media.isPlaying { media.pause() } else { media.play() }; playButton.title = media.isPlaying ? "Ⅱ Pause" : "▶ Play" }
+    func togglePlayback() { if showRuntime.isPlaying { pauseShow() } else { playShow() }; playButton.title = showRuntime.isPlaying ? "Ⅱ Pause" : "▶ Play" }
     func captureCue() { mutate("Capture scene") { $0.cues.append(Cue(name:"Scene \($0.cues.count+1)",surfaces:$0.surfaces,duration:1)) } }
-    func deleteCue() { let i = cuePicker.indexOfSelectedItem; guard project.cues.indices.contains(i) else { return }; mutate("Delete scene") { $0.cues.remove(at:i) } }
+    func deleteCue() { let i = cuePicker.indexOfSelectedItem; guard project.cues.indices.contains(i) else { return }; mutate("Delete scene") { p in let id=p.cues[i].id;p.cues.remove(at:i);p.timelineSettings.markers.removeAll {$0.cueID==id} } }
     func goCue(index:Int? = nil) {
         let i = index ?? cuePicker.indexOfSelectedItem; guard project.cues.indices.contains(i) else { return }
         var target = project.cues[i]
@@ -475,6 +480,7 @@ import MappingCore
     }
     func tick() {
         let now = ProcessInfo.processInfo.systemUptime
+        advanceShow(at:now)
         if let cue = cueTarget {
             if let sampled = cueEngine.sample(at:now),sampled != project.surfaces { project.surfaces = sampled; dirty = true; window?.isDocumentEdited = true }
             if !cueEngine.isTransitioning {
@@ -492,14 +498,13 @@ import MappingCore
             lighting?.renderer.blackout = blackout
             lighting?.update(surfaces:effectiveSurfaces); lastLighting = now
         }
-        let primary = project.assets.first(where:{$0.kind == "video"})
-        let playhead = primary.map { media.playbackTime(for:$0.id) } ?? media.currentTime
-        seekSlider.maxValue = max(1,media.duration,project.timeline.flatMap(\.keyframes).map(\.time).max() ?? 0); seekSlider.doubleValue = playhead
+        let playhead = showRuntime.time
+        seekSlider.maxValue = max(project.timelineSettings.duration,playhead); seekSlider.doubleValue = playhead
         func time(_ n:Double)->String { String(format:"%02d:%02d",Int(max(0,n))/60,Int(max(0,n))%60) }
-        timeLabel.stringValue = "\(time(playhead)) / \(time(media.duration))"
-        playButton.title = media.isPlaying ? "Ⅱ Pause" : "▶ Play"
+        timeLabel.stringValue = "\(time(playhead)) / \(time(project.timelineSettings.duration))\(playhead>project.timelineSettings.duration ? " +" : "")"
+        playButton.title = showRuntime.isPlaying ? "Ⅱ Pause" : "▶ Play"
         let error = media.errorMessages.values.first.map { " · \($0)" } ?? ""
-        status.stringValue = "\(renderer.statistics) · \(project.surfaces.count) surfaces · \(outputWindows.count) output windows\(blackout ? " · BLACKOUT" : "")\(error)\(renderer.errorDescription.isEmpty ? "" : " · Last render error: " + renderer.errorDescription)\(renderError.isEmpty ? "" : " · " + renderError)\(editError.isEmpty ? "" : " · " + editError)\(workMessage.isEmpty ? "" : " · " + workMessage)"
+        status.stringValue = "\(renderer.statistics) · \(project.surfaces.count) surfaces · \(outputWindows.count) output windows\(blackout ? " · BLACKOUT" : "")\(error)\(renderer.errorDescription.isEmpty ? "" : " · Last render error: " + renderer.errorDescription)\(renderError.isEmpty ? "" : " · " + renderError)\(editError.isEmpty ? "" : " · " + editError)\(workMessage.isEmpty ? "" : " · " + workMessage)\(timelineEventWarning.isEmpty ? "" : " · " + timelineEventWarning)"
         if dirty, now-lastRecovery > 10, let url = projectURL { try? ProjectStore.saveRecovery(project,for:url); lastRecovery = now }
     }
     func configureOutputs() {
@@ -549,9 +554,9 @@ import MappingCore
     }
     func remote(_ command:ControlCommand) {
         switch command {
-        case .play: media.play()
-        case .pause: media.pause()
-        case .seek(let time): media.seek(to:time)
+        case .play: playShow()
+        case .pause: pauseShow()
+        case .seek(let time): seekShow(to:time)
         case .blackout(let value): blackout = value; updateRender()
         case .cue(let index): goCue(index:index)
         case .opacity(let index,let value): if project.surfaces.indices.contains(index) { mutate("Remote opacity") { $0.surfaces[index].opacity = max(0,min(1,value)) } }

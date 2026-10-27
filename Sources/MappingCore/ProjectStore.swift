@@ -74,6 +74,7 @@ public enum ProjectStore {
         guard project.version >= 0,project.version <= Project.currentVersion else { throw ProjectError.unsupportedVersion(project.version) }
         var portable = project.version < 3 ? GroupEngine.migrateLegacyLabels(project) : project
         if portable.version < 4 { clearLegacyStrokeExtensions(&portable) }
+        if portable.version < 5 { migrateLegacyTimeline(&portable) }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
@@ -109,6 +110,7 @@ public enum ProjectStore {
         }
         if p.version < 3 { p = GroupEngine.migrateLegacyLabels(p) }
         if p.version < 4 { clearLegacyStrokeExtensions(&p) }
+        if p.version < 5 { migrateLegacyTimeline(&p) }
         p.version = Project.currentVersion
         try validate(p)
         let base = url.deletingLastPathComponent()
@@ -129,6 +131,16 @@ public enum ProjectStore {
         }
         project.surfaces=project.surfaces.map(normalized)
         for i in project.cues.indices { project.cues[i].surfaces=project.cues[i].surfaces.map(normalized) }
+    }
+
+    /// Versions 0...4 defined linear scalar keys but no timeline settings or
+    /// easing payload. Preserve their times/values without activating extensions.
+    private static func migrateLegacyTimeline(_ project:inout Project) {
+        for track in project.timeline.indices {
+            project.timeline[track].keyframes=project.timeline[track].keyframes.map { AutomationKeyframe(time:$0.time,value:$0.value) }
+        }
+        project.timelineSettings=TimelineSettings.inferred(from:project.timeline)
+        project.timelineSettings.stopAtEnd=false
     }
 
     public static func recoveryURL(for projectURL: URL) -> URL {
@@ -175,6 +187,7 @@ public enum ProjectStore {
         // A cue may temporarily remove an automated surface. Its stable ID remains a valid
         // target while any saved cue snapshot can bring that surface back.
         try TimelineEngine.validate(tracks:project.timeline,surfaces:project.surfaces+project.cues.flatMap(\.surfaces))
+        try TimelineSettings.validate(project.timelineSettings,tracks:project.timeline,cueIDs:Set(project.cues.map(\.id)))
     }
 
     private static func validateSurfaces(_ surfaces: [Surface], mediaIDs: Set<UUID>, outputIDs: Set<UUID>) throws {

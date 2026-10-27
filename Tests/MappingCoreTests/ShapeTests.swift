@@ -121,7 +121,7 @@ final class ShapeTests: XCTestCase {
         XCTAssertThrowsError(try ProjectStore.load(from:url))
         try Data("{\"version\":999}".utf8).write(to:url)
         XCTAssertThrowsError(try ProjectStore.load(from:url)) { XCTAssertEqual($0 as? ProjectError,.unsupportedVersion(999)) }
-        XCTAssertTrue(ProjectError.unsupportedVersion(999).localizedDescription.contains("0 through 4"))
+        XCTAssertTrue(ProjectError.unsupportedVersion(999).localizedDescription.contains("0 through \(Project.currentVersion)"))
     }
 
     func testShapesRoundTripCuesCollectAndHistory() throws {

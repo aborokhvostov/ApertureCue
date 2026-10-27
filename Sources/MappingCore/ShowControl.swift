@@ -113,10 +113,28 @@ public final class CueEngine {
     }
 }
 
+public enum AutomationInterpolation:String,Codable,CaseIterable,Sendable { case hold,linear,bezier }
+
 public struct AutomationKeyframe: Codable, Equatable, Sendable {
     public var time: Double
     public var value: Double
-    public init(time: Double, value: Double) { self.time=time; self.value=value }
+    /// Interpolation of the outgoing segment. Exact next-key time uses its value.
+    public var interpolation:AutomationInterpolation
+    public var control1:Point2
+    public var control2:Point2
+    public init(time: Double, value: Double, interpolation:AutomationInterpolation = .linear,
+                control1:Point2=Point2(1.0/3,1.0/3), control2:Point2=Point2(2.0/3,2.0/3)) {
+        self.time=time; self.value=value; self.interpolation=interpolation
+        self.control1=control1; self.control2=control2
+    }
+    private enum CodingKeys:String,CodingKey { case time,value,interpolation,control1,control2 }
+    public init(from decoder:Decoder) throws {
+        let c=try decoder.container(keyedBy:CodingKeys.self)
+        self.init(time:try c.decode(Double.self,forKey:.time),value:try c.decode(Double.self,forKey:.value),
+                  interpolation:try c.decodeIfPresent(AutomationInterpolation.self,forKey:.interpolation) ?? .linear,
+                  control1:try c.decodeIfPresent(Point2.self,forKey:.control1) ?? Point2(1.0/3,1.0/3),
+                  control2:try c.decodeIfPresent(Point2.self,forKey:.control2) ?? Point2(2.0/3,2.0/3))
+    }
 }
 
 public struct AutomationTrack: Codable, Equatable, Identifiable, Sendable {
@@ -155,9 +173,16 @@ public enum TimelineEngine {
             total += track.keyframes.count
             guard !track.keyframes.isEmpty, track.keyframes.count <= 4096, total <= 65536 else { throw ProjectError.invalid("timeline keyframe count") }
             _ = try Automation.value(at:0,keyframes:track.keyframes)
-            let range:ClosedRange<Double>
-            switch track.parameter { case "opacity":range=0...1; case "gamma":range=0.01...10; default:range=0...16 }
+            let range=try parameterRange(track.parameter)
             guard track.keyframes.allSatisfy({ $0.time <= 86400*365 && range.contains($0.value) }) else { throw ProjectError.invalid("timeline value or time outside supported range") }
+        }
+    }
+    public static func parameterRange(_ parameter:String) throws -> ClosedRange<Double> {
+        switch parameter {
+        case "opacity":return 0...1
+        case "gamma":return 0.01...10
+        case "brightness","red","green","blue":return 0...16
+        default:throw ProjectError.invalid("unknown timeline parameter")
         }
     }
     /// Evaluate against the caller's current transport time. No state accumulates across seeks/loops.
@@ -185,20 +210,67 @@ public enum TimelineEngine {
     }
 }
 
+/// Immutable curve cache for editors. Construction validates once; drawing can
+/// sample hundreds of points without rescanning the complete key collection.
+public struct AutomationCurve:Sendable {
+    private var keyframes:[AutomationKeyframe]
+    public init(keyframes:[AutomationKeyframe]) throws {
+        if !keyframes.isEmpty { try Automation.validate(keyframes:keyframes) }
+        self.keyframes=keyframes
+    }
+    public func value(at time:Double) throws -> Double? {
+        guard time.isFinite else { throw ProjectError.invalid("non-finite automation time") }
+        guard !keyframes.isEmpty else { return nil }
+        return Automation.evaluated(at:time,keyframes:keyframes)
+    }
+}
+
 public enum Automation {
-    /// Piecewise-linear automation. Duplicate or unsorted times are rejected.
+    /// Validation is shared by editing/persistence and the compiled runtime.
+    public static func validate(keyframes:[AutomationKeyframe]) throws {
+        guard !keyframes.isEmpty,keyframes.count<=4096 else { throw ProjectError.invalid("automation requires 1...4096 keys") }
+        for i in keyframes.indices {
+            let key=keyframes[i]
+            guard key.time.isFinite,key.value.isFinite,key.time>=0,key.time<=86400*365,
+                  i==0 || key.time>keyframes[i-1].time else { throw ProjectError.invalid("invalid automation keyframes") }
+            guard [key.control1,key.control2].allSatisfy({$0.x.isFinite && $0.y.isFinite && (0...1).contains($0.x) && (0...1).contains($0.y)}),
+                  key.control1.x<=key.control2.x else { throw ProjectError.invalid("Bezier easing handles require normalized monotonic x coordinates") }
+        }
+    }
+    /// Stateless public evaluator. Compiled programs validate once and call the
+    /// same binary-search/easing implementation without rescanning every key.
     public static func value(at time: Double, keyframes: [AutomationKeyframe]) throws -> Double? {
         guard time.isFinite else { throw ProjectError.invalid("non-finite automation time") }
         guard !keyframes.isEmpty else { return nil }
-        for i in keyframes.indices {
-            guard keyframes[i].time.isFinite, keyframes[i].value.isFinite, keyframes[i].time >= 0,
-                  i == 0 || keyframes[i].time > keyframes[i-1].time else { throw ProjectError.invalid("invalid automation keyframes") }
+        try validate(keyframes:keyframes)
+        return evaluated(at:time,keyframes:keyframes)
+    }
+    static func evaluated(at time:Double,keyframes:[AutomationKeyframe]) -> Double {
+        if time<=keyframes[0].time { return keyframes[0].value }
+        if time>=keyframes.last!.time { return keyframes.last!.value }
+        var low=0,high=keyframes.count
+        while low<high {
+            let mid=(low+high)/2
+            if keyframes[mid].time<=time { low=mid+1 } else { high=mid }
         }
-        if time <= keyframes[0].time { return keyframes[0].value }
-        for i in 1..<keyframes.count where time <= keyframes[i].time {
-            let a=keyframes[i-1], b=keyframes[i]
-            return a.value+(b.value-a.value)*(time-a.time)/(b.time-a.time)
+        let a=keyframes[low-1],b=keyframes[low]
+        let u=(time-a.time)/(b.time-a.time)
+        let weight:Double
+        switch a.interpolation {
+        case .hold:weight=0
+        case .linear:weight=u
+        case .bezier:
+            func cubic(_ t:Double,_ p:Double,_ q:Double) -> Double {
+                let v=1-t
+                return 3*v*v*t*p+3*v*t*t*q+t*t*t
+            }
+            var left=0.0,right=1.0
+            for _ in 0..<48 {
+                let middle=(left+right)/2
+                if cubic(middle,a.control1.x,a.control2.x)<u { left=middle } else { right=middle }
+            }
+            weight=cubic((left+right)/2,a.control1.y,a.control2.y)
         }
-        return keyframes.last!.value
+        return a.value+(b.value-a.value)*weight
     }
 }

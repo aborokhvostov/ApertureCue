@@ -102,7 +102,7 @@ enum EditorSelfTest {
 
             let track=AutomationTrack(name:"Editor fade",surfaceID:addedID,parameter:"opacity",keyframes:[AutomationKeyframe(time:0,value:0),AutomationKeyframe(time:10,value:1)])
             e.mutate("Add test automation") { $0.timeline.append(track) }
-            e.media.seek(to:5)
+            e.seekShow(to:5)
             let effective=try required(e.effectiveSurfaces.first { $0.id == addedID },"Automated surface missing")
             try expect(abs(effective.opacity-0.5)<1e-12,"Controller did not apply timeline at current seek time")
             e.project.cues[0].duration=0
@@ -151,7 +151,7 @@ enum EditorSelfTest {
             try expect(!FileManager.default.fileExists(atPath:ProjectStore.recoveryURL(for:projectURL).path),"Successful save did not clear its recovery sidecar")
             passed("document save marks clean and preserves separate recovery; next save removes sidecar")
 
-            e.media.seek(to:8); e.media.play()
+            e.seekShow(to:8); e.playShow()
             e.dirty=false // The fixture explicitly chooses discard without opening a user-facing alert.
             e.newProject(); e.tick()
             try expect(e.project.name == "Untitled" && e.projectURL == nil && !e.dirty,"newProject did not replace the document cleanly")
@@ -163,7 +163,7 @@ enum EditorSelfTest {
             passed("new document clears media, playback time, history, URL and selection")
 
             e.addSurface(); try expect(e.history.canUndo,"Open fixture did not establish old history")
-            e.media.seek(to:123); e.media.play(); e.dirty=false
+            e.seekShow(to:8); e.playShow(); e.dirty=false
             // There is deliberately no recovery sidecar, so openProject cannot present a restore alert.
             e.openProject(projectURL); e.tick()
             try expect(e.project == saved && e.projectURL == projectURL && !e.dirty,"openProject did not restore the saved document")
@@ -435,11 +435,112 @@ enum EditorSelfTest {
             e.saveTo(strokeURL); let savedStroke=e.project
             e.newProject(); try expect(!e.overlay.pathMode,"New document retained path editing")
             e.openProject(strokeURL)
-            try expect(e.project == savedStroke && e.project.version == 4,"Stroke scene/path did not survive schema-4 save/new/open")
+            try expect(e.project == savedStroke && e.project.version == Project.currentVersion,"Stroke scene/path did not survive schema-4 save/new/open")
             try expect(e.renderer.surfaces.first?.stroke == savedStroke.surfaces.first?.stroke,"Production renderer lost path payload")
             let strokePixels=try editorPixels()
             try expect(stride(from:0,to:strokePixels.count,by:4).contains {strokePixels[$0]>40},"Production editor stroke rendered no visible pixels")
             passed("stroke scenes and schema-4 save/new/open retain visible production geometry")
+
+            let showSurface=Surface(name:"Timeline red",output:Point2.unitQuad,color:[1,0,0],generator:"solid")
+            let showOutput=OutputConfig(name:"Timeline output")
+            var sceneSurface=showSurface;sceneSurface.brightness=0.6
+            let showCue=Cue(name:"Timeline scene",surfaces:[sceneSurface],duration:0)
+            e.mutate("Timeline fixture") {$0=Project(surfaces:[showSurface],outputs:[showOutput],cues:[showCue],fixtures:[Fixture(name:"Timeline light",points:[Point2(0.5,0.5)])])}
+            e.selectedID=showSurface.id
+            let showTrackID=try e.timelineAddTrack(surfaceID:showSurface.id,parameter:"opacity")
+            try e.timelineEditKey(trackID:showTrackID,index:0,key:AutomationKeyframe(time:0,value:0,interpolation:.hold))
+            try e.timelineEditKey(trackID:showTrackID,index:1,key:AutomationKeyframe(time:2,value:0.25,interpolation:.bezier,control1:Point2(0.3,0),control2:Point2(0.7,1)))
+            try e.timelineEditKey(trackID:showTrackID,index:nil,key:AutomationKeyframe(time:6,value:0.75))
+            try e.timelineEditKey(trackID:showTrackID,index:nil,key:AutomationKeyframe(time:10,value:1))
+            e.seekShow(to:1);try expect(e.renderer.surfaces[0].opacity==0,"Hold timeline did not retain outgoing value")
+            e.seekShow(to:4);try expect(abs(e.renderer.surfaces[0].opacity-0.5)<1e-9,"Bezier timeline did not evaluate against master show time")
+            e.openOutput(showOutput,fullscreen:false,showWindow:false)
+            let showOutputRenderer=try required(e.outputWindows[showOutput.id],"Timeline output missing").1
+            try expect(showOutputRenderer.surfaces == e.renderer.surfaces,"Timeline output used a different time/program")
+            let showPixels=try editorPixels()
+            try expect(abs(Int(showPixels[(48*128+64)*4])-128)<=1,"Timeline opacity did not reach actual Metal output")
+            e.lighting.isSampling=true;e.lighting.isSending=false;e.lastLighting=0;e.tick()
+            try expect(e.lighting.renderer.surfaces == e.effectiveSurfaces,"Timeline light sampling used different show time")
+            try expect(pump(timeout:5) {abs(Int(e.lighting.lastUniverses[1]?.first ?? 0)-128)<=1},"Timeline GPU light sample did not follow master opacity")
+            e.lighting.stop();e.closeOutputs()
+            passed("master timeline without video drives hold/Bezier editor, independent output and GPU light sampling")
+
+            let beforeInvalidKey=e.project
+            do { try e.timelineEditKey(trackID:showTrackID,index:1,key:AutomationKeyframe(time:0,value:0.5));throw Failure(message:"Duplicate timeline key accepted") }
+            catch is Failure {throw Failure(message:"Duplicate timeline key accepted")}
+            catch {try expect(e.project==beforeInvalidKey,"Rejected key collision changed document")}
+            do { try e.timelineEditKey(trackID:showTrackID,index:1,key:AutomationKeyframe(time:2,value:0.25,interpolation:.bezier,control1:Point2(0.8,0),control2:Point2(0.2,1)));throw Failure(message:"Non-monotonic curve time accepted") }
+            catch is Failure {throw Failure(message:"Non-monotonic curve time accepted")}
+            catch {try expect(e.project==beforeInvalidKey,"Rejected Bezier control changed document")}
+            try e.timelineSetTrackEnabled(id:showTrackID,enabled:false)
+            try expect(e.renderer.surfaces[0].opacity==1,"Disabled timeline still overrides base state")
+            e.undoEdit();try expect(e.project==beforeInvalidKey,"Undo timeline enable did not restore tracks")
+            let secondTrackID=try e.timelineAddTrack(surfaceID:showSurface.id,parameter:"brightness")
+            try expect(e.project.timeline.count==2,"Second parameter track was not created")
+            try e.timelineRemoveTrack(id:secondTrackID);e.undoEdit();try expect(e.project.timeline.count==2,"Undo track deletion lost binding")
+            e.redoEdit();try expect(e.project.timeline.count==1,"Redo track deletion differs")
+            passed("timeline mutations reject collisions/invalid curves atomically and preserve enabled/binding history")
+
+            let timeline=TimelineWindowController(editor:e);e.timelineWindow=timeline
+            timeline.window?.orderOut(nil);timeline.selectedTrackID=showTrackID;timeline.refresh()
+            timeline.window?.contentView?.layoutSubtreeIfNeeded()
+            try expect(timeline.canvas.bounds.width > (timeline.window?.contentView?.bounds.width ?? 1200)*0.6,"Timeline graph did not fill the available window width")
+            try expect(timeline.canvas.track?.id==showTrackID && timeline.window?.isVisible==false,"Hidden timeline did not bind the actual selected track")
+            let beforeGraphInsert=e.project
+            timeline.canvas.onInsertKey?(5,0.65)
+            try expect(e.project.timeline[0].keyframes.contains {$0.time==5 && $0.value==0.65},"Actual graph insert callback did not publish a key")
+            e.undoEdit();try expect(e.project==beforeGraphInsert,"One graph insert Undo did not restore the project")
+            e.redoEdit()
+            let graphIndex=try required(e.project.timeline[0].keyframes.firstIndex {$0.time==5},"Inserted graph key missing")
+            let beforeGraphDrag=e.project
+            timeline.canvas.onEditKey?(graphIndex,AutomationKeyframe(time:5.5,value:0.7,interpolation:.hold))
+            try expect(e.project.timeline[0].keyframes.contains {$0.time==5.5 && $0.interpolation == .hold},"Actual graph drag callback did not move key/mode")
+            e.undoEdit();try expect(e.project==beforeGraphDrag,"Graph drag did not commit as one Undo")
+            e.redoEdit();timeline.canvas.onSeek?(4)
+            try expect(e.showRuntime.time==4 && timeline.canvas.playhead==4,"Ruler seek did not reach the master clock and graph playhead")
+            passed("hidden graphical timeline binds track and production insert/drag/ruler callbacks with one-command history")
+
+            let pauseMarker=try e.timelineAddMarker(name:"Wait",time:3,action:.pause,cueID:nil)
+            let cueMarker=try e.timelineAddMarker(name:"Recall",time:5,action:.cue,cueID:showCue.id)
+            e.stopShow(at:100);e.playShow(at:100);e.advanceShow(at:104)
+            try expect(e.showRuntime.time==3 && !e.showRuntime.isPlaying && !e.media.isPlaying && abs(e.media.currentTime-3)<1e-9,"Pause marker did not latch show/media at exact crossing")
+            try expect(e.cueTarget==nil,"Pause marker allowed a later scene marker in the same tick")
+            e.seekShow(to:5,at:150);try expect(e.cueTarget==nil,"Explicit seek fired a scene marker")
+            e.playShow(at:200);e.advanceShow(at:201);try expect(e.cueTarget==nil,"Play at a scene marker retriggered it")
+            e.stopShow(at:300);try e.timelineDeleteMarker(id:pauseMarker)
+            e.playShow(at:300);e.advanceShow(at:305.2)
+            try expect(e.cueTarget?.id==showCue.id,"Natural scene marker did not call the production scene engine")
+            e.commitInterruptedCue();e.stopShow(at:400)
+            try e.timelineDeleteMarker(id:cueMarker)
+            var loopSettings=e.project.timelineSettings;loopSettings.loopEnabled=true;loopSettings.loopStart=2;loopSettings.loopEnd=6
+            try e.timelineUpdateSettings(loopSettings)
+            e.seekShow(to:5.8,at:500);e.playShow(at:500);e.advanceShow(at:500.5);e.pauseShow(at:500.5)
+            try expect(abs(e.showRuntime.time-2.3)<1e-9 && abs(e.media.currentTime-2.3)<1e-9,"Loop range did not preserve overshoot and resync media")
+            passed("natural pause/scene markers, seek suppression and loop overshoot synchronize production show/media adapters")
+
+            _=try e.timelineAddMarker(name:"Scene reference",time:5,action:.cue,cueID:showCue.id)
+            let beforeSceneDelete=e.project;e.cuePicker.selectItem(at:0);e.deleteCue()
+            try expect(e.project.cues.isEmpty && e.project.timelineSettings.markers.isEmpty,"Deleting scene left a dangling timeline marker")
+            e.undoEdit();try expect(e.project==beforeSceneDelete,"Undo scene deletion did not restore marker references")
+            let timelineURL=directory.appendingPathComponent("timeline.aperturecue.json")
+            e.saveTo(timelineURL);let timelineSaved=e.project
+            e.newProject();try expect(e.timelineWindow==nil && !e.showRuntime.isPlaying && e.showRuntime.time==0,"New retained old timeline window/runtime")
+            e.openProject(timelineURL)
+            try expect(e.project==timelineSaved && e.project.version==Project.currentVersion && e.showRuntime.time==0 && !e.showRuntime.isPlaying,"Timeline schema/settings/keys did not survive save/new/open with clean runtime")
+            passed("timeline scene references, loop/settings/curves persist and new/open reset window/playhead/runtime")
+
+            var legacyLong=Project(version:4,name:"Legacy continuing transport",surfaces:[Surface(name:"Long show")])
+            legacyLong.timeline=[]
+            let legacyLongURL=directory.appendingPathComponent("legacy-long.aperturecue.json")
+            try JSONEncoder().encode(legacyLong).write(to:legacyLongURL)
+            e.dirty=false;e.openProject(legacyLongURL)
+            try expect(!e.project.timelineSettings.stopAtEnd,"Legacy project gained a new ten-second stop")
+            e.seekShow(to:60,at:100)
+            try expect(e.showRuntime.time==60 && e.media.currentTime==60,"Legacy continuing transport cannot seek past the graph horizon")
+            e.playShow(at:100);e.advanceShow(at:101)
+            try expect(e.showRuntime.time==61 && e.showRuntime.isPlaying && e.media.isPlaying,"Legacy transport stopped a long show at ten seconds")
+            e.pauseShow(at:101);e.stopShow()
+            passed("legacy projects retain continuing master playback and seek beyond the default graph horizon")
 
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count

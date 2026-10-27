@@ -1,5 +1,5 @@
 {
-  "checkCount" : 23,
+  "checkCount" : 29,
   "checks" : [
     "hidden editor startup with valid demo project",
     "add, duplicate, delete and controller undo\/redo",
@@ -23,7 +23,13 @@
     "production editor dissolve\/undo\/redo preserve exact visible checker pixels",
     "stroke creation, actual shape picker, cubic split\/remove and undo preserve path data",
     "world path tangent drag inverts hierarchy and mesh, preserves source, and rejects invalid edits",
-    "stroke scenes and schema-4 save\/new\/open retain visible production geometry"
+    "stroke scenes and schema-4 save\/new\/open retain visible production geometry",
+    "master timeline without video drives hold\/Bezier editor, independent output and GPU light sampling",
+    "timeline mutations reject collisions\/invalid curves atomically and preserve enabled\/binding history",
+    "hidden graphical timeline binds track and production insert\/drag\/ruler callbacks with one-command history",
+    "natural pause\/scene markers, seek suppression and loop overshoot synchronize production show\/media adapters",
+    "timeline scene references, loop\/settings\/curves persist and new\/open reset window\/playhead\/runtime",
+    "legacy projects retain continuing master playback and seek beyond the default graph horizon"
   ],
   "documentAssetCount" : 1,
   "documentSurfaceCount" : 2,
@@ -38,6 +44,6 @@
   "platform" : "Version 26.6.2 (Build 25G83)",
   "schemaVersion" : 1,
   "scope" : "Production EditorController and hidden output renderer integration; no external application, visible output, or hardware interaction.",
-  "timestampUTC" : "2026-10-26T23:45:46Z",
+  "timestampUTC" : "2026-10-27T12:10:08Z",
   "windowsShown" : false
 }

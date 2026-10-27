@@ -58,4 +58,12 @@ runCase("Stroke.crossing inverse mesh", StrokeTests.self) { try $0.testCrossingT
 runCase("Stroke.schema four migration", StrokeTests.self) { try $0.testSchemaFourMigrationDefaultsAndMalformedPersistence() }
 runCase("Stroke.cue frames collapse", StrokeTests.self) { try $0.testCuePathInterpolationFramesAndCollapseRemainValid() }
 runCase("Stroke.group history collect", StrokeTests.self) { try $0.testGroupHistorySaveAndPortableCollectionKeepLocalStroke() }
+runCase("TimelineRuntime.easing immutable curve", TimelineRuntimeTests.self) { try $0.testHoldLinearBezierExactKeysAndImmutableCurve() }
+runCase("TimelineRuntime.compiled program", TimelineRuntimeTests.self) { try $0.testCompiledProgramBinarySearchDisabledAndDormantTargets() }
+runCase("TimelineRuntime.transport finite end", TimelineRuntimeTests.self) { try $0.testIndependentTransportPlayPauseSeekEndAndInvalidHostTime() }
+runCase("TimelineRuntime.marker pause seek", TimelineRuntimeTests.self) { try $0.testMarkerCrossingsPauseResumeSeekAndExactBoundaries() }
+runCase("TimelineRuntime.loop event budget", TimelineRuntimeTests.self) { try $0.testLoopRangeExactWrapMarkerOrderingAndLongElapsedBudget() }
+runCase("TimelineRuntime.pause budget configure", TimelineRuntimeTests.self) { try $0.testEventBudgetStillHonorsPauseAndAtomicConfiguration() }
+runCase("TimelineRuntime.settings validation", TimelineRuntimeTests.self) { try $0.testSettingsAndMarkerReferenceValidation() }
+runCase("TimelineRuntime.migration persistence", TimelineRuntimeTests.self) { try $0.testLegacyLinearNormalizationSchemaFiveHistoryAndPortableRoundTrip() }
 exit(finishTests())

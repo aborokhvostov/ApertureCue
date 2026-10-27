@@ -142,16 +142,16 @@ final class StrokeTests:XCTestCase {
             old.surfaces[0].stroke.width=0 // unknown pre-v4 extension is not activated
             try JSONEncoder().encode(old).write(to:url)
             let loaded=try ProjectStore.load(from:url)
-            XCTAssertEqual(loaded.version,4); XCTAssertEqual(loaded.surfaces[0].stroke,.line)
+            XCTAssertEqual(loaded.version,Project.currentVersion); XCTAssertEqual(loaded.surfaces[0].stroke,.line)
             XCTAssertEqual(loaded.surfaces[0].shape,version<2 ? .quad : .ellipse)
             XCTAssertEqual(loaded.cues[0].surfaces[0].shape,.quad)
             XCTAssertEqual(loaded.cues[0].surfaces[0].stroke,.line)
             try ProjectStore.save(old,to:url)
             XCTAssertEqual(try ProjectStore.load(from:url).surfaces[0].stroke,.line)
         }
-        try Data("{\"version\":4,\"surfaces\":[{\"shape\":\"line\"}]}".utf8).write(to:url)
+        try Data("{\"version\":5,\"surfaces\":[{\"shape\":\"line\"}]}".utf8).write(to:url)
         XCTAssertEqual(try ProjectStore.load(from:url).surfaces[0].stroke,.line)
-        try Data("{\"version\":4,\"surfaces\":[{\"shape\":\"line\",\"stroke\":{\"nodes\":[]}}]}".utf8).write(to:url)
+        try Data("{\"version\":5,\"surfaces\":[{\"shape\":\"line\",\"stroke\":{\"nodes\":[]}}]}".utf8).write(to:url)
         XCTAssertThrowsError(try ProjectStore.load(from:url))
         try Data("{\"version\":999}".utf8).write(to:url)
         XCTAssertThrowsError(try ProjectStore.load(from:url)) { XCTAssertEqual($0 as? ProjectError,.unsupportedVersion(999)) }
