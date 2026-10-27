@@ -5,18 +5,18 @@
     "frameCount" : 300,
     "gpuUtilizationPercent" : null,
     "height" : 360,
-    "maxGPUExecutionMilliseconds" : 0.58287498541176319,
-    "meanGPUExecutionMilliseconds" : 0.1133899992176642,
-    "meanWallMilliseconds" : 1.3294223610622187,
+    "maxGPUExecutionMilliseconds" : 2.257124986499548,
+    "meanGPUExecutionMilliseconds" : 0.18012138898484409,
+    "meanWallMilliseconds" : 3.0890969443134964,
     "method" : "300 sequential offscreen frames including GPU wait, BGRA readback and RGBA swizzle; does not measure live drawable FPS",
     "outputCount" : 1,
-    "readbackFramesPerSecond" : 752.20639376111615,
-    "residentMemoryAfterBytes" : 49496064,
-    "residentMemoryBeforeBytes" : 50216960,
+    "readbackFramesPerSecond" : 323.71920274008573,
+    "residentMemoryAfterBytes" : 37519360,
+    "residentMemoryBeforeBytes" : 51986432,
     "source" : "procedural gradient and grid; no media decoder in benchmark",
     "surfaceCount" : 2,
     "unmeasuredMetrics" : "GPU\/CPU utilization and decoder frame drops require separate profiling; Metal command times exclude CPU work.",
-    "wallSeconds" : 0.39882670831866562,
+    "wallSeconds" : 0.92672908329404891,
     "width" : 640
   },
   "cameraHardware" : "Not verified; failure-path test only",
@@ -85,5 +85,5 @@
   "platform" : "Version 26.6.2 (Build 25G83)",
   "schemaVersion" : 1,
   "scope" : "Local offscreen Metal and AVFoundation checks; external displays, projectors and lighting hardware are not verified.",
-  "timestampUTC" : "2026-10-27T13:05:36Z"
+  "timestampUTC" : "2026-10-27T18:12:39Z"
 }

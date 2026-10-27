@@ -9,13 +9,15 @@ extension EditorController {
     }
     /// Rebuild only on document mutations. Playback evaluates the compiled model.
     func configureShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
-        let beforeTime=showRuntime.time, beforePlaying=showRuntime.isPlaying
+        let beforeTime=showRuntime.currentTime(at:hostTime), beforePlaying=showRuntime.isPlaying
         do {
             try showRuntime.configure(settings:project.timelineSettings,tracks:project.timeline,
                                       surfaces:project.surfaces+project.cues.filter {$0.scope == .full}.flatMap(\.surfaces),cueIDs:Set(project.cues.map(\.id)),at:hostTime)
             showConfigurationError=""
-            if beforePlaying && !showRuntime.isPlaying { media.pause() }
-            if abs(showRuntime.time-beforeTime)>1e-9 { media.seek(to:showRuntime.time) }
+            let stopped=beforePlaying && !showRuntime.isPlaying
+            if stopped { media.pause() }
+            let afterTime=showRuntime.currentTime(at:hostTime)
+            if stopped || abs(afterTime-beforeTime)>1e-9 { media.seek(to:afterTime) }
         } catch { showConfigurationError=error.localizedDescription }
     }
     func playShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
@@ -27,22 +29,28 @@ extension EditorController {
     }
     func pauseShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
         advanceShow(at:hostTime)
+        stopAutomationRecording(reason:"Paused",at:hostTime)
         showRuntime.pause(at:hostTime); media.pause(); media.seek(to:showRuntime.time)
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func stopShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
+        stopAutomationRecording(reason:"Stopped",at:hostTime)
         timelineEventWarning=""
         commitInterruptedCue(); showRuntime.stop(at:hostTime); media.pause(); media.seek(to:0)
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func seekShow(to seconds:Double,at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
         guard seconds.isFinite else { return }
+        stopAutomationRecording(reason:"Seek",at:hostTime)
         timelineEventWarning=""
         showRuntime.seek(to:seconds,at:hostTime); media.seek(to:showRuntime.time)
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func advanceShow(at hostTime:Double) {
         let result=showRuntime.tick(at:hostTime)
+        if recording.enabled && (!result.isPlaying || result.discontinuity || result.time>=project.timelineSettings.duration) {
+            stopAutomationRecording(reason:!result.isPlaying ? "Playback paused or ended" : result.discontinuity ? "Playback discontinuity / loop wrap" : "Recording reached graph end",at:hostTime)
+        }
         if result.discontinuity {
             if !result.isPlaying { media.pause() }
             media.seek(to:result.time)

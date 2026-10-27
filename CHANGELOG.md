@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-alpha.8 - recorded inspector automation, 2026-10-27
+
+- Add session-only per-track Arm and Record input for six existing scalar tracks. Continuous inspector gestures replace touched key spans with ordinary linear keys, retain outside key metadata, preview through shared rendering/light composition, and commit one Undo per gesture.
+- Stop recording on transport discontinuities, Scene GO and document edits; late native tracking tokens cannot modify a changed document. Accepted keys participate in recovery before history commit. No-input gestures remain clean no-ops.
+- Preserve show/media clocks through pure track edits and Undo/Redo; remove spurious media seeks on unchanged show configuration. Run the timer in common modes while sliders track.
+- Keep schema 6, compatible with alpha 7 readers; include an original recording-practice project. Local checks passed: 82 standalone core methods, 46 GPU/media, 46 editor and 11 lighting/UDP. Native recording drag, per-gesture Undo/Redo, save/relaunch/reopen and restored curve/seek passed. Fresh ZIP extraction/signature and all 46 editor checks from the archive passed. Exact-source CI remains the publication gate.
+
 ## 0.1.0-alpha.7 — selective surface cues, 2026-10-27
 
 - Add UUID-bound selective surface cues with 13 atomic field masks, numeric/discrete transitions, missing-target diagnostics and current layer/order preservation. Recall retains running show/media clocks and active parameter automation.

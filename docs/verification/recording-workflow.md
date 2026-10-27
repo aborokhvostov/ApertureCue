@@ -1,0 +1,17 @@
+# Recorded inspector automation GUI verification
+
+27 October 2026, Apple M2 / arm64 / macOS 26.6.2. Agent-driven native GUI via CUA in a separate ad hoc signed production copy `org.aperturecue.recording-check`; only bundle identity/display name changed. Opened a new system-temporary copy of the original Recording practice demo and its generated PNG/H.264 files. No existing user project, reference application installation or physical device was edited.
+
+1. Open the practice project. It has two original mapped media surfaces and three ordinary scalar tracks: movie opacity, grid brightness and movie red. Select the movie surface and open Timeline. Arm selected marks the opacity row ARM without editing the project; Record input is unavailable until Play. Start Play and Record input: the status becomes RECORDING with1 armed track.
+2. Close the Timeline window and leave the main inspector visible. Opacity shows `[REC]`, the original H.264 keeps displaying, and the show clock advances. An earlier controlled slider input records three keys around61.244...61.270 seconds: initial1, input0.4 and held0.4.
+3. A native mouse drag on the opacity slider records a separate three-key span at109.897985...109.909493 seconds: evaluated start0.8967948, input0.6289593 and the same release value. Input timestamps advance from start through release. Recorded data contains input spans, rather than a key on every idle timer tick. The show reaches its finite120-second end and recording stops.
+4. Save. Independent inspection of the own JSON finds schema6 and8 opacity keys, including the untouched endpoints0/120. The other two tracks retain2 keys each, and the movie surface's base opacity remains1. All inserted keys are linear.
+5. Undo once and Save: the opacity track has5 keys, removing the whole final three-key drag while retaining the earlier input and outside endpoints. Redo once and Save restores8 keys. This uses the actual app menu/history commands, not a separately constructed core history.
+
+6. Quit normally, relaunch the same production copy and Open the saved file. The main title is clean and playhead0; Timeline shows Recording idle and0 armed, so arming/session state did not persist. Fit displays0...120 and the restored recorded curve. Typed Seek110 moves the playhead into the final recorded span while staying paused. The graph shows the two recorded drops and linear adjacent segments; no keys were edited by Fit/Seek. Quit normally.
+
+Native GUI result: PASS for this workflow. Automatic, archive and remote CI evidence are recorded separately.
+
+The production editor checks cover all six scalar callbacks, active Metal pixels and GPU light sampling, inclusive range replacement/outside metadata, no-movement no-op, all interruption/token cases, recovery during an active gesture, key-budget mouse-up failure and H.264 seek-generation continuity through recording/Undo/Redo. These are automatic checks, not additional manual observations.
+
+Initial CUA launch was delayed by tool/host availability; that interval is not a measured soak. The native drag is a functional input test, not a sampling-rate/latency, optical FPS or decoder-frame-lock benchmark. No external projector/display, camera, MIDI or light hardware was tested. Recording remains limited to existing enabled/current-surface scalar tracks and inspector input; no montage/audio/MIDI/OSC/automatic provider recording is claimed.

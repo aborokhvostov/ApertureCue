@@ -83,3 +83,15 @@ Same signing/runtime/hardware limitations as earlier releases: ad hoc arm64, not
 Ad hoc arm64 signing only; not notarized/universal. macOS 13 target, runtime observed on macOS 26.6.2. No new throughput/frame-lock/long-show or physical hardware claim. Full snapshots remain surface-only; group definitions are shared, timeline can override recalled base parameters, and source-excluding cues keep current clocks. Recorded automation/montage/external clocks remain open. Alpha 1...6 reject schema 6; keep an older copy when downgrading.
 
 [Alpha 7 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.7) is a prerelease. ZIP and SHA256SUMS were confirmed `uploaded`; GitHub ZIP size/SHA-256 match the local values above. The release tag resolves to the exact source above. Previous releases remain available.
+
+## Alpha 8 candidate
+
+27 October 2026, Apple M2 / arm64 / macOS 26.6.2. Recorded inspector automation on armed scalar tracks, ordinary schema-6 keys. Exact-source CI is still a publication gate; no alpha8 publication is asserted yet.
+
+- Archive `ApertureCue-macOS-arm64.zip`, 1,177,703 bytes; SHA-256 `e13c43c0c4bc76152e0a15b052198e1531479a6b81ef60c7de13a94715d8f901`.
+- Includes original `Demo/Recording.aperturecue.json`: PNG/H.264 surfaces, three existing scalar tracks and120-second recording-practice horizon, previous original demos, license and notices.
+- Fresh extraction passed ZIP CRC/entry validation and `codesign --verify --deep --strict`.
+- Executable directly from the extracted archive passed **46 production editor checks**, including live native input callbacks, Metal/light preview, one-gesture history, recovery before commit, release budget failure, interruption/token handling and actual H.264 seek-generation preservation through record/Undo/Redo and no-op refresh.
+- Final optimized production binary passed **46 GPU/media** and **11 lighting/UDP** checks. Portable core passed **82 standalone methods**, zero failed assertions; remote XCTest remains independent. [Native recording GUI workflow](recording-workflow.md) passed.
+
+Ad hoc arm64 only, not notarized/universal; macOS13 target, runtime observed on macOS26.6.2. No new throughput, long-show, optical FPS, decoder frame-lock or hardware conformance claim. Recording affects existing enabled/current-surface scalar tracks from inspector input; no timer, automatic provider, audio/MIDI/OSC or montage capture. Outside keys persist, but adjacent evaluated segments may change. Keys remain schema6 and readable by alpha7; arming is session-only.

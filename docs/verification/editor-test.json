@@ -1,5 +1,5 @@
 {
-  "checkCount" : 36,
+  "checkCount" : 46,
   "checks" : [
     "hidden editor startup with valid demo project",
     "add, duplicate, delete and controller undo\/redo",
@@ -36,7 +36,17 @@
     "selective GO preserves hidden targets, current order, later layers, running clocks and active timeline overrides",
     "missing-only selective recall skips targets without resurrection, history entry or dirty state",
     "full-cue deletion retains other owners then atomically prunes orphan tracks and markers with undo\/redo",
-    "source-excluding selective recall preserves a running generated H.264 decoder and show clock"
+    "source-excluding selective recall preserves a running generated H.264 decoder and show clock",
+    "hidden recording Arm\/Record\/Stop\/Disarm callbacks are session-only and reject disabled\/dormant targets",
+    "six production inspector slider callbacks record ordinary scalar keys without editing base surfaces and undo once per gesture",
+    "active recording override reaches actual Metal pixels and GPU light sampling without base-field changes",
+    "multi-sample recording replaces inclusive touched keys, retains outside metadata and commits one Undo\/Redo",
+    "no-movement recording gestures and timer-only playback remain clean history-free no-ops",
+    "recording release key-budget failure stops atomically and retains accepted keys with one Undo",
+    "pause\/seek\/stop\/loop\/GO\/document edits finalize recording and absorb late native gesture tokens",
+    "active recording recovery and ordinary schema-6 Save\/New\/Open retain keys while session arming resets",
+    "no-op show configuration between ticks preserves the running H.264 seek generation",
+    "recorded gestures and Undo\/Redo keep generated H.264\/show clocks and production preview continuous"
   ],
   "documentAssetCount" : 1,
   "documentSurfaceCount" : 2,
@@ -51,6 +61,6 @@
   "platform" : "Version 26.6.2 (Build 25G83)",
   "schemaVersion" : 1,
   "scope" : "Production EditorController and hidden output renderer integration; no external application, visible output, or hardware interaction.",
-  "timestampUTC" : "2026-10-27T13:07:17Z",
+  "timestampUTC" : "2026-10-27T18:34:55Z",
   "windowsShown" : false
 }

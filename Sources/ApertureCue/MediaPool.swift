@@ -136,6 +136,8 @@ final class MediaPool {
         let value = entries[id]?.player?.currentTime().seconds ?? 0
         return value.isFinite ? max(0, value) : 0
     }
+    /// Internal integration evidence for clock continuity across document edits.
+    func seekGeneration(for id:UUID)->UInt64? {entries[id]?.seekGeneration}
     func duration(for id: UUID) -> Double {
         let value = entries[id]?.player?.currentItem?.duration.seconds ?? 0
         return value.isFinite ? value : 0

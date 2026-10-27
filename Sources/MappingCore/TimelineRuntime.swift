@@ -128,6 +128,7 @@ public final class ShowRuntime {
         let ids=Set(surfaces.map(\.id))
         // A frame refresh must not move the host anchor or lose elapsed time.
         if newSettings==settings,tracks==sourceTracks,ids==sourceIDs { return }
+        let tracksOnly=newSettings==settings && ids==sourceIDs
         let nextProgram=try TimelineProgram(tracks:tracks,surfaces:surfaces)
         // Validate completely before consuming any clock or queued events.
         let previous=tick(at:hostTime)
@@ -137,7 +138,7 @@ public final class ShowRuntime {
         markers=newSettings.markers.sorted {$0.time<$1.time};pauses=markers.filter {$0.action == .pause}
         time=newTime
         isPlaying=previous.isPlaying && (newSettings.loopEnabled || newTime<endBoundary(newSettings))
-        anchorHost=max(anchorHost,hostTime);pendingDiscontinuity=true
+        anchorHost=max(anchorHost,hostTime);pendingDiscontinuity=previous.discontinuity || !tracksOnly
         queuedEvents=oldEvents;queuedSkipped=previous.eventsSkipped
     }
     public func currentTime(at hostTime:Double=ProcessInfo.processInfo.systemUptime) -> Double { projected(at:hostTime).time }

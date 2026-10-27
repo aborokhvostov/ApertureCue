@@ -75,4 +75,12 @@ runCase("SelectiveCue.capture rejection", SelectiveCueTests.self) { try $0.testC
 runCase("SelectiveCue.schema migration strictness", SelectiveCueTests.self) { try $0.testLegacySchemasIgnoreExtensionsAndSchemaSixIsStrict() }
 runCase("SelectiveCue.persistence resource references", SelectiveCueTests.self) { try $0.testPersistenceHistoryCollectionAndDormantResourceReferenceValidation() }
 runCase("SelectiveCue.group dissolve masks", SelectiveCueTests.self) { try $0.testGroupDissolveIgnoresUnselectedFramesAndGuardsPartialAppearance() }
+runCase("Recording.inclusive span metadata", AutomationRecordingTests.self) { try $0.testInclusiveSpanReplacementPreservesOutsideKeysAndTrackIdentity() }
+runCase("Recording.duplicates atomic no-op", AutomationRecordingTests.self) { try $0.testSameTimestampReplacementNoOpAndRejectedSamplesAreAtomic() }
+runCase("Recording.parameter ranges validation", AutomationRecordingTests.self) { try $0.testParameterRangesInitialValidationAndDisabledTracks() }
+runCase("Recording.session merged bounds", AutomationRecordingTests.self) { try $0.testSessionAndMergedTrackBoundsAllowReplacementAtCapacity() }
+runCase("Recording.finish persistence history", AutomationRecordingTests.self) { try $0.testFinishOrdinaryKeysSaveAndSingleHistoryCommit() }
+runCase("Recording.track edit clock continuity", AutomationRecordingTests.self) { try $0.testTracksOnlyConfigurePreservesNaturalClockWithoutDiscontinuity() }
+runCase("Recording.pause loop exactly once", AutomationRecordingTests.self) { try $0.testTrackEditsRetainPauseLoopCrossingsAndExactlyOnceEvents() }
+runCase("Recording.aggregate atomic configure", AutomationRecordingTests.self) { try $0.testProjectAggregateBudgetAndRejectedConfigureRemainAtomic() }
 exit(finishTests())

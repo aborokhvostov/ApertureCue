@@ -37,6 +37,11 @@ import MappingCore
     private let trackToggle=ActionButton("Disable track",action:{})
     private let deleteKeyButton=ActionButton("Delete key",action:{})
     private let saveKeyButton=ActionButton("Save key",action:{})
+    let armTrackButton=ActionButton("Arm selected",action:{})
+    let disarmAllButton=ActionButton("Disarm all",action:{})
+    let recordInputButton=ActionButton("Record input",action:{})
+    let recordingStatus=label("Recording idle",size:11)
+    private var displayedArmedTracks:Set<UUID>=[]
 
     init(editor:EditorController) {
         self.editor=editor
@@ -59,6 +64,15 @@ import MappingCore
         guard let content=window?.contentView else { return }
         let transport=stack([playButton,ActionButton("Stop") {[weak self] in self?.editor?.stopShow()},positionLabel,label("Seek s"),timeField,ActionButton("Seek") {[weak self] in self?.seekTyped()},ActionButton("Undo") {[weak self] in self?.editor?.undoEdit()},ActionButton("Redo") {[weak self] in self?.editor?.redoEdit()}],vertical:false)
         fixedWidth([timeField],90)
+        recordingStatus.lineBreakMode = .byTruncatingTail
+        recordingStatus.setContentCompressionResistancePriority(.defaultLow,for:.horizontal)
+        recordingStatus.setContentHuggingPriority(.defaultLow,for:.horizontal)
+        let recordingRow=stack([armTrackButton,disarmAllButton,recordInputButton,recordingStatus],vertical:false)
+        let recordingHelp=label("Arm enabled tracks on current surfaces, Play, then Record input. Inspector opacity/brightness/gamma/RGB gestures write linear keys (one Undo per gesture); touched spans replace keys, outside keys remain, boundary curves may change. No timer/OSC/MIDI capture. Pause, seek, Stop, loop wrap, GO and document edits stop recording.",size:11)
+        recordingHelp.maximumNumberOfLines=0;recordingHelp.lineBreakMode = .byWordWrapping
+        recordingHelp.setContentCompressionResistancePriority(.defaultLow,for:.horizontal)
+        recordingHelp.setContentHuggingPriority(.defaultLow,for:.horizontal)
+        recordingRow.setContentHuggingPriority(.defaultLow,for:.horizontal)
         let durationRow=stack([label("Duration / graph end s"),durationField,stopAtDurationButton,ActionButton("Apply duration / loop") {[weak self] in self?.saveSettings()}],vertical:false)
         let loopRow=stack([loopButton,label("Start s"),loopStartField,label("End s"),loopEndField],vertical:false)
         let settings=stack([durationRow,loopRow],spacing:6)
@@ -93,10 +107,10 @@ import MappingCore
         canvas.setContentHuggingPriority(.defaultLow,for:.vertical)
         let help=label("Double-click: add key · drag diamond/handle: edit · ruler: seek · edits commit on mouse release",size:11)
         let markerHelp=label("Markers require time > 0 and fire only on forward crossing. Seek and loop-start wrap do not fire them.",size:11)
-        let root=stack([transport,settings,work,help,markerHelp],spacing:12)
+        let root=stack([transport,recordingRow,settings,work,help,markerHelp,recordingHelp],spacing:10)
         root.edgeInsets=NSEdgeInsets(top:14,left:14,bottom:14,right:14)
         fill(root,in:content)
-        for v in [transport,settings,work,help,markerHelp] {v.widthAnchor.constraint(equalTo:root.widthAnchor,constant:-28).isActive=true}
+        for v in [transport,recordingRow,settings,work,help,markerHelp,recordingHelp] {v.widthAnchor.constraint(equalTo:root.widthAnchor,constant:-28).isActive=true}
         work.setContentHuggingPriority(.defaultLow,for:.vertical)
     }
     private func bind() {
@@ -104,6 +118,21 @@ import MappingCore
         trackToggle.actionBlock={[weak self] in self?.toggleTrack()}
         saveKeyButton.actionBlock={[weak self] in self?.saveTypedKey()}
         deleteKeyButton.actionBlock={[weak self] in self?.deleteKey()}
+        armTrackButton.actionBlock={[weak self] in
+            guard let self,let editor=self.editor,let id=self.selectedTrackID else {return}
+            self.perform {try editor.setRecordingArmed(trackID:id,armed:!editor.armedRecordingTracks.contains(id))}
+        }
+        disarmAllButton.actionBlock={[weak self] in
+            guard let self,let editor=self.editor else {return}
+            self.perform {for id in editor.armedRecordingTracks {try editor.setRecordingArmed(trackID:id,armed:false)}}
+        }
+        recordInputButton.actionBlock={[weak self] in
+            guard let self,let editor=self.editor else {return}
+            self.perform {
+                if editor.isRecordingAutomation {editor.stopAutomationRecording(reason:"Stopped")}
+                else {try editor.startAutomationRecording()}
+            }
+        }
         timeField.actionBlock={[weak self] _ in self?.seekTyped()}
         interpolationPicker.actionBlock={[weak self] _ in self?.updateCurveControls()}
         markerAction.actionBlock={[weak self] _ in self?.markerCue.isEnabled=self?.markerAction.indexOfSelectedItem == 1 && !(self?.cueIDs.isEmpty ?? true)}
@@ -171,6 +200,30 @@ import MappingCore
         playButton.title=editor.showRuntime.isPlaying ? "Pause" : "Play"
         // Do not replace text under the user's insertion point on every tick.
         if window?.firstResponder !== timeField.currentEditor() {timeField.stringValue=String(format:"%.3f",editor.showRuntime.time)}
+        refreshRecordingControls()
+    }
+    /// Session arming and recording state are separate from the saved timeline.
+    func refreshRecordingControls() {
+        guard let editor else {return}
+        let armed=selectedTrackID.map {editor.armedRecordingTracks.contains($0)} ?? false
+        let eligible=selectedTrack.map {track in track.enabled && editor.project.surfaces.contains {$0.id==track.surfaceID}} ?? false
+        armTrackButton.title=armed ? "Disarm selected" : "Arm selected"
+        armTrackButton.isEnabled=armed || eligible
+        disarmAllButton.isEnabled = !editor.armedRecordingTracks.isEmpty
+        recordInputButton.title=editor.isRecordingAutomation ? "Stop recording" : "Record input"
+        recordInputButton.isEnabled=editor.isRecordingAutomation || (editor.showRuntime.isPlaying && !editor.armedRecordingTracks.isEmpty)
+        let state=editor.isRecordingAutomation ? "RECORDING inspector input" : "Recording idle"
+        let message=editor.recordingMessage.isEmpty ? (editor.showRuntime.isPlaying ? "" : "Play to record") : editor.recordingMessage
+        recordingStatus.stringValue="\(state) · \(editor.armedRecordingTracks.count) armed\(message.isEmpty ? "" : " · "+message)"
+        recordingStatus.toolTip=recordingStatus.stringValue+". Arming is session-only. Pause, seek, Stop, loop wrap, GO or document edits stop recording."
+        recordingStatus.textColor=editor.isRecordingAutomation ? .systemRed : .secondaryLabelColor
+        if displayedArmedTracks != editor.armedRecordingTracks {
+            displayedArmedTracks=editor.armedRecordingTracks
+            let wasRefreshing=refreshing;refreshing=true
+            trackTable.reloadData()
+            if let i=editor.project.timeline.firstIndex(where:{$0.id==selectedTrackID}) {trackTable.selectRowIndexes(IndexSet(integer:i),byExtendingSelection:false)}
+            refreshing=wasRefreshing
+        }
     }
     private func loadKeyFields() {
         guard let track=selectedTrack,let i=selectedKeyIndex,track.keyframes.indices.contains(i) else {
@@ -244,7 +297,7 @@ import MappingCore
         if tableView === trackTable {
             guard editor.project.timeline.indices.contains(row) else {return nil}
             let track=editor.project.timeline[row]
-            return label((track.enabled ? "● " : "○ ")+String(track.name.prefix(100)),size:11)
+            return label((editor.armedRecordingTracks.contains(track.id) ? "ARM · " : "")+(track.enabled ? "● " : "○ ")+String(track.name.prefix(100)),size:11)
         }
         guard editor.project.timelineSettings.markers.indices.contains(row) else {return nil}
         let marker=editor.project.timelineSettings.markers[row]
@@ -257,6 +310,7 @@ import MappingCore
             selectedTrackID=editor.project.timeline.indices.contains(row) ? editor.project.timeline[row].id : nil
             selectedKeyIndex=nil;canvas.track=selectedTrack;canvas.selectedKeyIndex=nil;canvas.valueRange=chartRange(selectedTrack);loadKeyFields()
             trackToggle.title=selectedTrack?.enabled == true ? "Disable track" : "Enable track";trackToggle.isEnabled=selectedTrack != nil
+            refreshRecordingControls()
         } else {
             let row=markerTable.selectedRow
             selectedMarkerID=editor.project.timelineSettings.markers.indices.contains(row) ? editor.project.timelineSettings.markers[row].id : nil

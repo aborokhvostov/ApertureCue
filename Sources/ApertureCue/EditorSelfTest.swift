@@ -543,6 +543,8 @@ enum EditorSelfTest {
             passed("legacy projects retain continuing master playback and seek beyond the default graph horizon")
 
             for name in try SelectiveCueEditorTest.run(editor:e,directory:directory) { passed(name) }
+            for name in try RecordingEditorSelfTest.run(editor:e,directory:directory) { passed(name) }
+            for name in try RecordingMediaSelfTest.run(editor:e,directory:directory) { passed(name) }
 
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count
