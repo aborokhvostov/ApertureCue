@@ -84,14 +84,21 @@ Ad hoc arm64 signing only; not notarized/universal. macOS 13 target, runtime obs
 
 [Alpha 7 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.7) is a prerelease. ZIP and SHA256SUMS were confirmed `uploaded`; GitHub ZIP size/SHA-256 match the local values above. The release tag resolves to the exact source above. Previous releases remain available.
 
-## Alpha 8 candidate
+## Alpha 8
 
-27 October 2026, Apple M2 / arm64 / macOS 26.6.2. Recorded inspector automation on armed scalar tracks, ordinary schema-6 keys. Exact-source CI is still a publication gate; no alpha8 publication is asserted yet.
+27 October 2026, Apple M2 / arm64 / macOS 26.6.2. Recorded inspector automation on armed scalar tracks, ordinary schema-6 keys. The `v0.1.0-alpha.8` tag identifies `c0ef2825c65d864603d5a37583c3a2753834cf73`. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/40563089950) passed 82 XCTest on macOS and 82 on Linux, zero failures, plus macOS SwiftPM release/native bundle/signature/archive/artifact.
 
 - Archive `ApertureCue-macOS-arm64.zip`, 1,177,703 bytes; SHA-256 `e13c43c0c4bc76152e0a15b052198e1531479a6b81ef60c7de13a94715d8f901`.
 - Includes original `Demo/Recording.aperturecue.json`: PNG/H.264 surfaces, three existing scalar tracks and120-second recording-practice horizon, previous original demos, license and notices.
 - Fresh extraction passed ZIP CRC/entry validation and `codesign --verify --deep --strict`.
 - Executable directly from the extracted archive passed **46 production editor checks**, including live native input callbacks, Metal/light preview, one-gesture history, recovery before commit, release budget failure, interruption/token handling and actual H.264 seek-generation preservation through record/Undo/Redo and no-op refresh.
-- Final optimized production binary passed **46 GPU/media** and **11 lighting/UDP** checks. Portable core passed **82 standalone methods**, zero failed assertions; remote XCTest remains independent. [Native recording GUI workflow](recording-workflow.md) passed.
+- Final optimized production binary passed **46 GPU/media** and **11 lighting/UDP** checks. Portable core passed **82 standalone methods**, zero failed assertions; remote XCTest passed independently as linked above. [Native recording GUI workflow](recording-workflow.md) passed.
+- Recording workloads: the native practice uses2 media surfaces,3 tracks and0 output windows; original H.264 is640x360/30fps/3s looped, PNG960x540. The GUI show clock traversed120s; this is a functional workflow, not a long-run stability measure. Active automatic recording pixel checks use1 solid surface and32x18 snapshots, plus production320x180 light sampling. Core/editor fake-host intervals are deterministic rather than wall-time playback. Full-suite wall time, new throughput/drift/latency and external-display behavior were not instrumented.
 
-Ad hoc arm64 only, not notarized/universal; macOS13 target, runtime observed on macOS26.6.2. No new throughput, long-show, optical FPS, decoder frame-lock or hardware conformance claim. Recording affects existing enabled/current-surface scalar tracks from inspector input; no timer, automatic provider, audio/MIDI/OSC or montage capture. Outside keys persist, but adjacent evaluated segments may change. Keys remain schema6 and readable by alpha7; arming is session-only.
+Ad hoc arm64 only, not notarized/universal; macOS 13 target, runtime observed on macOS 26.6.2. No new throughput, long-show, optical FPS, decoder frame-lock or hardware conformance claim. Recording affects existing enabled/current-surface scalar tracks from inspector input; no timer, automatic provider, audio/MIDI/OSC or montage capture. Outside keys persist, but adjacent evaluated segments may change. Keys remain schema 6 and readable by alpha 7; arming is session-only.
+
+CI maintenance for alpha8: the queued macOS 14 run was superseded after verifying the official [runner retirement notice](https://github.com/actions/runner-images/issues/13518). The workflow now pins macOS 15; production source, tests, build scripts and generated demo are unchanged from the locally verified recording commit. This does not claim runtime testing on macOS 13/14 hardware.
+
+[Alpha 8 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.8) is a prerelease. ZIP and SHA256SUMS were confirmed `uploaded`; both server digests match local files. ZIP size matches the value above, and the tag resolves to the exact source above. Previous releases remain available.
+
+Alpha 8 core-suite timing from actual CI logs: Linux 4.712 s and macOS 15 6.180 s reported wall time, 82 tests/zero failures each. These are test-suite durations, not presentation/decode throughput or desktop soak measurements.
