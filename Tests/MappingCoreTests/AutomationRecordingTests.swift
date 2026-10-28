@@ -114,7 +114,7 @@ final class AutomationRecordingTests:XCTestCase {
         defer { try? FileManager.default.removeItem(at:url) }
         try ProjectStore.save(after,to:url)
         let loaded=try ProjectStore.load(from:url)
-        XCTAssertEqual(loaded.version,6);XCTAssertEqual(loaded.timeline,[result])
+        XCTAssertEqual(loaded.version,Project.currentVersion);XCTAssertEqual(loaded.timeline,[result])
     }
 
     func testTracksOnlyConfigurePreservesNaturalClockWithoutDiscontinuity() throws {

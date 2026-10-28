@@ -83,4 +83,13 @@ runCase("Recording.finish persistence history", AutomationRecordingTests.self) {
 runCase("Recording.track edit clock continuity", AutomationRecordingTests.self) { try $0.testTracksOnlyConfigurePreservesNaturalClockWithoutDiscontinuity() }
 runCase("Recording.pause loop exactly once", AutomationRecordingTests.self) { try $0.testTrackEditsRetainPauseLoopCrossingsAndExactlyOnceEvents() }
 runCase("Recording.aggregate atomic configure", AutomationRecordingTests.self) { try $0.testProjectAggregateBudgetAndRejectedConfigureRemainAtomic() }
+runCase("Montage.half-open sorted gaps", MontageTests.self) { try $0.testHalfOpenIntervalsSortedClipsImageAndExplicitGaps() }
+runCase("Montage.rate loop stateless", MontageTests.self) { try $0.testRateSegmentLoopMontageLoopAndRandomAccessAreStateless() }
+runCase("Montage.trim overlap validation", MontageTests.self) { try $0.testVideoTrimRateBoundsCanonicalImagesAndOverlapRejectAtomically() }
+runCase("Montage.identity resource bounds", MontageTests.self) { try $0.testGlobalIdentityAndResourceBudgetsRejectDuplicateOrNestedSources() }
+runCase("Montage.extreme time rejection", MontageTests.self) { try $0.testInvalidSampleTimesAndExtremeRepeatRatiosCannotTrap() }
+runCase("Montage.schema seven migration", MontageTests.self) { try $0.testLegacyVersionsIgnoreMalformedMontageExtensionsAndSchemaSevenIsStrict() }
+runCase("Montage.current cue references", MontageTests.self) { try $0.testMontageReferencesAcrossCurrentFullAndSelectiveCueSnapshots() }
+runCase("Montage.persistence collect history", MontageTests.self) { try $0.testPersistenceRecoveryCollectAndHistoryRetainOnlyRealAssetFiles() }
+runCase("Montage.shared asset isolation", MontageTests.self) { try $0.testSharedAssetMultipleMontagesHaveIndependentSourcePositions() }
 exit(finishTests())

@@ -332,7 +332,7 @@ import MappingCore
         case .blendMode: return surface.blendMode
         case .visibility: return surface.enabled ? "Visible" : "Hidden"
         case .source:
-            if let id = surface.mediaID { return editor?.project.assets.first(where: { $0.id == id })?.name ?? "Media \(id.uuidString.prefix(8))" }
+            if let id = surface.mediaID { return editor?.sourceName(for:id) ?? "Media \(id.uuidString.prefix(8))" }
             return "Generator: \(surface.generator)"
         case .input: return points(surface.input)
         case .outputGeometry:

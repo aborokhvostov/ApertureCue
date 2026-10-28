@@ -15,6 +15,9 @@ if CommandLine.arguments.contains("--benchmark") {
 if CommandLine.arguments.contains("--lighting-test") {
     exit(LightingSelfTest.run())
 }
+if CommandLine.arguments.contains("--montage-test") {
+    exit(MontageSelfTest.run())
+}
 if CommandLine.arguments.contains("--editor-test") {
     exit(EditorSelfTest.run())
 }

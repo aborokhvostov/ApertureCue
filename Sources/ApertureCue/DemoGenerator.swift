@@ -23,6 +23,32 @@ enum DemoGenerator {
         p.assets = [a,v]; p.surfaces[0].mediaID = a.id; p.surfaces[1].mediaID = v.id
         for i in p.cues.indices { for j in p.cues[i].surfaces.indices { p.cues[i].surfaces[j].mediaID = j == 0 ? a.id : v.id } }
         try ProjectStore.save(p,to:directory.appendingPathComponent("Demo.aperturecue.json"))
+        // Both assignable sources share the original file UUIDs. Their video
+        // trims stay inside the generated three-second movie, with room before EOF.
+        let black = MediaMontage(name:"Black gaps · image and video",duration:10,loop:true,gapMode:.black,clips:[
+            MontageClip(assetID:a.id,start:0,duration:2),
+            MontageClip(assetID:v.id,start:3,duration:3,sourceIn:0.25,sourceOut:2.75,rate:0.5),
+            MontageClip(assetID:v.id,start:7,duration:2.5,sourceIn:0,sourceOut:2.5)
+        ])
+        let skip = MediaMontage(name:"Skip gaps · trimmed video loop",duration:10,loop:true,gapMode:.skip,clips:[
+            MontageClip(assetID:v.id,start:0,duration:2,sourceIn:1,sourceOut:2,rate:2,loop:true),
+            MontageClip(assetID:a.id,start:3,duration:2),
+            MontageClip(assetID:v.id,start:6,duration:3,sourceIn:0,sourceOut:1.5,rate:0.5)
+        ])
+        var montageProject = p
+        montageProject.name = "ApertureCue Montage Demo"
+        montageProject.montages = [black,skip]
+        montageProject.timelineSettings = TimelineSettings(duration:10,loopEnabled:true,loopStart:0,loopEnd:10)
+        montageProject.surfaces[0].name = "Black gaps · Montage"
+        montageProject.surfaces[1].name = "Skip gaps · Montage"
+        for index in montageProject.surfaces.indices { montageProject.surfaces[index].mediaID = index == 0 ? black.id : skip.id }
+        for cue in montageProject.cues.indices {
+            for surface in montageProject.cues[cue].surfaces.indices {
+                montageProject.cues[cue].surfaces[surface].name = montageProject.surfaces[surface].name
+                montageProject.cues[cue].surfaces[surface].mediaID = surface == 0 ? black.id : skip.id
+            }
+        }
+        try ProjectStore.save(montageProject,to:directory.appendingPathComponent("Montage.aperturecue.json"))
     }
     private static func makeMovie(at url:URL) throws {
         let temporary = url.deletingLastPathComponent().appendingPathComponent(".encoding-\(UUID().uuidString).mov")

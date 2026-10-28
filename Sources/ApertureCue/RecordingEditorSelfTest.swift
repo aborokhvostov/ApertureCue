@@ -206,14 +206,14 @@ import MappingCore
         e.saveTo(savedURL); let saved = e.project
         let json = try required(try JSONSerialization.jsonObject(with: Data(contentsOf: savedURL)) as? [String: Any], "Saved recording JSON object missing")
         let reloaded = try ProjectStore.load(from: savedURL)
-        try expect(saved.version == 6 && Project.currentVersion == 6 && !e.dirty && !e.isRecordingAutomation && json["recording"] == nil && json["armedRecordingTracks"] == nil && reloaded == saved, "Recorded ordinary keys changed schema or persisted ephemeral recording/arm state")
+        try expect(saved.version == Project.currentVersion && !e.dirty && !e.isRecordingAutomation && json["recording"] == nil && json["armedRecordingTracks"] == nil && reloaded == saved, "Recorded ordinary keys changed schema or persisted ephemeral recording/arm state")
         e.stopShow(at: saveAnchor + 20)
         try start(at: saveAnchor + 20)
         _ = e.beginAutomationGesture(surfaceID: surface.id, parameter: "opacity", at: saveAnchor + 20)
         e.newProject()
         try expect(e.project.name == "Untitled" && e.armedRecordingTracks.isEmpty && !e.isRecordingAutomation && e.recording.gesture == nil && e.showRuntime.time == 0 && !e.dirty, "Clean active no-movement New retained recording/session state")
         e.openProject(savedURL)
-        try expect(e.project == saved && e.project.version == 6 && e.armedRecordingTracks.isEmpty && !e.isRecordingAutomation && e.showRuntime.time == 0 && !e.history.canUndo, "Save/New/Open did not retain ordinary recording keys and clear session arm/runtime state")
+        try expect(e.project == saved && e.project.version == Project.currentVersion && e.armedRecordingTracks.isEmpty && !e.isRecordingAutomation && e.showRuntime.time == 0 && !e.history.canUndo, "Save/New/Open did not retain ordinary recording keys and clear session arm/runtime state")
         passed("active recording recovery and ordinary schema-6 Save/New/Open retain keys while session arming resets")
         return checks
     }

@@ -1,0 +1,330 @@
+{
+  "checks" : [
+    "original generated H.264 temporal, one-fps and rotation-metadata fixtures encoded",
+    "explicit ordinary source activation keeps an unassigned same-file player muted and paused after asynchronous readiness\/seek",
+    "two independent montage positions of one H.264 file coexist with an ordinary playing source",
+    "paused montage frames carry true PTS intervals covering the requested source time",
+    "montage decode preserves ordinary player seek generation, playback continuity and activation",
+    "virtual frame resources retain both pixel buffers and Metal wrappers across repeated consumers",
+    "editor, routed output and asynchronous lighting readback consume the same accepted frame",
+    "Black gap is opaque without procedural fallback",
+    "Skip gap excludes the surface and exposes lower composition",
+    "missing video reports a diagnostic and follows Black\/Skip composition policy",
+    "hard cut immediately rejects preceding clip frame and then displays the new clip at its In",
+    "rate0.5 and rate2 source-time mapping reaches independently decoded correct frames",
+    "trim loop and whole montage loop reset decoder identity and preserve source position",
+    "PTS zero, large\/backward and repeated identical paused seeks display correct temporal colors",
+    "60 coalesced rapid seeks settle on final generation without a stale result",
+    "successive playing updates advance decoded PTS with one stable clip generation",
+    "playing trim and montage wraps advance cycle generation once and resume stable forward decoding",
+    "rate2 playing lag permits110ms show time, rejects130ms, and paused targets always require exact coverage",
+    "reset releases owners and rejects old in-flight document results",
+    "one-fps non-frame-aligned paused target selects covering preceding frame",
+    "generated initial empty edit stays black and preserves later source PTS without rebasing",
+    "variable sample intervals preserve coverage and temporal colors without assuming nominal FPS",
+    "runtime rejects Source Out beyond actual video-track extent with diagnostic and explicit gap",
+    "90-degree preferredTransform rotates all four encoded video quadrants in production shader",
+    "ordinary AVPlayer and independent montage paths display identical upright rotation quadrants",
+    "explicit same-path asset invalidation decodes replacement bytes without ordinary-player seeks",
+    "eight fixed decoder slots admit deterministic sources, diagnose the ninth and release inactive owners"
+  ],
+  "decoderBoundObservations" : [
+    {
+      "diagnostic" : "",
+      "finalGeneration" : 104,
+      "hasFrame" : true,
+      "initialGeneration" : 104,
+      "name" : "Bounded 0",
+      "pts" : 0.23333333333333334
+    },
+    {
+      "diagnostic" : "",
+      "finalGeneration" : 10,
+      "hasFrame" : true,
+      "initialGeneration" : 10,
+      "name" : "Bounded 1",
+      "pts" : 0.23333333333333334
+    },
+    {
+      "diagnostic" : "",
+      "finalGeneration" : 1,
+      "hasFrame" : true,
+      "initialGeneration" : 1,
+      "name" : "Bounded 2",
+      "pts" : 0.23333333333333334
+    },
+    {
+      "diagnostic" : "",
+      "finalGeneration" : 4,
+      "hasFrame" : true,
+      "initialGeneration" : 4,
+      "name" : "Bounded 3",
+      "pts" : 0.23333333333333334
+    },
+    {
+      "diagnostic" : "Montage video decoder limit (8) reached",
+      "finalGeneration" : 0,
+      "hasFrame" : false,
+      "initialGeneration" : 0,
+      "name" : "Bounded 4",
+      "pts" : -1
+    },
+    {
+      "diagnostic" : "",
+      "finalGeneration" : 1,
+      "hasFrame" : true,
+      "initialGeneration" : 1,
+      "name" : "Bounded 5",
+      "pts" : 0.23333333333333334
+    },
+    {
+      "diagnostic" : "",
+      "finalGeneration" : 3,
+      "hasFrame" : true,
+      "initialGeneration" : 3,
+      "name" : "Bounded 6",
+      "pts" : 0.23333333333333334
+    },
+    {
+      "diagnostic" : "",
+      "finalGeneration" : 1,
+      "hasFrame" : true,
+      "initialGeneration" : 1,
+      "name" : "Bounded 7",
+      "pts" : 0.23333333333333334
+    },
+    {
+      "diagnostic" : "",
+      "finalGeneration" : 1,
+      "hasFrame" : true,
+      "initialGeneration" : 1,
+      "name" : "Bounded 8",
+      "pts" : 0.23333333333333334
+    }
+  ],
+  "fixtureDirectory" : "montage-generated-588037E8-6C57-471D-96BA-6CA04EC13492",
+  "gpu" : "Apple M2",
+  "hardwareVerification" : false,
+  "passedCheckCount" : 27,
+  "pausedFrameObservations" : [
+    {
+      "end" : 0.26666666666666666,
+      "pts" : 0.23333333333333334,
+      "target" : 0.25
+    },
+    {
+      "end" : 2.2666666666666666,
+      "pts" : 2.2333333333333334,
+      "target" : 2.25
+    },
+    {
+      "firstRGBA" : [
+        227,
+        21,
+        21,
+        255
+      ],
+      "secondRGBA" : [
+        20,
+        20,
+        228,
+        255
+      ]
+    },
+    {
+      "end" : 0.83333333333333337,
+      "pts" : 0.80000000000000004,
+      "target" : 0.80000000000000004
+    },
+    {
+      "end" : 2.0333333333333332,
+      "pts" : 2,
+      "target" : 2
+    },
+    {
+      "end" : 1.7666666666666666,
+      "pts" : 1.7333333333333334,
+      "target" : 1.75
+    },
+    {
+      "end" : 1.5333333333333334,
+      "pts" : 1.5,
+      "target" : 1.5
+    },
+    {
+      "end" : 2.7666666666666666,
+      "pts" : 2.7333333333333334,
+      "target" : 2.75
+    },
+    {
+      "end" : 2.3999999999999999,
+      "pts" : 2.3666666666666667,
+      "target" : 2.375
+    },
+    {
+      "end" : 2.2666666666666666,
+      "pts" : 2.2333333333333334,
+      "target" : 2.25
+    },
+    {
+      "end" : 1.2666666666666666,
+      "pts" : 1.2333333333333334,
+      "target" : 1.25
+    },
+    {
+      "end" : 0.033333333333333333,
+      "pts" : 0,
+      "target" : 0
+    },
+    {
+      "end" : 3.5333333333333332,
+      "pts" : 3.5,
+      "target" : 3.5
+    },
+    {
+      "end" : 0.066666666666666666,
+      "pts" : 0.033333333333333333,
+      "target" : 0.050000000000000003
+    },
+    {
+      "end" : 2.2666666666666666,
+      "pts" : 2.2333333333333334,
+      "target" : 2.25
+    },
+    {
+      "end" : 0.066666666666666666,
+      "pts" : 0.033333333333333333,
+      "target" : 0.050000000000000003
+    },
+    {
+      "end" : 0.066666666666666666,
+      "pts" : 0.033333333333333333,
+      "target" : 0.050000000000000003
+    },
+    {
+      "end" : 2.2666666666666666,
+      "pts" : 2.2333333333333334,
+      "target" : 2.25
+    },
+    {
+      "end" : 0.23333333333333334,
+      "pts" : 0.20000000000000001,
+      "target" : 0.20000000000000001
+    },
+    {
+      "end" : 0.36499999999999999,
+      "pts" : 0.33333333333333331,
+      "target" : 0.34999999999999998
+    },
+    {
+      "end" : 0.53333333333333333,
+      "pts" : 0.5,
+      "target" : 0.5
+    },
+    {
+      "end" : 0.66666666666666663,
+      "pts" : 0.6333333333333333,
+      "target" : 0.65000000000000002
+    },
+    {
+      "end" : 0.83333333333333337,
+      "pts" : 0.80000000000000004,
+      "target" : 0.80000000000000004
+    },
+    {
+      "end" : 1.8666666666666667,
+      "pts" : 1.8333333333333333,
+      "target" : 1.8500000000000001
+    },
+    {
+      "end" : 2.8666666666666667,
+      "pts" : 2.8333333333333335,
+      "target" : 2.8500000000000001
+    },
+    {
+      "end" : 1.0666666666666667,
+      "pts" : 1.0333333333333334,
+      "target" : 1.05
+    },
+    {
+      "end" : 2.0666666666666669,
+      "pts" : 2.0333333333333332,
+      "target" : 2.0499999999999998
+    },
+    {
+      "end" : 1.1666666666666667,
+      "pts" : 1.1333333333333333,
+      "target" : 1.1499999999999999
+    },
+    {
+      "end" : 2.1666666666666665,
+      "pts" : 2.1333333333333333,
+      "target" : 2.1499999999999999
+    },
+    {
+      "end" : 0.53333333333333333,
+      "pts" : 0.5,
+      "target" : 0.5
+    },
+    {
+      "end" : 0.76666666666666672,
+      "pts" : 0.73166666666666669,
+      "target" : 0.7533333333333333
+    },
+    {
+      "end" : 1.0333333333333334,
+      "pts" : 1,
+      "target" : 1.0266666666666668
+    },
+    {
+      "end" : 0.26666666666666666,
+      "pts" : 0.23333333333333334,
+      "target" : 0.25
+    },
+    {
+      "end" : 2,
+      "pts" : 1,
+      "target" : 1.5
+    },
+    {
+      "end" : 1,
+      "pts" : 0,
+      "target" : 0.5
+    },
+    {
+      "end" : 1.5,
+      "pts" : 1,
+      "target" : 1.25
+    },
+    {
+      "end" : 2.5,
+      "pts" : 0.5,
+      "target" : 1.5
+    },
+    {
+      "end" : 3.7999999999999998,
+      "pts" : 2.5,
+      "target" : 3.2000000000000002
+    },
+    {
+      "end" : 0.5,
+      "pts" : 0,
+      "target" : 0.25
+    },
+    {
+      "end" : 0.26666666666666666,
+      "pts" : 0.23333333333333334,
+      "target" : 0.25
+    },
+    {
+      "end" : 0.26666666666666666,
+      "pts" : 0.23333333333333334,
+      "target" : 0.25
+    }
+  ],
+  "platform" : "Version 26.6.2 (Build 25G83)",
+  "result" : "passed",
+  "schemaVersion" : 1,
+  "scope" : "Generated local H.264 files, production AVAssetReader\/MediaPool\/MontagePool and offscreen Metal. No external display\/projector, audible audio, hardware throughput or long playback soak is verified.",
+  "timestampUTC" : "2026-10-28T16:53:22Z"
+}

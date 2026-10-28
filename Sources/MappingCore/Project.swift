@@ -130,7 +130,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 6
+    public static let currentVersion = 7
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]
@@ -142,12 +142,16 @@ public struct Project: Codable, Equatable, Sendable {
     public var timeline: [AutomationTrack]
     public var timelineSettings:TimelineSettings
     public var groups: [SurfaceGroup]
+    public var montages:[MediaMontage]
+    public var sourceMediaIDs:Set<UUID> {Set(assets.map(\.id)+(version>=7 ? montages.map(\.id) : []))}
     public init(version: Int = Project.currentVersion, name: String = "Untitled", assets: [MediaAsset] = [],
                 surfaces: [Surface] = [], outputs: [OutputConfig] = [], cues: [Cue] = [],
-                fixtures: [Fixture] = [], timeline: [AutomationTrack] = [], groups: [SurfaceGroup] = [], timelineSettings:TimelineSettings? = nil) {
+                fixtures: [Fixture] = [], timeline: [AutomationTrack] = [], groups: [SurfaceGroup] = [], timelineSettings:TimelineSettings? = nil,
+                montages:[MediaMontage]=[]) {
         self.version=version; self.name=name; self.assets=assets; self.surfaces=surfaces; self.outputs=outputs; self.cues=cues
         self.fixtures=fixtures; self.timeline=timeline; self.groups=groups
         self.timelineSettings=timelineSettings ?? TimelineSettings.inferred(from:timeline)
+        self.montages=montages
     }
     public static func demo() -> Project {
         let output = OutputConfig(name:"Projector 1")
@@ -161,10 +165,11 @@ public struct Project: Codable, Equatable, Sendable {
             Cue(name:"Aligned", surfaces:cueSurfaces, duration:2)
         ])
     }
-    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups,timelineSettings }
+    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups,timelineSettings,montages }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy:CodingKeys.self)
         let version=try c.decodeIfPresent(Int.self,forKey:.version) ?? 0
+        guard version>=0,version<=Self.currentVersion else {throw ProjectError.unsupportedVersion(version)}
         var cues:[Cue]=[]
         if c.contains(.cues) {
             var entries=try c.nestedUnkeyedContainer(forKey:.cues)
@@ -179,6 +184,7 @@ public struct Project: Codable, Equatable, Sendable {
                   fixtures: try c.decodeIfPresent([Fixture].self, forKey:.fixtures) ?? [],
                   timeline: try c.decodeIfPresent([AutomationTrack].self, forKey:.timeline) ?? [],
                   groups: try c.decodeIfPresent([SurfaceGroup].self, forKey:.groups) ?? [],
-                  timelineSettings:try c.decodeIfPresent(TimelineSettings.self,forKey:.timelineSettings))
+                  timelineSettings:try c.decodeIfPresent(TimelineSettings.self,forKey:.timelineSettings),
+                  montages:version<7 ? [] : try c.decode([MediaMontage].self,forKey:.montages))
     }
 }

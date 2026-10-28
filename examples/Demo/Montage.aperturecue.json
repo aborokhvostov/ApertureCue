@@ -1,0 +1,738 @@
+{
+  "assets" : [
+    {
+      "id" : "0C6A3F21-D2A3-4BD9-BEC3-1D26647F2101",
+      "kind" : "image",
+      "loop" : true,
+      "name" : "Calibration grid",
+      "path" : "calibration.png",
+      "volume" : 1
+    },
+    {
+      "id" : "7BB459F8-1722-4489-A6E4-0C3400CC48F7",
+      "kind" : "video",
+      "loop" : true,
+      "name" : "Moving bars · H.264",
+      "path" : "motion.mov",
+      "volume" : 1
+    }
+  ],
+  "cues" : [
+    {
+      "bindings" : [
+
+      ],
+      "duration" : 1,
+      "id" : "BCF3E32C-4D03-47D0-8F78-F4B019080458",
+      "name" : "Perspective",
+      "scope" : "full",
+      "surfaces" : [
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "checker",
+          "group" : "",
+          "id" : "5C86610E-2758-4741-AE52-D66D799E679C",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "mask" : [
+
+          ],
+          "mediaID" : "F9E995D2-9428-4B13-86D3-F86665A0C318",
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshRows" : 0,
+          "name" : "Black gaps · Montage",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.04,
+              "y" : 0.12
+            },
+            {
+              "x" : 0.49,
+              "y" : 0.23
+            },
+            {
+              "x" : 0.46,
+              "y" : 0.88
+            },
+            {
+              "x" : 0.09,
+              "y" : 0.8
+            }
+          ],
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          }
+        },
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "gradient",
+          "group" : "",
+          "id" : "5B454983-1A94-499F-A116-6023D1AD7B05",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "mask" : [
+
+          ],
+          "mediaID" : "F0DF8ACE-4024-4448-B9CD-43669516FD00",
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshRows" : 0,
+          "name" : "Skip gaps · Montage",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.54,
+              "y" : 0.16
+            },
+            {
+              "x" : 0.94,
+              "y" : 0.08
+            },
+            {
+              "x" : 0.91,
+              "y" : 0.88
+            },
+            {
+              "x" : 0.56,
+              "y" : 0.82
+            }
+          ],
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          }
+        }
+      ]
+    },
+    {
+      "bindings" : [
+
+      ],
+      "duration" : 2,
+      "id" : "DE4A50DF-60F6-42F7-A37F-53DB955D8C2A",
+      "name" : "Aligned",
+      "scope" : "full",
+      "surfaces" : [
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "checker",
+          "group" : "",
+          "id" : "5C86610E-2758-4741-AE52-D66D799E679C",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "mask" : [
+
+          ],
+          "mediaID" : "F9E995D2-9428-4B13-86D3-F86665A0C318",
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshRows" : 0,
+          "name" : "Black gaps · Montage",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.04,
+              "y" : 0.06
+            },
+            {
+              "x" : 0.48,
+              "y" : 0.06
+            },
+            {
+              "x" : 0.48,
+              "y" : 0.94
+            },
+            {
+              "x" : 0.04,
+              "y" : 0.94
+            }
+          ],
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          }
+        },
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "gradient",
+          "group" : "",
+          "id" : "5B454983-1A94-499F-A116-6023D1AD7B05",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "mask" : [
+
+          ],
+          "mediaID" : "F0DF8ACE-4024-4448-B9CD-43669516FD00",
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshRows" : 0,
+          "name" : "Skip gaps · Montage",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.52,
+              "y" : 0.06
+            },
+            {
+              "x" : 0.96,
+              "y" : 0.06
+            },
+            {
+              "x" : 0.96,
+              "y" : 0.94
+            },
+            {
+              "x" : 0.52,
+              "y" : 0.94
+            }
+          ],
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          }
+        }
+      ]
+    }
+  ],
+  "fixtures" : [
+
+  ],
+  "groups" : [
+
+  ],
+  "montages" : [
+    {
+      "clips" : [
+        {
+          "assetID" : "0C6A3F21-D2A3-4BD9-BEC3-1D26647F2101",
+          "duration" : 2,
+          "id" : "0EF5E6F3-5710-4888-B245-717128A44B50",
+          "loop" : false,
+          "rate" : 1,
+          "sourceIn" : 0,
+          "sourceOut" : 1,
+          "start" : 0
+        },
+        {
+          "assetID" : "7BB459F8-1722-4489-A6E4-0C3400CC48F7",
+          "duration" : 3,
+          "id" : "9E9856D2-8789-4A4A-8A9F-037DAB08CB27",
+          "loop" : false,
+          "rate" : 0.5,
+          "sourceIn" : 0.25,
+          "sourceOut" : 2.75,
+          "start" : 3
+        },
+        {
+          "assetID" : "7BB459F8-1722-4489-A6E4-0C3400CC48F7",
+          "duration" : 2.5,
+          "id" : "68A2EDCD-215D-4039-9398-A3EC86866F0B",
+          "loop" : false,
+          "rate" : 1,
+          "sourceIn" : 0,
+          "sourceOut" : 2.5,
+          "start" : 7
+        }
+      ],
+      "duration" : 10,
+      "gapMode" : "black",
+      "id" : "F9E995D2-9428-4B13-86D3-F86665A0C318",
+      "loop" : true,
+      "name" : "Black gaps · image and video"
+    },
+    {
+      "clips" : [
+        {
+          "assetID" : "7BB459F8-1722-4489-A6E4-0C3400CC48F7",
+          "duration" : 2,
+          "id" : "09E847D1-8C41-48F1-91B7-48B6682534B9",
+          "loop" : true,
+          "rate" : 2,
+          "sourceIn" : 1,
+          "sourceOut" : 2,
+          "start" : 0
+        },
+        {
+          "assetID" : "0C6A3F21-D2A3-4BD9-BEC3-1D26647F2101",
+          "duration" : 2,
+          "id" : "141F57FF-3F3E-4AB1-8DCB-CBCAB4854944",
+          "loop" : false,
+          "rate" : 1,
+          "sourceIn" : 0,
+          "sourceOut" : 1,
+          "start" : 3
+        },
+        {
+          "assetID" : "7BB459F8-1722-4489-A6E4-0C3400CC48F7",
+          "duration" : 3,
+          "id" : "8C46C027-FDCE-4B5F-8F30-7E8BE867AFEB",
+          "loop" : false,
+          "rate" : 0.5,
+          "sourceIn" : 0,
+          "sourceOut" : 1.5,
+          "start" : 6
+        }
+      ],
+      "duration" : 10,
+      "gapMode" : "skip",
+      "id" : "F0DF8ACE-4024-4448-B9CD-43669516FD00",
+      "loop" : true,
+      "name" : "Skip gaps · trimmed video loop"
+    }
+  ],
+  "name" : "ApertureCue Montage Demo",
+  "outputs" : [
+    {
+      "height" : 1080,
+      "id" : "E1BB0E4F-C70E-4E98-AA02-0AFE812C2BE9",
+      "name" : "Projector 1",
+      "screenIndex" : 0,
+      "width" : 1920
+    }
+  ],
+  "surfaces" : [
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "checker",
+      "group" : "",
+      "id" : "5C86610E-2758-4741-AE52-D66D799E679C",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "mask" : [
+
+      ],
+      "mediaID" : "F9E995D2-9428-4B13-86D3-F86665A0C318",
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshRows" : 0,
+      "name" : "Black gaps · Montage",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.04,
+          "y" : 0.12
+        },
+        {
+          "x" : 0.49,
+          "y" : 0.23
+        },
+        {
+          "x" : 0.46,
+          "y" : 0.88
+        },
+        {
+          "x" : 0.09,
+          "y" : 0.8
+        }
+      ],
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      }
+    },
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "gradient",
+      "group" : "",
+      "id" : "5B454983-1A94-499F-A116-6023D1AD7B05",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "mask" : [
+
+      ],
+      "mediaID" : "F0DF8ACE-4024-4448-B9CD-43669516FD00",
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshRows" : 0,
+      "name" : "Skip gaps · Montage",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.54,
+          "y" : 0.16
+        },
+        {
+          "x" : 0.94,
+          "y" : 0.08
+        },
+        {
+          "x" : 0.91,
+          "y" : 0.88
+        },
+        {
+          "x" : 0.56,
+          "y" : 0.82
+        }
+      ],
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      }
+    }
+  ],
+  "timeline" : [
+
+  ],
+  "timelineSettings" : {
+    "duration" : 10,
+    "loopEnabled" : true,
+    "loopEnd" : 10,
+    "loopStart" : 0,
+    "markers" : [
+
+    ],
+    "stopAtEnd" : true
+  },
+  "version" : 7
+}

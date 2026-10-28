@@ -17,33 +17,33 @@ extension EditorController {
             let stopped=beforePlaying && !showRuntime.isPlaying
             if stopped { media.pause() }
             let afterTime=showRuntime.currentTime(at:hostTime)
-            if stopped || abs(afterTime-beforeTime)>1e-9 { media.seek(to:afterTime) }
+            if stopped || abs(afterTime-beforeTime)>1e-9 { montageSerial &+= 1; media.seek(to:afterTime) }
         } catch { showConfigurationError=error.localizedDescription }
     }
     func playShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
         configureShow(at:hostTime)
         guard showConfigurationError.isEmpty,!showRuntime.isPlaying else { return }
         showRuntime.play(at:hostTime)
-        media.seek(to:showRuntime.time); media.play()
+        montageSerial &+= 1; media.seek(to:showRuntime.time); media.play()
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func pauseShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
         advanceShow(at:hostTime)
         stopAutomationRecording(reason:"Paused",at:hostTime)
-        showRuntime.pause(at:hostTime); media.pause(); media.seek(to:showRuntime.time)
+        showRuntime.pause(at:hostTime); montageSerial &+= 1; media.pause(); media.seek(to:showRuntime.time)
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func stopShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
         stopAutomationRecording(reason:"Stopped",at:hostTime)
         timelineEventWarning=""
-        commitInterruptedCue(); showRuntime.stop(at:hostTime); media.pause(); media.seek(to:0)
+        commitInterruptedCue(); showRuntime.stop(at:hostTime); montageSerial &+= 1; media.pause(); media.seek(to:0)
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func seekShow(to seconds:Double,at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
         guard seconds.isFinite else { return }
         stopAutomationRecording(reason:"Seek",at:hostTime)
         timelineEventWarning=""
-        showRuntime.seek(to:seconds,at:hostTime); media.seek(to:showRuntime.time)
+        showRuntime.seek(to:seconds,at:hostTime); montageSerial &+= 1; media.seek(to:showRuntime.time)
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func advanceShow(at hostTime:Double) {
@@ -52,6 +52,7 @@ extension EditorController {
             stopAutomationRecording(reason:!result.isPlaying ? "Playback paused or ended" : result.discontinuity ? "Playback discontinuity / loop wrap" : "Recording reached graph end",at:hostTime)
         }
         if result.discontinuity {
+            montageSerial &+= 1
             if !result.isPlaying { media.pause() }
             media.seek(to:result.time)
             if result.isPlaying && !media.isPlaying { media.play() }

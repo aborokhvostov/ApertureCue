@@ -1,6 +1,6 @@
 # Текущее состояние ApertureCue
 
-Обновлено: 27 октября 2026 (Europe/Moscow), macOS first. Исследование начато 25 октября. Полное функциональное равенство MadMapper **не достигнуто**. Задача продолжается по [roadmap](roadmap.md); [матрица](feature-matrix.md) различает исследование, реализацию, автоматические, ручные и аппаратные проверки.
+Обновлено: 28 октября 2026 (Europe/Moscow), macOS first. Исследование начато 25 октября. Полное функциональное равенство MadMapper **не достигнуто**. Задача продолжается по [roadmap](roadmap.md); [матрица](feature-matrix.md) различает исследование, реализацию, автоматические, ручные и аппаратные проверки.
 
 ## Окружение и референс
 
@@ -13,13 +13,13 @@
 
 ## Реализованный работающий subset
 
-AppKit editor, Metal compositor, PNG/images и AVFoundation video, textured line/Bézier paths, quad/triangle/ellipse в четырёхугольной перспективной рамке, independent input/output, projective homography, regular mesh, source-UV polygon mask, local shape feather и antialias, normal/add/multiply/screen, brightness/gamma/RGB, layer ordering, UUID group hierarchy с affine/shear и inherited per-layer opacity/visibility, undo/redo, schema v6 JSON с v0/v1 quad и v0–v2 legacy-group migration, relative media paths, atomic save, named-project recovery, missing-media fallback и relink.
+AppKit editor, Metal compositor, PNG/images и AVFoundation video, textured line/Bézier paths, quad/triangle/ellipse в четырёхугольной перспективной рамке, independent input/output, projective homography, regular mesh, source-UV polygon mask, local shape feather и antialias, normal/add/multiply/screen, brightness/gamma/RGB, layer ordering, UUID group hierarchy с affine/shear и inherited per-layer opacity/visibility, undo/redo, schema v7 JSON с v0/v1 quad и v0–v2 legacy-group migration, relative media paths, atomic save, named-project recovery, missing-media fallback и relink.
 
 Отдельные output windows с display selection/routing/blackout; full/selective surface snapshots with 13 atomic field masks and a native Scenes editor; графический parameter timeline с Hold/Linear/Bezier, independent show clock, loop/continuation и Pause/Scene markers; latest-frame AVCapture adapter; fixed MIDI input profile, OSC localhost control с bounded main-thread mailbox; basic RGB/GRB/RGBW strips, asynchronous composition sampling, simulator и opt-in IPv4 ArtDmx/sACN. OBJ импортируется как статическая pinhole-проекция в editable quad patches, без depth buffer и сохранения исходной 3D-сцены. PNG still export.
 
 ## Текущий этап
 
-Alpha 8 records inspector gestures on armed opacity/brightness/gamma/RGB tracks. One Undo per gesture, ordinary schema-6 keys, retained outside key metadata, active recovery and interruption-token protection are implemented. Verified: 82 standalone core methods, 46 GPU/media, 46 editor, 11 lighting/UDP; native drag/Undo/Redo/save/relaunch/reopen/curve/Seek; fresh ZIP signature/entries and all 46 editor checks from extraction. Exact-source CI passed 82 actual XCTest on each macOS/Linux plus macOS release/native packaging. Media montage and broader recording tools remain next; full reference parity has not been reached.
+Source montage development after published alpha8: schema7 definitions, image/video trims/rate/loop, hard cuts and Black/Skip gaps are integrated with the source library, master show time and native Montage editor. Core passed91 standalone methods; initial production integration passed46 GPU/media,51 editor and11 lighting/UDP checks. Enhanced montage reader checks passed27 groups including truePTS, source isolation, live-generation continuity, rapid seeks, rotation and eight decoder slots. A reproduced eight-read cooperative-executor stall was fixed by serial Dispatch reader ownership; raw PTS probes also identified the generated initial empty edit as a real black sample, not a missing decoder frame. Variable-interval/extent tests passed; final optimized/native GUI/archive/exact-source CI gates are in progress. See [montage evidence](verification/montage-workflow.md), including the pending whole-editor retry. Published alpha8 remains unchanged until those release gates pass; no alpha9 publication is asserted here.
 
 ## Проверки
 

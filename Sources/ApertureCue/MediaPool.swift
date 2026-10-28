@@ -7,6 +7,24 @@ import MetalKit
 import QuartzCore
 import MappingCore
 
+/// Immutable references retained together through all consuming GPU commands.
+struct MediaFrameResource {
+    let texture:MTLTexture
+    var wrappers:[CVMetalTexture]=[]
+    var buffers:[CVPixelBuffer]=[]
+    var uv:MediaUVTransform = .identity
+}
+struct MediaFrameResources:@unchecked Sendable {
+    let textures:[UUID:MTLTexture]
+    let retained:[CVMetalTexture]
+    let buffers:[CVPixelBuffer]
+    let uv:[UUID:MediaUVTransform]
+    static let empty=MediaFrameResources(textures:[:],retained:[],buffers:[],uv:[:])
+}
+protocol VirtualMediaFrames:AnyObject {
+    func frameResource(for id:UUID)->MediaFrameResource?
+}
+
 /// Main-thread coordinator. Image I/O and texture creation use a serial worker;
 /// AVFoundation owns its bounded decoder queues. Each movie retains one video
 /// output frame and each image retains one texture, shared by all output views.
@@ -80,6 +98,9 @@ final class MediaPool {
         let url: URL
         var texture: MTLTexture?
         var cvTexture: CVMetalTexture?
+        var pixelBuffer:CVPixelBuffer?
+        var presentationTransform=CGAffineTransform.identity
+        var naturalSize=CGSize.zero
         var player: AVPlayer?
         var videoOutput: AVPlayerItemVideoOutput?
         var endObserver: NSObjectProtocol?
@@ -105,6 +126,8 @@ final class MediaPool {
     private(set) var isPlaying = false
     private(set) var errorMessages: [UUID: String] = [:]
     var onChange: (() -> Void)?
+    weak var virtualSources:VirtualMediaFrames?
+    private var activeAssetIDs:Set<UUID>?
 
     init(device: MTLDevice) {
         self.device = device
@@ -142,20 +165,46 @@ final class MediaPool {
         let value = entries[id]?.player?.currentItem?.duration.seconds ?? 0
         return value.isFinite ? value : 0
     }
+    /// Nil preserves the standalone pool API. The editor explicitly activates
+    /// assigned ordinary sources, so montage-only files cannot leak audio.
+    func setActiveAssetIDs(_ ids:Set<UUID>?) {
+        precondition(Thread.isMainThread)
+        guard ids != activeAssetIDs else {return}
+        let previous=activeAssetIDs;activeAssetIDs=ids
+        for entry in entries.values {
+            let active=isActive(entry.asset.id),wasActive=previous?.contains(entry.asset.id) ?? true
+            entry.player?.isMuted = !active
+            if !active {entry.player?.pause()}
+            else if !wasActive {seek(entry:entry,toShowTime:currentTime)}
+        }
+    }
+    private func isActive(_ id:UUID)->Bool {activeAssetIDs?.contains(id) ?? true}
+    func isSourcePlaying(for id:UUID)->Bool {(entries[id]?.player?.rate ?? 0) != 0}
+    func isSourceMuted(for id:UUID)->Bool {entries[id]?.player?.isMuted ?? false}
+    func sourceVolume(for id:UUID)->Float? {entries[id]?.player?.volume}
 
     /// Acquire each source once for an entire composition. The returned wrappers
     /// belong to exactly these textures and must survive the submitted GPU work.
-    func frameResources(for ids: Set<UUID>) -> (textures: [UUID: MTLTexture], retained: [CVMetalTexture]) {
+    func frameResources(for ids: Set<UUID>) -> MediaFrameResources {
         precondition(Thread.isMainThread)
         var textures: [UUID: MTLTexture] = [:]
         var retained: [CVMetalTexture] = []
+        var buffers:[CVPixelBuffer]=[]
+        var uv:[UUID:MediaUVTransform]=[:]
         for id in ids {
+            if entries[id] == nil,let frame=virtualSources?.frameResource(for:id) {
+                textures[id]=frame.texture;retained += frame.wrappers;buffers += frame.buffers;uv[id]=frame.uv;continue
+            }
             if let texture = texture(for: id) {
                 textures[id] = texture
                 if let wrapper = entries[id]?.cvTexture { retained.append(wrapper) }
+                if let pixelBuffer=entries[id]?.pixelBuffer {buffers.append(pixelBuffer)}
+                if let entry=entries[id],let pixel=entry.pixelBuffer,entry.naturalSize.width>0 {
+                    uv[id]=try? MediaUVTransform.video(entry.presentationTransform,size:entry.naturalSize,pixelWidth:CVPixelBufferGetWidth(pixel),pixelHeight:CVPixelBufferGetHeight(pixel))
+                }
             }
         }
-        return (textures, retained)
+        return MediaFrameResources(textures:textures,retained:retained,buffers:buffers,uv:uv)
     }
 
     /// Explicit relink can restore a file at the same path as a failed entry.
@@ -250,8 +299,18 @@ final class MediaPool {
         let player = AVPlayer(playerItem: item)
         player.actionAtItemEnd = .pause
         player.volume = Float(max(0, min(1, entry.asset.volume)))
+        player.isMuted = !isActive(entry.asset.id)
         entry.player = player
         entry.videoOutput = output
+        Task { @MainActor [weak self,weak entry] in
+            do {
+                let tracks=try await item.asset.loadTracks(withMediaType:.video)
+                guard let track=tracks.first else {return}
+                let matrix=try await track.load(.preferredTransform),size=try await track.load(.naturalSize)
+                guard let self,let entry,self.entries[entry.asset.id] === entry else {return}
+                entry.presentationTransform=matrix;entry.naturalSize=size;self.onChange?()
+            } catch { /* AVPlayer's status observer supplies decode diagnostics. */ }
+        }
         entry.statusObserver = item.observe(\.status, options: [.new, .initial]) { [weak self, weak entry] item, _ in
             DispatchQueue.main.async {
                 guard let self, let entry, self.entries[entry.asset.id] === entry else { return }
@@ -264,7 +323,7 @@ final class MediaPool {
             }
         }
         entry.endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self, weak entry] _ in
-            guard let self, let entry, self.entries[entry.asset.id] === entry, entry.asset.loop,
+            guard let self, let entry, self.entries[entry.asset.id] === entry, entry.asset.loop,self.isPlaying,self.isActive(entry.asset.id),
                   let duration = entry.player?.currentItem?.duration.seconds, duration.isFinite, duration > 0,
                   self.playbackTime(for: entry.asset.id) >= duration - 1.0 / 120.0 else { return }
             self.seek(entry: entry, toShowTime: 0)
@@ -276,7 +335,7 @@ final class MediaPool {
         guard !isPlaying else { return }
         clockAnchor = CACurrentMediaTime()
         isPlaying = true
-        for entry in entries.values { entry.player?.play() }
+        for entry in entries.values where isActive(entry.asset.id) { entry.player?.play() }
     }
 
     func pause() {
@@ -306,14 +365,15 @@ final class MediaPool {
             DispatchQueue.main.async {
                 guard let self, let entry, finished, self.entries[entry.asset.id] === entry,
                       entry.seekGeneration == generation else { return }
-                if self.isPlaying { entry.player?.play() } else { entry.player?.pause() }
+                entry.player?.isMuted = !self.isActive(entry.asset.id)
+                if self.isPlaying && self.isActive(entry.asset.id) { entry.player?.play() } else { entry.player?.pause() }
             }
         }
     }
 
     /// Retains the latest texture if a decoder frame is late; no queue grows.
     func texture(for id: UUID) -> MTLTexture? {
-        guard let entry = entries[id] else { return nil }
+        guard let entry = entries[id] else { return virtualSources?.frameResource(for:id)?.texture }
         if let pixelBuffer = entry.camera?.takeLatest() { updateTexture(entry: entry, pixelBuffer: pixelBuffer) }
         if let output = entry.videoOutput {
             let time = output.itemTime(forHostTime: CACurrentMediaTime())
@@ -332,6 +392,7 @@ final class MediaPool {
             .bgra8Unorm, CVPixelBufferGetWidth(pixelBuffer), CVPixelBufferGetHeight(pixelBuffer), 0, &cvTexture)
         if result == kCVReturnSuccess, let cvTexture {
             entry.cvTexture = cvTexture
+            entry.pixelBuffer = pixelBuffer
             entry.texture = CVMetalTextureGetTexture(cvTexture)
         }
     }

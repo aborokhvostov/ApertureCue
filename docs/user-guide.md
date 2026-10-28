@@ -78,6 +78,20 @@ File → **Import projected OBJ…** читает polygonal Wavefront OBJ и п�
 
 **Camera…** запрашивает доступ к камере только по действию пользователя и предлагает доступные устройства. Источник назначается выбранной поверхности. Capture backend сохраняет последний кадр, пропускает опоздавшие и выводит диагностику недоступного устройства. Работа без подключённой камеры и сама реализация adapter не подтверждают capture на конкретной модели; доступность/разрешение/отключение проверяются отдельно. Camera source остаётся live при pause movie transport.
 
+## Монтаж источников (schema 7, после alpha 8)
+
+Импортируйте изображения и видео через **Import…**. В левой библиотеке нажмите **Montage sources…**, затем **New montage**. Задайте **Name**, **Duration s**, **Loop montage** и поведение пустого участка **Black / Skip**; нажмите **Create montage**. Монтаж появляется в общей библиотеке как назначаемый источник.
+
+Выберите **New clip**, исходный файл в **Source asset**, **Start s** и **Duration s**. Для видео задайте **Video In s / Out s**, **Rate** (0.25…4) и при необходимости **Loop trimmed video**, затем **Add clip**. Изображению нужны только Start/Duration. Нажатие блока на полосе или строки таблицы выбирает клип; время редактируется числовыми полями и **Save clip**. **Delete clip** удаляет выбранный клип. Перекрытия отклоняются; следующий клип может начинаться точно в конце предыдущего. Для видео без clip loop длительность клипа не может превышать `(Out−In)/Rate`.
+
+Изменения свойств монтажа сохраняет **Save montage properties**, правки клипа — **Save clip**. Несохранённые поля остаются draft при обычном обновлении окна. Каждая успешная операция имеет одну команду Undo/Redo. **Seek clip start** переводит общее время шоу к началу выбранного клипа; Play/Pause/Stop и основной slider управляют монтажами вместе с parameter timeline. Длительность графа в **Timeline…** определяет конец самого шоу; длительность монтажа задаёт его собственный конец/цикл.
+
+Выберите поверхность в основном окне и нажмите **Assign montage to selected surface**. Также можно выбрать монтаж в общей библиотеке и нажать **Assign to surface**. Поверхности с одним montage UUID показывают один принятый кадр; разные монтажи одного видео имеют независимые позиции. **Black** выдаёт чёрный источник с обычными opacity/blend поверхности; **Skip** исключает её из композиции и показывает нижние слои. Загрузка, ошибка и отсутствие подходящего кадра используют тот же режим с диагностикой, без подстановки checker. Поворот из video metadata учитывается при чтении texture; surface input/mask остаются в координатах повёрнутого изображения.
+
+Клипы монтажа воспроизводятся без звука. Обычный видеоисточник звучит только при прямом назначении на текущую поверхность; opacity/visibility/routing не отключают его звук. Монтаж не меняет volume или позицию такого обычного источника. Одновременно допускаются восемь активных видеомонтажей; девятый показывает выбранный gap и диагностику. Приоритет определяется UUID. Reverse, crossfade/перекрытия, аудиомонтаж, камеры/вложенные монтажи и запись клипов пока отсутствуют.
+
+Сцены сохраняют UUID назначения, а определения монтажей общие для проекта. **Delete montage** очищает его назначения в текущих поверхностях и сохранённых сценах; Undo восстанавливает всё вместе. Save/Open/Recovery/Collect сохраняют определения и ссылки. `Demo/Montage.aperturecue.json` — собственный пример с изображением, видео, Black/Skip, trim/rate/loop. Schema 7 требует новый reader; alpha 1…8 такие проекты отклоняют. Сохраняйте отдельную копию для старой сборки.
+
 ## Выход на дисплей
 
 Нажмите **Outputs…**, выберите экран, затем **Open fullscreen** или **Open preview window**. Это отдельное окно с чистой композицией, без handles редактора. **Escape** закрывает output. **Close outputs** закрывает все output windows. **Blackout** делает output чёрным, оставляя редактор доступным для настройки.
@@ -124,7 +138,7 @@ Full recall сохраняет прежнее поведение surface snapsho
 
 Recall сам по себе не останавливает и не перематывает media/show clocks. Fades идут по host clock даже при Pause параметрического timeline. Активная timeline automation продолжает перекрывать соответствующие базовые поля Cue; её Pause/loop/seek/end остаются отдельными transport-событиями. Это не frame lock между декодерами. Undo возвращает сохранённое состояние документа до GO. Delete удаляет связанные Scene markers и tracks, потерявшие последний target в текущих поверхностях или оставшихся full snapshots.
 
-Проект сохраняется в schema 6: старые версии 0…5 мигрируют как full surface snapshots. Старые binaries, не поддерживающие schema 6, отклонят такой проект; сохраняйте отдельную копию. Clip montage, cue-owned timelines, quantized launch и calendar scheduler остаются следующими этапами. Текущий журнал ручных проверок selective workflow: [checklist](verification/selective-workflow.md).
+Проект сохраняется в schema 7: старые версии 0…5 мигрируют как full surface snapshots; v6 сохраняет selective bindings. Старые binaries, не поддерживающие schema 7, отклонят такой проект; сохраняйте отдельную копию. Cue-owned timelines, quantized launch и calendar scheduler остаются следующими этапами. Журнал ручных проверок selective workflow: [checklist](verification/selective-workflow.md).
 
 ### Графический Parameter Timeline
 
@@ -140,7 +154,7 @@ Interpolation относится к сегменту **после** выбран
 
 **Add marker at playhead** добавляет **Pause** или **Recall scene**. Маркеры должны иметь разные положительные времена внутри Duration; для добавления сначала перейдите к нужному времени. Pause останавливает часы точно на marker time; следующий Play продолжает без повторной остановки на нём. Recall scene вызывает существующую surface scene. Marker срабатывает при естественном проходе `(previous,current]`; seek/попадание ровно в marker time не запускает его. Marker в Loop End проходит перед wrap; marker в Loop Start может пройти в начальном preroll, но не запускается повторно от одного приземления при wrap. **Seek marker** только перемещает playhead. Удаление сцены удаляет её marker references одной Undo-командой.
 
-При длинной задержке обрабатывается не более 256 событий/переходов loop за tick; excess cue events пропускаются с видимой диагностикой, однако первая Pause сохраняется. Изменение дорожек/настроек сохраняет уже естественно пройденные events для однократной доставки; Stop/Seek очищают очередь. Существующие scene fades используют собственный host clock и могут продолжаться, когда parameter timeline поставлен на Pause. Совместная графическая clip/audio/MIDI/OSC montage, внешние clock/timecode, Conductor banks и schedule остаются следующими областями реализации. `Demo/Timeline.aperturecue.json` — собственный параметрический пример.
+При длинной задержке обрабатывается не более 256 событий/переходов loop за tick; excess cue events пропускаются с видимой диагностикой, однако первая Pause сохраняется. Изменение дорожек/настроек сохраняет уже естественно пройденные events для однократной доставки; Stop/Seek очищают очередь. Существующие scene fades используют собственный host clock и могут продолжаться, когда parameter timeline поставлен на Pause. Совместная графическая audio/MIDI/OSC montage, внешние clock/timecode, Conductor banks и schedule остаются следующими областями реализации. `Demo/Timeline.aperturecue.json` — собственный параметрический пример.
 
 ### Запись scalar automation из inspector
 
@@ -154,7 +168,7 @@ Interpolation относится к сегменту **после** выбран
 
 **Stop recording**, Pause/Stop/Seek, loop wrap, Scene GO, конец graph duration и редактирование документа завершают режим. При таком прерывании сохраняется только последний принятый участок; искусственный endpoint в момент остановки не добавляется. Запоздалые события старого gesture после прерывания не превращаются в новую правку поверхности. Arm можно оставить для следующего запуска Record input. Старт записи фиксирует активный scene fade; изменение Arm также завершает запись. Save/Undo/Redo завершают текущий жест перед своей операцией.
 
-Запись не перематывает media и не перезапускает show clock. Изменение только keys и Undo/Redo keys сохраняют текущую позицию и playback; реальные Pause/Seek/loop/end выполняют собственные transport-действия. Это не синхронизация декодеров по кадрам. Результат — обычные schema-6 keys, без нового формата: reader уровня alpha 7 может их прочитать, но Arm/режим записи в нём не восстановятся. Наличие описанного workflow не заменяет отдельные автоматические и ручные результаты в status и verification.
+Запись не перематывает media и не перезапускает show clock. Изменение только keys и Undo/Redo keys сохраняют текущую позицию и playback; реальные Pause/Seek/loop/end выполняют собственные transport-действия. Это не синхронизация декодеров по кадрам. Сама запись создаёт обычные keys ранее введённого формата. Текущий writer сохраняет весь документ как schema 7; для его открытия нужна новая сборка. Arm/режим записи не сохраняются. Наличие описанного workflow не заменяет отдельные автоматические и ручные результаты в status и verification.
 
 ## LED mapping и симулятор
 
@@ -176,7 +190,7 @@ Art-Net™ Designed by and Copyright Artistic Licence.
 
 ## Сохранение, история и экспорт
 
-File > Save (`Cmd-S`) and Save As (`Cmd-Shift-S`) write the own `.aperturecue.json`; Open (`Cmd-O`) reloads it. The current JSON schema is version 6. v0/v1 migrate to quad; v2 retains triangle/ellipse; legacy v0...v2 group labels become UUID groups. v3 stores groups, v4 paths, v5 timeline easing/settings/markers, v6 explicit full/selective cue scope and bindings. Pre-v4 stroke extensions are cleared; v0...v5 cues migrate to full snapshots. Saving upgrades to v6. Alpha 1...6 reject schema 6, so keep an older document copy for downgrade. Alpha 7 can read the ordinary recorded keys introduced by alpha 8. Media paths are relative on disk and absolute in memory.
+File > Save (`Cmd-S`) and Save As (`Cmd-Shift-S`) write the own `.aperturecue.json`; Open (`Cmd-O`) reloads it. The current JSON schema is version 7. v0/v1 migrate to quad; v2 retains triangle/ellipse; legacy v0...v2 group labels become UUID groups. v3 stores groups, v4 paths, v5 timeline easing/settings/markers, v6 explicit full/selective cue scope and bindings. Pre-v4 stroke extensions are cleared; v0...v5 cues migrate to full snapshots. v7 adds required montage definitions and extends surface source references; earlier versions discard undefined montage extensions. Saving upgrades to v7. Alpha 1...8 reject schema 7, so keep an older document copy for downgrade. Media paths are relative on disk and absolute in memory.
 
 File → **Collect portable project…** создаёт переносимую копию в новой, ещё не существующей папке. Внутри находятся `project.aperturecue.json` и `media/<asset UUID>.<extension>`. Такое именование разделяет одноимённые источники. Приложение копирует обычные media files, проверяет созданный проект и относительные ссылки, затем публикует готовую папку одним переименованием. Missing media, неподходящий source или ошибка копирования отменяют операцию; исходный проект и выбранная папка назначения не перезаписываются.
 

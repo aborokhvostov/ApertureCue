@@ -19,6 +19,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         var localX: SIMD4<Float>; var localY: SIMD4<Float>; var localW: SIMD4<Float>
         var properties: SIMD4<Float>; var tint: SIMD4<Float>; var misc: SIMD4<Float>
         var shape: SIMD4<Float>
+        var mediaX:SIMD4<Float>;var mediaY:SIMD4<Float>
     }
 
     let device: MTLDevice
@@ -220,10 +221,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         buffer.commit()
     }
 
-    private func encode(descriptor: MTLRenderPassDescriptor, buffer: MTLCommandBuffer) -> [CVMetalTexture] {
-        guard let encoder = buffer.makeRenderCommandEncoder(descriptor: descriptor) else { return [] }
+    private func encode(descriptor: MTLRenderPassDescriptor, buffer: MTLCommandBuffer) -> MediaFrameResources {
+        guard let encoder = buffer.makeRenderCommandEncoder(descriptor: descriptor) else { return .empty }
         defer { encoder.endEncoding() }
-        guard !blackout else { return [] }
+        guard !blackout else { return .empty }
         let visible = surfaces.filter { surface in
             surface.enabled && surface.opacity > 0 && (outputID == nil || surface.outputID == nil || outputID == surface.outputID)
         }
@@ -231,13 +232,13 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         strokeCache = strokeCache.filter { visibleIDs.contains($0.key) }
         let resources = media.frameResources(for: Set(visible.compactMap(\.mediaID)))
         for surface in visible {
-            do { try draw(surface: surface, encoder: encoder, textures: resources.textures) }
+            do { try draw(surface: surface, encoder: encoder, textures: resources.textures,mediaUV:resources.uv) }
             catch { errorDescription = "\(surface.name): \(error.localizedDescription)" }
         }
-        return resources.retained
+        return resources
     }
 
-    private func draw(surface: Surface, encoder: MTLRenderCommandEncoder, textures: [UUID: MTLTexture]) throws {
+    private func draw(surface: Surface, encoder: MTLRenderCommandEncoder, textures: [UUID: MTLTexture],mediaUV:[UUID:MediaUVTransform]) throws {
         guard surface.input.count == 4, surface.output.count == 4 else { return }
         let unit = [Point2(0, 0), Point2(1, 0), Point2(1, 1), Point2(0, 1)]
         let columns = surface.meshColumns
@@ -269,6 +270,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                         vertex(points[0], 0, 0), vertex(points[2], 1, 1), vertex(points[3], 0, 1)]
         }
         let texture = surface.mediaID.flatMap { textures[$0] }
+        let mediaTransform=surface.mediaID.flatMap {mediaUV[$0]} ?? .identity
         let generators = ["checker": Float(1), "gradient": Float(2), "solid": Float(3), "grid": Float(4)]
         let generator = texture != nil ? Float(0) : (generators[surface.generator] ?? 1)
         let tint = surface.color.count >= 3 ? surface.color : [1, 1, 1]
@@ -281,7 +283,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
                               Float(max(0.01, surface.gamma)), Float(max(0, min(0.5, surface.feather)))),
             tint: SIMD4(Float(tint[0]), Float(tint[1]), Float(tint[2]), 1),
             misc: SIMD4(generator, Float(polygon.count), hasMesh ? 1 : 0, Float(media.currentTime)),
-            shape: SIMD4(surface.shape.isStroke ? 3 : (surface.shape == .triangle ? 1 : (surface.shape == .ellipse ? 2 : 0)), Float(surface.stroke.width), Float(stroke?.count ?? 0), 0))
+            shape: SIMD4(surface.shape.isStroke ? 3 : (surface.shape == .triangle ? 1 : (surface.shape == .ellipse ? 2 : 0)), Float(surface.stroke.width), Float(stroke?.count ?? 0), 0),
+            mediaX:mediaTransform.x,mediaY:mediaTransform.y)
         guard let pipeline = pipelines[surface.blendMode] ?? pipelines["normal"] else { return }
         encoder.setRenderPipelineState(pipeline)
         // set*Bytes is limited to 4 KiB; a dense mesh gets an ordinary buffer.
@@ -338,6 +341,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         float4 localX; float4 localY; float4 localW;
         float4 properties; float4 tint; float4 misc;
         float4 shape;
+        float4 mediaX;float4 mediaY;
     };
     vertex Raster mappingVertex(const device Vertex* vertices [[buffer(0)]], uint id [[vertex_id]]) {
         Raster out;
@@ -405,7 +409,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         constexpr sampler sampleFilter(coord::normalized, address::clamp_to_edge, filter::linear);
         float4 color;
         int kind = int(u.misc.x);
-        if (kind == 0) { color = image.sample(sampleFilter, uv); }
+        if (kind == 0) { float3 p=float3(uv,1.0);color = image.sample(sampleFilter,float2(dot(u.mediaX.xyz,p),dot(u.mediaY.xyz,p))); }
         else if (kind == 2) { color = float4(uv.x, uv.y, 1.0 - uv.x, 1.0); }
         else if (kind == 3) { color = float4(1.0); }
         else {

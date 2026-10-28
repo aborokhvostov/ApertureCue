@@ -166,7 +166,7 @@ final class SelectiveCueTests:XCTestCase {
             entries[0]["scope"]="future-extension";entries[0]["bindings"]=["not":"a binding"]
             legacy["cues"]=entries
             let migrated=try ProjectStore.load(from:write(legacy))
-            XCTAssertEqual(migrated.version,6);XCTAssertEqual(migrated.cues[0].scope,.full);XCTAssertEqual(migrated.cues[0].bindings,[])
+            XCTAssertEqual(migrated.version,Project.currentVersion);XCTAssertEqual(migrated.cues[0].scope,.full);XCTAssertEqual(migrated.cues[0].bindings,[])
             let saved=scratch.appendingPathComponent("save-\(version).json")
             try ProjectStore.save(Project(version:version,surfaces:[s],cues:[capture]),to:saved)
             XCTAssertEqual(try ProjectStore.load(from:saved).cues[0].scope,.full)

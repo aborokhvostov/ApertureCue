@@ -78,6 +78,9 @@ import MappingCore
     var cueMessage = ""
     var showConfigurationError = ""
     var timelineEventWarning = ""
+    var montageWindow: MontageWindowController?
+    var montagePool: MontagePool!
+    var montageSerial: UInt64 = 0
     var media: MediaPool!
     var renderer: MetalRenderer!
     let metalView = MTKView()
@@ -106,7 +109,7 @@ import MappingCore
         do {
             guard showConfigurationError.isEmpty else { throw ProjectError.invalid(showConfigurationError) }
             let timed = applyRecordingOverride(to:try showRuntime.apply(surfaces:project.surfaces))
-            let resolved = try GroupEngine.resolve(surfaces:timed,groups:project.groups)
+            let resolved = try GroupEngine.resolve(surfaces:montagePool.apply(to:timed),groups:project.groups)
             renderError = ""; return resolved
         } catch {
             renderError = "Group/automation: \(error.localizedDescription)"
@@ -124,6 +127,7 @@ import MappingCore
         selectedID = project.surfaces.first?.id
         guard let device = MTLCreateSystemDefaultDevice() else { fatalError("ApertureCue requires Metal") }
         metalView.device = device; media = MediaPool(device: device)
+        montagePool = MontagePool(device:device,media:media); media.virtualSources = montagePool
         renderer = MetalRenderer(view: metalView, media: media)
         makeUI(); bindOverlay(); reconcile(); refresh(); startTick()
         network = NetworkController { [weak self] command in self?.remote(command) }
@@ -209,6 +213,7 @@ import MappingCore
         assets.heightAnchor.constraint(equalToConstant:180).isActive = true
         let s = stack([label("MEDIA",bold:true),assets,
             ActionButton("Assign to surface") { [weak self] in self?.assignMedia() },
+            ActionButton("Montage sources…") { [weak self] in self?.showMontageWindow() },
             label("SURFACES · back → front",bold:true),layers,
             stack([ActionButton("+ Quad") { [weak self] in self?.addSurface() },ActionButton("Duplicate") { [weak self] in self?.duplicateSurface() }],vertical:false),
             stack([ActionButton("+ Triangle") { [weak self] in self?.addSurface(shape:.triangle) },ActionButton("+ Ellipse") { [weak self] in self?.addSurface(shape:.ellipse) }],vertical:false),
@@ -218,7 +223,7 @@ import MappingCore
         layers.heightAnchor.constraint(greaterThanOrEqualToConstant:120).isActive = true
         return s
     }
-    func numberOfRows(in tableView:NSTableView) -> Int { tableView === layerTable ? project.surfaces.count : project.assets.count }
+    func numberOfRows(in tableView:NSTableView) -> Int { tableView === layerTable ? project.surfaces.count : project.assets.count + project.montages.count }
     func tableView(_ tableView:NSTableView,viewFor tableColumn:NSTableColumn?,row:Int) -> NSView? {
         if tableView === layerTable {
             let s = project.surfaces[row]
@@ -226,13 +231,17 @@ import MappingCore
             let prefix = s.groupID.flatMap { id in project.groups.first(where:{$0.id == id})?.name }.map { "[\($0)] " } ?? ""
             return label((visible ? "◈ " : "○ ") + prefix + s.name)
         }
+        if row >= project.assets.count { return label("▤ " + project.montages[row-project.assets.count].name) }
         let a = project.assets[row]; return label((a.kind == "video" ? "▶ " : "▧ ") + a.name)
     }
     func tableViewSelectionDidChange(_ notification:Notification) {
         guard let table = notification.object as? NSTableView else { return }
         if table === layerTable, project.surfaces.indices.contains(table.selectedRow) {
             selectedID = project.surfaces[table.selectedRow].id; refreshInspector(); updateRender()
-        } else if table === mediaTable, project.assets.indices.contains(table.selectedRow) { selectedMediaID = project.assets[table.selectedRow].id }
+        } else if table === mediaTable {
+            let ids = project.assets.map(\.id) + project.montages.map(\.id)
+            if ids.indices.contains(table.selectedRow) { selectedMediaID = ids[table.selectedRow] }
+        }
     }
     private func bindOverlay() {
         overlay.onSelect = { [weak self] id in self?.selectedID = id; self?.refresh() }
@@ -285,7 +294,12 @@ import MappingCore
     func editSurface(_ name:String,_ body:(inout Surface)->Void) {
         guard let i = selectedIndex else { return }; mutate(name) { body(&$0.surfaces[i]) }
     }
-    func reconcile() { media.reconcile(assets:project.assets,baseURL:baseURL) }
+    func reconcile() {
+        updateActiveMedia()
+        media.reconcile(assets:project.assets,baseURL:baseURL)
+        do { try montagePool.reconcile(montages:project.montages,assets:project.assets,baseURL:baseURL) }
+        catch { editError=error.localizedDescription }
+    }
     func refresh() {
         let currentIDs=Set(project.surfaces.map(\.id))
         recording.armed.formIntersection(Set(project.timeline.filter {$0.enabled && currentIDs.contains($0.surfaceID)}.map(\.id)))
@@ -294,9 +308,11 @@ import MappingCore
         if let i = selectedIndex { layerTable.selectRowIndexes(IndexSet(integer:i),byExtendingSelection:false) }
         cuePicker.removeAllItems(); cuePicker.addItems(withTitles:project.cues.map(\.name))
         window?.title = "\(project.name)\(dirty ? " •" : "") — ApertureCue 0.1"
-        window?.isDocumentEdited = dirty; refreshInspector(); timelineWindow?.refresh(); cueWindow?.refresh()
+        window?.isDocumentEdited = dirty; refreshInspector(); timelineWindow?.refresh(); cueWindow?.refresh(); montageWindow?.refresh()
     }
     func updateRender() {
+        updateActiveMedia()
+        montagePool.update(time:showRuntime.time,playing:showRuntime.isPlaying,used:Set(project.surfaces.compactMap(\.mediaID)),serial:montageSerial,baseURL:baseURL)
         let effective = effectiveSurfaces
         do { resolvedBaseSurfaces = try GroupEngine.resolve(surfaces:project.surfaces,groups:project.groups) }
         catch { resolvedBaseSurfaces = []; renderError = error.localizedDescription }
@@ -383,13 +399,17 @@ import MappingCore
             add(ActionSlider(value:a.volume,min:0,max:1) { [weak self] value in self?.mutate("Volume") { p in if let aIndex = p.assets.firstIndex(where:{$0.id == a.id}) { p.assets[aIndex].volume = value } } })
             if a.kind != "camera" { add(ActionButton("Relink media…") { [weak self] in self?.relink(a.id) }) }
         }
+        if let montage=project.montages.first(where:{$0.id==surface.mediaID}) {
+            add(label("MONTAGE · " + montage.name,size:11,bold:true))
+            add(ActionButton("Edit montage…") { [weak self] in self?.showMontageWindow(); self?.montageWindow?.selectMontage(id:montage.id) })
+        }
         updateRecordingInspector()
     }
     @objc func newProject() {
         stopAutomationRecording(reason:"New project")
         guard confirmDiscard() else { return }; resetAutomationRecording(); closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil
         history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false; documentGeneration = UUID()
-        lighting?.stop(); selectedID = project.surfaces.first?.id; dirty = false; showRuntime.stop(); media.pause(); media.seek(to:0); timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; reconcile(); refresh()
+        lighting?.stop(); selectedID = project.surfaces.first?.id; dirty = false; showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; reconcile(); refresh()
     }
     @objc func openDialog() {
         let p = NSOpenPanel(); p.allowedContentTypes = [.json]; p.allowsMultipleSelection = false
@@ -401,7 +421,7 @@ import MappingCore
         do {
             let loaded = try ProjectStore.load(from:url)
             resetAutomationRecording()
-            closeOutputs(); lighting?.stop(); showRuntime.stop(); media.pause(); media.seek(to:0); timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false; documentGeneration = UUID(); project = loaded; projectURL = url; dirty = false; selectedID = loaded.surfaces.first?.id
+            closeOutputs(); lighting?.stop(); showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false; documentGeneration = UUID(); project = loaded; projectURL = url; dirty = false; selectedID = loaded.surfaces.first?.id
             if FileManager.default.fileExists(atPath:ProjectStore.recoveryURL(for:url).path) {
                 let alert = NSAlert(); alert.messageText = "Recovery snapshot found"; alert.informativeText = "Restore the autosaved state for this project?"; alert.addButton(withTitle:"Restore"); alert.addButton(withTitle:"Use saved project")
                 if alert.runModal() == .alertFirstButtonReturn, let recovered = try? ProjectStore.loadRecovery(for:url) { project = recovered; dirty = true }
@@ -444,7 +464,7 @@ import MappingCore
         let p = NSOpenPanel(); guard p.runModal() == .OK, let url = p.url else { return }
         let previousPath = project.assets.first(where: { $0.id == id })?.path
         mutate("Relink media") { state in if let i = state.assets.firstIndex(where:{$0.id == id}) { state.assets[i].path = url.path; state.assets[i].name = url.lastPathComponent } }
-        if previousPath == url.path { media.reloadAsset(id:id,assets:project.assets,baseURL:baseURL); refresh() }
+        if previousPath == url.path { montagePool.invalidateAsset(id); media.reloadAsset(id:id,assets:project.assets,baseURL:baseURL); refresh() }
     }
     func assignMedia() { guard let id = selectedMediaID else { return }; editSurface("Assign media") { $0.mediaID = id } }
     func addSurface(shape:SurfaceShape = .quad) {
@@ -519,7 +539,7 @@ import MappingCore
             }
             updateRender()
         }
-        if !project.timeline.isEmpty { updateRender() }
+        if !project.timeline.isEmpty || !project.montages.isEmpty { updateRender() }; montageWindow?.updatePlayhead()
         if lighting?.isSampling == true, now-lastLighting >= 1.0/30 {
             lighting?.fixtures = project.fixtures
             lighting?.renderer.blackout = blackout
@@ -530,7 +550,7 @@ import MappingCore
         func time(_ n:Double)->String { String(format:"%02d:%02d",Int(max(0,n))/60,Int(max(0,n))%60) }
         timeLabel.stringValue = "\(time(playhead)) / \(time(project.timelineSettings.duration))\(playhead>project.timelineSettings.duration ? " +" : "")"
         playButton.title = showRuntime.isPlaying ? "Ⅱ Pause" : "▶ Play"
-        let error = media.errorMessages.values.first.map { " · \($0)" } ?? ""
+        let error = (montagePool.diagnostics.values.first ?? media.errorMessages.values.first).map { " · \($0)" } ?? ""
         status.stringValue = "\(renderer.statistics) · \(project.surfaces.count) surfaces · \(outputWindows.count) output windows\(blackout ? " · BLACKOUT" : "")\(error)\(renderer.errorDescription.isEmpty ? "" : " · Last render error: " + renderer.errorDescription)\(renderError.isEmpty ? "" : " · " + renderError)\(editError.isEmpty ? "" : " · " + editError)\(workMessage.isEmpty ? "" : " · " + workMessage)\(timelineEventWarning.isEmpty ? "" : " · " + timelineEventWarning)\(cueMessage.isEmpty ? "" : " · " + cueMessage)\(isRecordingAutomation ? " · REC INPUT" : "")"
         if dirty, now-lastRecovery > 10, let url = projectURL { try? ProjectStore.saveRecovery(project,for:url); lastRecovery = now }
     }

@@ -76,6 +76,7 @@ public enum ProjectStore {
         if portable.version < 4 { clearLegacyStrokeExtensions(&portable) }
         if portable.version < 5 { migrateLegacyTimeline(&portable) }
         if portable.version < 6 { clearLegacyCueExtensions(&portable) }
+        if portable.version < 7 { portable.montages=[] }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
@@ -113,6 +114,7 @@ public enum ProjectStore {
         if p.version < 4 { clearLegacyStrokeExtensions(&p) }
         if p.version < 5 { migrateLegacyTimeline(&p) }
         if p.version < 6 { clearLegacyCueExtensions(&p) }
+        if p.version < 7 { p.montages=[] }
         p.version = Project.currentVersion
         try validate(p)
         let base = url.deletingLastPathComponent()
@@ -166,7 +168,7 @@ public enum ProjectStore {
         try unique(project.assets.map(\.id), "media IDs")
         try unique(project.outputs.map(\.id), "output IDs")
         try unique(project.cues.map(\.id), "cue IDs")
-        let mediaIDs = Set(project.assets.map(\.id)), outputIDs = Set(project.outputs.map(\.id))
+        let mediaIDs = project.sourceMediaIDs, outputIDs = Set(project.outputs.map(\.id))
         for asset in project.assets {
             guard ["image","video","camera"].contains(asset.kind) else { throw ProjectError.invalid("unknown media kind \(asset.kind)") }
             guard asset.path.utf8.count <= 32768, !asset.path.contains("\0"), asset.name.utf8.count <= 4096 else { throw ProjectError.invalid("invalid media path or name") }
@@ -176,6 +178,7 @@ public enum ProjectStore {
         for output in project.outputs {
             guard output.screenIndex >= 0, output.screenIndex < 64, (1...16384).contains(output.width), (1...16384).contains(output.height) else { throw ProjectError.invalid("invalid output size or screen index") }
         }
+        try MontageProgram.validate(montages:project.version>=7 ? project.montages : [],assets:project.assets)
         if project.version >= 3, (project.surfaces + project.cues.flatMap(\.surfaces)).contains(where:{ !$0.group.isEmpty }) {
             throw ProjectError.invalid("schema 3 uses groupID references; legacy group labels must be migrated from a version 0...2 document")
         }
