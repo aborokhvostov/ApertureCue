@@ -31,17 +31,17 @@
   "decoderBoundObservations" : [
     {
       "diagnostic" : "",
-      "finalGeneration" : 104,
+      "finalGeneration" : 1,
       "hasFrame" : true,
-      "initialGeneration" : 104,
+      "initialGeneration" : 1,
       "name" : "Bounded 0",
       "pts" : 0.23333333333333334
     },
     {
       "diagnostic" : "",
-      "finalGeneration" : 10,
+      "finalGeneration" : 104,
       "hasFrame" : true,
-      "initialGeneration" : 10,
+      "initialGeneration" : 104,
       "name" : "Bounded 1",
       "pts" : 0.23333333333333334
     },
@@ -55,10 +55,18 @@
     },
     {
       "diagnostic" : "",
+      "finalGeneration" : 3,
+      "hasFrame" : true,
+      "initialGeneration" : 3,
+      "name" : "Bounded 3",
+      "pts" : 0.23333333333333334
+    },
+    {
+      "diagnostic" : "",
       "finalGeneration" : 4,
       "hasFrame" : true,
       "initialGeneration" : 4,
-      "name" : "Bounded 3",
+      "name" : "Bounded 4",
       "pts" : 0.23333333333333334
     },
     {
@@ -66,7 +74,7 @@
       "finalGeneration" : 0,
       "hasFrame" : false,
       "initialGeneration" : 0,
-      "name" : "Bounded 4",
+      "name" : "Bounded 5",
       "pts" : -1
     },
     {
@@ -74,22 +82,14 @@
       "finalGeneration" : 1,
       "hasFrame" : true,
       "initialGeneration" : 1,
-      "name" : "Bounded 5",
-      "pts" : 0.23333333333333334
-    },
-    {
-      "diagnostic" : "",
-      "finalGeneration" : 3,
-      "hasFrame" : true,
-      "initialGeneration" : 3,
       "name" : "Bounded 6",
       "pts" : 0.23333333333333334
     },
     {
       "diagnostic" : "",
-      "finalGeneration" : 1,
+      "finalGeneration" : 10,
       "hasFrame" : true,
-      "initialGeneration" : 1,
+      "initialGeneration" : 10,
       "name" : "Bounded 7",
       "pts" : 0.23333333333333334
     },
@@ -102,7 +102,7 @@
       "pts" : 0.23333333333333334
     }
   ],
-  "fixtureDirectory" : "montage-generated-588037E8-6C57-471D-96BA-6CA04EC13492",
+  "fixtureDirectory" : "montage-generated-7A041666-C329-4D7E-BB80-AF6960C00B86",
   "gpu" : "Apple M2",
   "hardwareVerification" : false,
   "passedCheckCount" : 27,
@@ -142,14 +142,14 @@
       "target" : 2
     },
     {
+      "end" : 2.3999999999999999,
+      "pts" : 2.3666666666666667,
+      "target" : 2.375
+    },
+    {
       "end" : 1.7666666666666666,
       "pts" : 1.7333333333333334,
       "target" : 1.75
-    },
-    {
-      "end" : 1.5333333333333334,
-      "pts" : 1.5,
-      "target" : 1.5
     },
     {
       "end" : 2.7666666666666666,
@@ -157,9 +157,9 @@
       "target" : 2.75
     },
     {
-      "end" : 2.3999999999999999,
-      "pts" : 2.3666666666666667,
-      "target" : 2.375
+      "end" : 1.5333333333333334,
+      "pts" : 1.5,
+      "target" : 1.5
     },
     {
       "end" : 2.2666666666666666,
@@ -326,5 +326,5 @@
   "result" : "passed",
   "schemaVersion" : 1,
   "scope" : "Generated local H.264 files, production AVAssetReader\/MediaPool\/MontagePool and offscreen Metal. No external display\/projector, audible audio, hardware throughput or long playback soak is verified.",
-  "timestampUTC" : "2026-10-28T16:53:22Z"
+  "timestampUTC" : "2026-10-28T20:03:42Z"
 }

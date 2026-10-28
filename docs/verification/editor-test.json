@@ -1,5 +1,5 @@
 {
-  "checkCount" : 46,
+  "checkCount" : 51,
   "checks" : [
     "hidden editor startup with valid demo project",
     "add, duplicate, delete and controller undo\/redo",
@@ -46,7 +46,12 @@
     "pause\/seek\/stop\/loop\/GO\/document edits finalize recording and absorb late native gesture tokens",
     "active recording recovery and ordinary schema-6 Save\/New\/Open retain keys while session arming resets",
     "no-op show configuration between ticks preserves the running H.264 seek generation",
-    "recorded gestures and Undo\/Redo keep generated H.264\/show clocks and production preview continuous"
+    "recorded gestures and Undo\/Redo keep generated H.264\/show clocks and production preview continuous",
+    "hidden native montage Create\/Save are explicit, preserve drafts and have complete one-command Undo\/Redo",
+    "native video\/image clip Add\/Save\/Delete retain UUIDs and source timing, canonicalize images, select and seek with Undo\/Redo",
+    "production montage adapters atomically reject overlap, missing\/nested sources, nonfinite placement, invalid trim\/rate and shortened horizons",
+    "montage assignment and shared definitions retain cue UUID snapshots; deletion clears all current\/full\/selective\/dormant refs with complete Undo\/Redo",
+    "schema-7 Save\/New\/Open and collected original image\/H.264 bytes retain montage, clip, source and cue UUIDs with clean document\/runtime"
   ],
   "documentAssetCount" : 1,
   "documentSurfaceCount" : 2,
@@ -61,6 +66,6 @@
   "platform" : "Version 26.6.2 (Build 25G83)",
   "schemaVersion" : 1,
   "scope" : "Production EditorController and hidden output renderer integration; no external application, visible output, or hardware interaction.",
-  "timestampUTC" : "2026-10-27T18:34:55Z",
+  "timestampUTC" : "2026-10-28T20:03:23Z",
   "windowsShown" : false
 }

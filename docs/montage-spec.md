@@ -1,6 +1,6 @@
 # Source montage specification
 
-**Development stage after alpha 8; verification in progress.** Schema 7 adds independently authored assignable image/video montages. Published alpha 8 remains schema 6 until the next checked release. Implementation alone does not assert a montage/render/audio test pass.
+**Implemented alpha 9 subset, schema 7.** Independently authored assignable image/video montages have passed local core/reader/Metal/editor checks, native GUI, fresh archive execution and actual macOS/Linux XCTest CI. [Evidence](verification/montage-workflow.md). This is the hard-cut subset below; reverse/crossfade/audio and full reference parity remain open.
 
 The official reference describes assignable montage sources with video/image arrangement, trims, speed/loop, reverse/crossfade and gap policies: [R19 track types](https://docs.madmapper.com/madmapper/6/10.-timelines/track-types-and-inspectors), [R20 clips](https://docs.madmapper.com/madmapper/6/10.-timelines/clips). Exact interval, decoder, conflict and latency policies below are independent design decisions.
 
