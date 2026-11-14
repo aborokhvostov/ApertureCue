@@ -169,13 +169,13 @@ import MappingCore
         let savedURL=directory.appendingPathComponent("montage-saved.aperturecue.json")
         e.saveTo(savedURL);let saved=e.project
         let json=try required(try JSONSerialization.jsonObject(with:Data(contentsOf:savedURL)) as? [String:Any],"Saved montage JSON missing")
-        try expect(saved.version==7 && (json["version"] as? Int)==7 && (json["montages"] as? [[String:Any]])?.count==1 && !e.dirty && (try ProjectStore.load(from:savedURL))==saved,
-                   "Montage Save lost schema-7 definitions, clips or source references")
+        try expect(saved.version==Project.currentVersion && (json["version"] as? Int)==Project.currentVersion && (json["montages"] as? [[String:Any]])?.count==1 && !e.dirty && (try ProjectStore.load(from:savedURL))==saved,
+                   "Montage Save lost definitions, clips or source references")
         e.newProject()
         try expect(e.montageWindow==nil && e.project.montages.isEmpty && e.showRuntime.time==0,"New retained old montage window/definitions/playhead")
         e.openProject(savedURL)
         try expect(e.project==saved && !e.dirty && !e.history.canUndo && e.montageWindow==nil && e.showRuntime.time==0,
-                   "Montage Save/New/Open did not preserve schema-7 state with clean runtime")
+                   "Montage Save/New/Open did not preserve the project with clean runtime")
         let collectedURL=try ProjectStore.collect(e.project,to:directory.appendingPathComponent("montage-collected",isDirectory:true))
         let collected=try ProjectStore.load(from:collectedURL)
         try expect(collected.montages==saved.montages && collected.surfaces==saved.surfaces && collected.cues==saved.cues && collected.assets.map(\.id)==saved.assets.map(\.id),

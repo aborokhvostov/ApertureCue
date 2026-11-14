@@ -130,7 +130,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 7
+    public static let currentVersion = 8
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]
@@ -143,15 +143,18 @@ public struct Project: Codable, Equatable, Sendable {
     public var timelineSettings:TimelineSettings
     public var groups: [SurfaceGroup]
     public var montages:[MediaMontage]
+    /// Editor state for current layers, independent of scene snapshots.
+    public var geometryLockedSurfaceIDs: Set<UUID>
     public var sourceMediaIDs:Set<UUID> {Set(assets.map(\.id)+(version>=7 ? montages.map(\.id) : []))}
     public init(version: Int = Project.currentVersion, name: String = "Untitled", assets: [MediaAsset] = [],
                 surfaces: [Surface] = [], outputs: [OutputConfig] = [], cues: [Cue] = [],
                 fixtures: [Fixture] = [], timeline: [AutomationTrack] = [], groups: [SurfaceGroup] = [], timelineSettings:TimelineSettings? = nil,
-                montages:[MediaMontage]=[]) {
+                montages:[MediaMontage]=[], geometryLockedSurfaceIDs: Set<UUID> = []) {
         self.version=version; self.name=name; self.assets=assets; self.surfaces=surfaces; self.outputs=outputs; self.cues=cues
         self.fixtures=fixtures; self.timeline=timeline; self.groups=groups
         self.timelineSettings=timelineSettings ?? TimelineSettings.inferred(from:timeline)
         self.montages=montages
+        self.geometryLockedSurfaceIDs = geometryLockedSurfaceIDs
     }
     public static func demo() -> Project {
         let output = OutputConfig(name:"Projector 1")
@@ -165,11 +168,14 @@ public struct Project: Codable, Equatable, Sendable {
             Cue(name:"Aligned", surfaces:cueSurfaces, duration:2)
         ])
     }
-    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups,timelineSettings,montages }
+    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups,timelineSettings,montages,geometryLockedSurfaceIDs }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy:CodingKeys.self)
         let version=try c.decodeIfPresent(Int.self,forKey:.version) ?? 0
         guard version>=0,version<=Self.currentVersion else {throw ProjectError.unsupportedVersion(version)}
+        let lockIDs = version < 8 ? [] : try c.decode([UUID].self, forKey: .geometryLockedSurfaceIDs)
+        let locks = Set(lockIDs)
+        guard locks.count == lockIDs.count else { throw ProjectError.invalid("duplicate geometry lock IDs") }
         var cues:[Cue]=[]
         if c.contains(.cues) {
             var entries=try c.nestedUnkeyedContainer(forKey:.cues)
@@ -185,6 +191,25 @@ public struct Project: Codable, Equatable, Sendable {
                   timeline: try c.decodeIfPresent([AutomationTrack].self, forKey:.timeline) ?? [],
                   groups: try c.decodeIfPresent([SurfaceGroup].self, forKey:.groups) ?? [],
                   timelineSettings:try c.decodeIfPresent(TimelineSettings.self,forKey:.timelineSettings),
-                  montages:version<7 ? [] : try c.decode([MediaMontage].self,forKey:.montages))
+                  montages:version<7 ? [] : try c.decode([MediaMontage].self,forKey:.montages),
+                  geometryLockedSurfaceIDs: locks)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(version, forKey: .version)
+        try c.encode(name, forKey: .name)
+        try c.encode(assets, forKey: .assets)
+        try c.encode(surfaces, forKey: .surfaces)
+        try c.encode(outputs, forKey: .outputs)
+        try c.encode(cues, forKey: .cues)
+        try c.encode(fixtures, forKey: .fixtures)
+        try c.encode(timeline, forKey: .timeline)
+        try c.encode(groups, forKey: .groups)
+        try c.encode(timelineSettings, forKey: .timelineSettings)
+        try c.encode(montages, forKey: .montages)
+        if version >= 8 {
+            try c.encode(geometryLockedSurfaceIDs.map(\.uuidString).sorted(), forKey: .geometryLockedSurfaceIDs)
+        }
     }
 }

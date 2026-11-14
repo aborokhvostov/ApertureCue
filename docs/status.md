@@ -1,6 +1,6 @@
 # Текущее состояние ApertureCue
 
-Обновлено: 28 октября 2026 (Europe/Moscow), macOS first. Исследование начато 25 октября. Полное функциональное равенство MadMapper **не достигнуто**. Задача продолжается по [roadmap](roadmap.md); [матрица](feature-matrix.md) различает исследование, реализацию, автоматические, ручные и аппаратные проверки.
+Обновлено: 14 ноября 2026 (Europe/Moscow), macOS first. Исследование начато 25 октября. Полное функциональное равенство MadMapper **не достигнуто**. Задача продолжается по [roadmap](roadmap.md); [матрица](feature-matrix.md) различает исследование, реализацию, автоматические, ручные и аппаратные проверки.
 
 ## Окружение и референс
 
@@ -18,6 +18,8 @@ AppKit editor, Metal compositor, PNG/images и AVFoundation video, textured line
 Отдельные output windows с display selection/routing/blackout; full/selective surface snapshots with 13 atomic field masks and a native Scenes editor; графический parameter timeline с Hold/Linear/Bezier, independent show clock, loop/continuation и Pause/Scene markers; latest-frame AVCapture adapter; fixed MIDI input profile, OSC localhost control с bounded main-thread mailbox; basic RGB/GRB/RGBW strips, asynchronous composition sampling, simulator и opt-in IPv4 ArtDmx/sACN. OBJ импортируется как статическая pinhole-проекция в editable quad patches, без depth buffer и сохранения исходной 3D-сцены. PNG still export.
 
 ## Текущий этап
+
+Schema 8 adds project-level geometry locks per current surface. In the editor the lock keeps selection available and blocks canvas handles and direct geometry controls for output, input, mesh, mask, shape, and stroke. Scenes, automation and group operations keep their existing behavior. Projects from v0–v7 load unlocked and save as v8. Local verification on Apple M2 / macOS 26.6.2 passed 92 standalone core methods, 53 editor checks, 27 montage checks, 46 GPU/media checks, 11 lighting/UDP checks and OSC/MIDI parser loopback. In the visible editor, Lock geometry hid output handles, disabled the inspector controls and blocked dragging the same corner that moved after Unlock geometry. The built-in demo was discarded after the check. Alpha 9 evidence below belongs to the published montage revision.
 
 Alpha 9 adds assignable image/video montage sources on the master show clock: explicit clip editing, In/Out, positive rate, trim/montage loop and Black/Skip gaps. Schema 7 persists shared definitions outside surface snapshots. Silent independent readers preserve ordinary source volume/transport; blocking reads use serial Dispatch ownership with generation leases and an eight-reader bound. Verified: 91 standalone core methods, 46 GPU/media, 27 montage, 51 editor and 11 lighting/UDP checks; visible native create/edit/assign/seek/play/pause/Undo/Redo/save/quit/relaunch/reopen; fresh extracted-app 51 editor and 27 montage checks. Exact-source CI passed 91 actual XCTest on each macOS/Linux plus macOS release/native packaging. [Montage evidence and limitations](verification/montage-workflow.md). Reverse/crossfade, audio montage, broader recording tools and full reference parity remain open.
 

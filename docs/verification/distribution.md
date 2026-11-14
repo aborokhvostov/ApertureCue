@@ -117,4 +117,14 @@ Alpha 8 core-suite timing from actual CI logs: Linux 4.712 s and macOS 15 6.180 
 
 Ad hoc arm64 only, not notarized/universal. macOS 13 target; runtime observed on macOS 26.6.2. Montage videos are silent; directly assigned ordinary sources retain independent transport/volume and may play audio even when their layer is hidden. Eight montage video readers are admitted in UUID order, with an explicit gap/diagnostic for excess sources. No reverse, crossfade/overlap, audio montage, nested source or clip recording is provided. External projector/camera/MIDI/light hardware and full reference parity remain open. Alpha 1...8 reject schema 7; keep a separate copy for downgrade.
 
+## Alpha 10 candidate
+
+14 November 2026 on Apple M2 / arm64 / macOS 26.6.2. The candidate adds surface geometry locks and saves schema 8. Versions 0–7 load with unlocked geometry. Saving a project in this build requires schema 8 support to reopen it. Builds target macOS 13+ and use ad hoc signing.
+
+- Local standalone harness passed 92 core methods. Native checks passed 53 editor, 27 montage, 46 GPU/media, 11 light/UDP and local OSC/MIDI parser checks. These runs cover generated media including H.264 MOV and production window/controller paths. The lock run uses two procedural surfaces and zero external outputs in the visible editor. It verifies that an attempted drag at the old upper-left handle leaves the geometry in place, then repeats the drag successfully after unlocking. The built-in demo changes were discarded.
+- The final ZIP contains the signed executable and library, eight original demo documents, their PNG/MOV, license and notices. An initial archive inspection found a recovery sidecar beside the demo. Packaging now selects the named original demos and media explicitly. The rebuilt archive has 27 entries and 1,424,963 bytes. ZIP integrity, demo byte comparison and strict app signature passed after fresh extraction. SHA-256 `8c353b4402c97c92cf4df2d8e2adb6a2c1664eeacc58c7fdd6d34b5bc9f5eabc`.
+- The extracted executable passed all 53 editor and 27 montage checks from the documented repository working directory. An earlier editor run from under macOS's `/var` temporary-directory alias failed the harness's strict asset-path equality after Save. The extracted executable passed when started from the repository without changing the archive.
+
+No new sustained throughput, external display, audible output, or lighting hardware measurements were made for this candidate.
+
 [Alpha 9 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.9) is a prerelease. ZIP and SHA256SUMS were confirmed uploaded; both server SHA-256 digests and ZIP size match local evidence, and the tag resolves to the exact source above. Previous releases remain available.

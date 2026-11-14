@@ -6,6 +6,9 @@ import MappingCore
 final class CanvasOverlay: NSView {
     var surfaces: [Surface] = [] { didSet { needsDisplay = true } }
     var selectedID: UUID? { didSet { needsDisplay = true } }
+    var geometryLockedSurfaceIDs: Set<UUID> = [] {
+        didSet { if oldValue != geometryLockedSurfaceIDs { needsDisplay = true } }
+    }
     var inputMode = false { didSet { needsDisplay = true } }
     var pathMode = false { didSet { needsDisplay = true } }
     var meshMode = false
@@ -14,8 +17,7 @@ final class CanvasOverlay: NSView {
     var onBegin: (() -> Void)?
     var onChange: ((UUID, [Point2], Bool, Bool) -> Void)?
     var onEnd: (() -> Void)?
-    private var dragging: Int?
-    private var original: [Point2] = []
+    private var drag: (id: UUID, index: Int, points: [Point2])?
     override var isOpaque: Bool { false }
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
@@ -83,6 +85,11 @@ final class CanvasOverlay: NSView {
                 centerlines.move(to:cg(first)); projected.dropFirst().forEach {centerlines.addLine(to:cg($0))}
             }
             if selected {
+                selectedTitle = surface.name + (inputMode ? " · INPUT" : (pathMode ? " · PATH" : " · OUTPUT"))
+                if geometryLockedSurfaceIDs.contains(surface.id) {
+                    selectedTitle = surface.name + (inputMode ? " · INPUT LOCKED" : " · OUTPUT LOCKED")
+                    continue
+                }
                 let vertices = vertices(surface)
                 if pathMode && !inputMode && surface.shape == .bezier {
                     for node in stride(from:0,to:vertices.count,by:3) {
@@ -97,7 +104,6 @@ final class CanvasOverlay: NSView {
                         numberLabels.append((value,NSPoint(x:p.x*bounds.width+8,y:p.y*bounds.height+3)))
                     }
                 }
-                selectedTitle = surface.name + (inputMode ? " · INPUT" : (pathMode ? " · PATH" : " · OUTPUT"))
             }
         }
         stroke(muted,color:NSColor.white.withAlphaComponent(0.35),width:1)
@@ -113,10 +119,10 @@ final class CanvasOverlay: NSView {
     override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
         let p = convert(event.locationInWindow, from: nil)
-        if let surface = surfaces.first(where: { $0.id == selectedID }) {
+        if let surface = surfaces.first(where: { $0.id == selectedID }), !geometryLockedSurfaceIDs.contains(surface.id) {
             let handles = vertices(surface)
             if let index = handles.indices.min(by: { hypot(point(handles[$0]).x-p.x, point(handles[$0]).y-p.y) < hypot(point(handles[$1]).x-p.x, point(handles[$1]).y-p.y) }), hypot(point(handles[index]).x-p.x, point(handles[index]).y-p.y) < 18 {
-                dragging = index; original = handles; onBegin?(); return
+                drag = (surface.id, index, handles); onBegin?(); return
             }
         }
         if !inputMode {
@@ -130,7 +136,7 @@ final class CanvasOverlay: NSView {
         surfaces.reversed().first { $0.enabled && $0.opacity > 0 && SurfaceGeometry.contains(output:output,surface:$0) }?.id
     }
     override func mouseDragged(with event: NSEvent) {
-        guard let i = dragging, let id = selectedID else { return }
+        guard let (id, i, original) = drag, id == selectedID, !geometryLockedSurfaceIDs.contains(id) else { return }
         var pts = original; pts[i] = normalized(event)
         if pathMode,let surface=surfaces.first(where:{$0.id == id}),surface.shape == .bezier,i%3 == 0 {
             let delta=Point2(pts[i].x-original[i].x,pts[i].y-original[i].y)
@@ -140,7 +146,11 @@ final class CanvasOverlay: NSView {
         onChange?(id, pts, inputMode, meshMode)
     }
     override func mouseUp(with event: NSEvent) {
-        if dragging != nil { dragging = nil; onEnd?() }
+        finishDrag()
+    }
+    func finishDrag() {
+        guard drag != nil else { return }
+        drag = nil; onEnd?()
     }
 }
 #endif

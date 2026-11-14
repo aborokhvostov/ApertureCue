@@ -12,6 +12,7 @@ runCase("Project.unicode external paths", ProjectTests.self) { try $0.testExtern
 runCase("Project.recovery", ProjectTests.self) { try $0.testRecoveryDoesNotOverwriteSavedProject() }
 runCase("Project.version migration", ProjectTests.self) { try $0.testVersionMigrationAndFutureVersionRejection() }
 runCase("Project.malformed rejection", ProjectTests.self) { try $0.testMalformedDocumentsAndReferencesRejected() }
+runCase("Project.geometry lock persistence and migration", ProjectTests.self) { try $0.testGeometryLocksPersistAndVersionSevenIgnoresLockExtensions() }
 runCase("Project.undo redo", ProjectTests.self) { $0.testUndoRedoBranchAndBoundedHistory() }
 runCase("Transport.play pause seek loop", ShowTests.self) { $0.testPlayPauseSeekAndLoopWithInjectedHostTime() }
 runCase("Transport.nonloop end", ShowTests.self) { $0.testNonLoopingEndAndRestart() }

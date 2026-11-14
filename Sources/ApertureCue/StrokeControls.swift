@@ -4,18 +4,20 @@ import MappingCore
 
 extension EditorController {
     func setStrokeEditing(_ enabled:Bool) {
+        guard editableGeometryIndex != nil else { return }
         modePicker.selectItem(at:0); overlay.meshMode=false; overlay.maskMode=false
         overlay.pathMode=enabled; updateRender(); refreshInspector()
     }
     func replaceStroke(_ stroke:StrokePath,label:String="Edit stroke") throws {
-        guard let i=selectedIndex,project.surfaces[i].shape.isStroke else { return }
+        guard let i=editableGeometryIndex,project.surfaces[i].shape.isStroke else { return }
         var candidate=project; candidate.surfaces[i].stroke=stroke
         try ProjectStore.validate(candidate)
         mutate(label) { $0=candidate }
     }
     /// Handles arrive in world space, then invert the parent and cage/mesh once.
     func editStrokeHandles(surfaceID:UUID,world:[Point2]) throws {
-        guard let i=project.surfaces.firstIndex(where:{$0.id==surfaceID}),project.surfaces[i].shape.isStroke else { return }
+        guard !project.geometryLockedSurfaceIDs.contains(surfaceID),
+              let i=project.surfaces.firstIndex(where:{$0.id==surfaceID}),project.surfaces[i].shape.isStroke else { return }
         let surface=project.surfaces[i]
         let perNode=surface.shape == .bezier ? 3 : 1
         guard world.count==surface.stroke.nodes.count*perNode else { throw ProjectError.invalid("stroke handle count changed") }
@@ -36,7 +38,7 @@ extension EditorController {
         try ProjectStore.validate(candidate); project=candidate; editError=""; updateRender()
     }
     func insertStrokeNode(after selected:Int) throws {
-        guard let i=selectedIndex else { return }; let surface=project.surfaces[i]
+        guard let i=editableGeometryIndex else { return }; let surface=project.surfaces[i]
         var path=surface.stroke
         guard path.nodes.count<32 else { throw ProjectError.invalid("a path supports at most 32 nodes") }
         let aIndex=min(max(0,selected),path.closed ? path.nodes.count-1 : path.nodes.count-2)
@@ -51,12 +53,12 @@ extension EditorController {
         path.nodes.insert(node,at:aIndex+1); try replaceStroke(path,label:"Insert stroke node")
     }
     func removeStrokeNode(at index:Int) throws {
-        guard let i=selectedIndex else { return }; var path=project.surfaces[i].stroke
+        guard let i=editableGeometryIndex else { return }; var path=project.surfaces[i].stroke
         guard path.nodes.count>(path.closed ? 3 : 2),path.nodes.indices.contains(index) else { throw ProjectError.invalid("an open path needs two nodes; a closed path needs three") }
         path.nodes.remove(at:index); try replaceStroke(path,label:"Remove stroke node")
     }
     func configureStroke() {
-        guard let i=selectedIndex,project.surfaces[i].shape.isStroke else { return }
+        guard let i=editableGeometryIndex,project.surfaces[i].shape.isStroke else { return }
         let surface=project.surfaces[i], path=surface.stroke
         let picker=ActionPopUp(items:path.nodes.indices.map { "Node \($0+1)" },action:{_ in})
         let ax=ActionField("",action:{_ in}), ay=ActionField("",action:{_ in})

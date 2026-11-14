@@ -6,7 +6,13 @@ task_package="$(mktemp -d "${TMPDIR:-/tmp}/aperturecue-package.XXXXXX")"
 task_release="$task_package/ApertureCue-macOS-$task_arch"
 mkdir -p "$task_release"
 ditto --norsrc --noextattr dist/ApertureCue.app "$task_release/ApertureCue.app"
-ditto --norsrc --noextattr examples/Demo "$task_release/Demo"
+mkdir -p "$task_release/Demo"
+# Ship only the original demos and their media. Working copies and recovery
+# sidecars can exist beside them after running the editor.
+for task_demo in Demo Groups Montage Recording SelectiveCues Shapes Strokes Timeline; do
+  cp "examples/Demo/$task_demo.aperturecue.json" "$task_release/Demo/"
+done
+cp examples/Demo/calibration.png examples/Demo/motion.mov "$task_release/Demo/"
 cp LICENSE THIRD_PARTY_NOTICES.md "$task_release/"
 cat > "$task_release/START-HERE.txt" <<'TEXT'
 ApertureCue 0.1.0 development preview

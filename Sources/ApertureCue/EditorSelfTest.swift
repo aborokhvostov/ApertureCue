@@ -547,6 +547,70 @@ enum EditorSelfTest {
             for name in try RecordingMediaSelfTest.run(editor:e,directory:directory) { passed(name) }
             for name in try MontageEditorSelfTest.run(editor:e,directory:directory) { passed(name) }
 
+            var lockedSurface=Surface(name:"Locked stroke",shape:.bezier,stroke:.bezier)
+            lockedSurface.input=crop
+            lockedSurface.mask=[Point2(0.1,0.1),Point2(0.8,0.1),Point2(0.8,0.8),Point2(0.1,0.8)]
+            lockedSurface.meshColumns=2; lockedSurface.meshRows=2
+            lockedSurface.mesh=try Geometry.regularMesh(quad:lockedSurface.output,columns:2,rows:2)
+            var cueSurface=lockedSurface; cueSurface.output=output
+            cueSurface.mesh=try Geometry.regularMesh(quad:output,columns:2,rows:2)
+            let geometryCue=Cue(name:"Move locked surface",surfaces:[cueSurface],duration:0)
+            let opacityTrack=AutomationTrack(name:"Locked opacity",surfaceID:lockedSurface.id,parameter:"opacity",
+                                             keyframes:[AutomationKeyframe(time:0,value:1),AutomationKeyframe(time:10,value:0)])
+            e.mutate("Geometry lock fixture") { $0=Project(surfaces:[lockedSurface],cues:[geometryCue],timeline:[opacityTrack]) }
+            e.selectedID=lockedSurface.id; e.modePicker.selectItem(at:0); e.refresh()
+            func geometryButton(_ title:String) throws -> ActionButton {
+                try required(e.inspector.arrangedSubviews.compactMap { $0 as? ActionButton }.first { $0.title==title },"Missing geometry control \(title)")
+            }
+            try geometryButton("Lock geometry").performClick(nil)
+            let locked=e.project
+            try expect(locked.geometryLockedSurfaceIDs==[lockedSurface.id] && e.history.undoLabel=="Lock geometry","Inspector lock did not commit one history command")
+            e.undoEdit(); try expect(e.project.geometryLockedSurfaceIDs.isEmpty,"Undo did not unlock the layer")
+            e.redoEdit(); try expect(e.project==locked,"Redo did not restore the geometry lock")
+
+            e.goCue(index:0)
+            for (input,mesh,mask,path) in [(false,false,false,false),(true,false,false,false),(false,true,false,false),
+                                           (true,false,true,false),(false,false,false,true)] {
+                e.overlay.maskMode=mask; e.overlay.pathMode=path
+                e.overlay.onBegin?(); e.overlay.onChange?(lockedSurface.id,output,input,mesh); e.overlay.onEnd?()
+            }
+            e.overlay.maskMode=false; e.overlay.pathMode=false
+            try expect(e.cueTarget?.id==geometryCue.id && e.dragBefore==nil && e.project==locked,"Locked drag changed the document or interrupted GO")
+            try expect(e.overlay.hitSurface(at:Point2(0.5,0.5))==lockedSurface.id,"Locked stroke could not be selected by its visible contour")
+            for title in ["Reset quad / input","Create 4 × 4 warp mesh","Edit mesh points","Edit polygon mask","Remove mask","Path nodes…"] {
+                let button=try geometryButton(title)
+                try expect(!button.isEnabled,"Locked geometry control was enabled: \(title)")
+                button.actionBlock?()
+            }
+            let lockedShapePicker=try required(e.inspector.arrangedSubviews.compactMap { $0 as? ActionPopUp }.first,"Missing shape picker")
+            try expect(!lockedShapePicker.isEnabled,"Locked shape picker was enabled")
+            lockedShapePicker.actionBlock?(0)
+            let widthSlider=try required(e.inspector.arrangedSubviews.compactMap { $0 as? ActionSlider }.first,"Missing stroke-width slider")
+            try expect(!widthSlider.isEnabled,"Locked width slider was enabled")
+            widthSlider.actionBlock?(0.3)
+            try e.insertStrokeNode(after:0)
+            try e.editStrokeHandles(surfaceID:lockedSurface.id,world:[])
+            try expect(e.project==locked && e.history.undoLabel=="Lock geometry" && e.cueTarget?.id==geometryCue.id,"Locked commands changed document, history or GO")
+            passed("geometry lock keeps layer selectable, blocks canvas and inspector geometry actions and leaves pending GO intact")
+
+            e.tick()
+            try expect(e.project.surfaces[0].output==output && e.project.geometryLockedSurfaceIDs==[lockedSurface.id],"Full GO failed to move the locked geometry or changed the lock")
+            e.seekShow(to:5)
+            try expect(e.effectiveSurfaces.first?.opacity==0.5,"Automation no longer renders on the locked layer")
+            let lockURL=directory.appendingPathComponent("geometry-lock.aperturecue.json")
+            e.saveTo(lockURL); let savedLock=e.project
+            e.newProject(); try expect(e.project.geometryLockedSurfaceIDs.isEmpty,"New inherited a previous document lock")
+            e.openProject(lockURL); try expect(e.project==savedLock && e.editableGeometryIndex==nil,"Reopen lost the geometry lock")
+            try geometryButton("Unlock geometry").performClick(nil)
+            try expect(e.history.undoLabel=="Unlock geometry" && e.editableGeometryIndex != nil,"Unlock did not restore editing")
+            let unlockedCrop=Point2.unitQuad
+            e.overlay.onBegin?(); e.overlay.onChange?(lockedSurface.id,unlockedCrop,true,false); e.overlay.onEnd?()
+            try expect(e.project.surfaces[0].input==unlockedCrop && e.history.undoLabel=="Move control point","Unlocked input drag did not commit")
+            e.undoEdit(); e.undoEdit(); try expect(e.project==savedLock,"Undo unlock lost saved surface state")
+            e.deleteSurface(); try expect(e.project.geometryLockedSurfaceIDs.isEmpty,"Deletion left an orphan lock")
+            e.undoEdit(); try expect(e.project==savedLock,"Delete Undo failed to restore layer and lock")
+            passed("scene and automation still render locked layers; lock and unlock round trip with save, reopen and history")
+
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count
             try writeReport()

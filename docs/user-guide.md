@@ -23,6 +23,8 @@ dist/ApertureCue.app/Contents/MacOS/ApertureCue examples/Demo/Demo.aperturecue.j
 
 **Reset quad / input** сбрасывает текущую сторону. Изменение output corners после создания warp mesh сбрасывает эту сетку; это ограничение текущего редактора. **Create 4 × 4 warp mesh** создаёт регулярную сетку. **Edit mesh points / Edit quad corners** переключает редактируемые handle points. Это регулярная линейная warp-сетка; Bézier mesh остаётся следующим этапом. Узлы текстурного пути редактируются отдельно, как описано ниже.
 
+Чтобы закрепить настройку, выделите поверхность и нажмите **Lock geometry** в правой панели. Строка слоя получает отметку **Locked**, контур остаётся доступен для выбора, а ручки исчезают. Блокируются правки рамки, формы, входной области, warp mesh, polygon mask и узлов и ширины пути. Сцены по-прежнему могут менять геометрию, а групповые команды, назначение медиа, цвет и автоматизация остаются доступны. **Unlock geometry** возвращает ручки и команды. Оба действия поддерживают Undo/Redo. Блокировка сохраняется в проекте. Новый дубликат и слой, возвращённый сценой после удаления, открываются для редактирования. Undo удаления возвращает прежнюю блокировку.
+
 ### Triangle и Ellipse
 
 Кнопки **+ Triangle** / **+ Ellipse** создают поверхности, а **Shape · four-corner frame** меняет форму выбранного слоя с Undo/Redo. Все формы сохраняют четыре ручки перспективной рамки; треугольник задаётся точками `(0.5,0)`, `(1,1)`, `(0,1)` внутри неё, эллипс — вписанной окружностью в local `[0,1]²`. Изменение пропорций рамки даёт эллипс, перспектива и mesh деформируют форму вместе с изображением. Это не режим трёх независимых вершин/UV.
@@ -138,7 +140,7 @@ Full recall сохраняет прежнее поведение surface snapsho
 
 Recall сам по себе не останавливает и не перематывает media/show clocks. Fades идут по host clock даже при Pause параметрического timeline. Активная timeline automation продолжает перекрывать соответствующие базовые поля Cue; её Pause/loop/seek/end остаются отдельными transport-событиями. Это не frame lock между декодерами. Undo возвращает сохранённое состояние документа до GO. Delete удаляет связанные Scene markers и tracks, потерявшие последний target в текущих поверхностях или оставшихся full snapshots.
 
-Проект сохраняется в schema 7: старые версии 0…5 мигрируют как full surface snapshots; v6 сохраняет selective bindings. Старые binaries, не поддерживающие schema 7, отклонят такой проект; сохраняйте отдельную копию. Cue-owned timelines, quantized launch и calendar scheduler остаются следующими этапами. Журнал ручных проверок selective workflow: [checklist](verification/selective-workflow.md).
+Версии 0…5 мигрируют как full surface snapshots. Версии начиная с v6 сохраняют selective bindings. Cue-owned timelines, quantized launch и calendar scheduler остаются следующими этапами. Журнал ручных проверок selective workflow: [checklist](verification/selective-workflow.md).
 
 ### Графический Parameter Timeline
 
@@ -168,7 +170,7 @@ Interpolation относится к сегменту **после** выбран
 
 **Stop recording**, Pause/Stop/Seek, loop wrap, Scene GO, конец graph duration и редактирование документа завершают режим. При таком прерывании сохраняется только последний принятый участок; искусственный endpoint в момент остановки не добавляется. Запоздалые события старого gesture после прерывания не превращаются в новую правку поверхности. Arm можно оставить для следующего запуска Record input. Старт записи фиксирует активный scene fade; изменение Arm также завершает запись. Save/Undo/Redo завершают текущий жест перед своей операцией.
 
-Запись не перематывает media и не перезапускает show clock. Изменение только keys и Undo/Redo keys сохраняют текущую позицию и playback; реальные Pause/Seek/loop/end выполняют собственные transport-действия. Это не синхронизация декодеров по кадрам. Сама запись создаёт обычные keys ранее введённого формата. Текущий writer сохраняет весь документ как schema 7; для его открытия нужна новая сборка. Arm/режим записи не сохраняются. Наличие описанного workflow не заменяет отдельные автоматические и ручные результаты в status и verification.
+Запись использует обычные keys и сохраняет текущую позицию и playback при правке keys и Undo/Redo. Pause, Seek, loop и end выполняют собственные transport-действия. Arm и режим записи действуют до закрытия проекта.
 
 ## LED mapping и симулятор
 
@@ -190,7 +192,7 @@ Art-Net™ Designed by and Copyright Artistic Licence.
 
 ## Сохранение, история и экспорт
 
-File > Save (`Cmd-S`) and Save As (`Cmd-Shift-S`) write the own `.aperturecue.json`; Open (`Cmd-O`) reloads it. The current JSON schema is version 7. v0/v1 migrate to quad; v2 retains triangle/ellipse; legacy v0...v2 group labels become UUID groups. v3 stores groups, v4 paths, v5 timeline easing/settings/markers, v6 explicit full/selective cue scope and bindings. Pre-v4 stroke extensions are cleared; v0...v5 cues migrate to full snapshots. v7 adds required montage definitions and extends surface source references; earlier versions discard undefined montage extensions. Saving upgrades to v7. Alpha 1...8 reject schema 7, so keep an older document copy for downgrade. Media paths are relative on disk and absolute in memory.
+**File → Save** (`⌘S`) и **Save As** (`⌘⇧S`) записывают `.aperturecue.json`, **Open** (`⌘O`) открывает его. В v2 появились triangle/ellipse, в v3 группы UUID, в v4 пути, в v5 easing и маркеры timeline, в v6 full/selective cues, в v7 монтаж источников. Проекты v0–v7 открываются с разблокированными поверхностями. Сохранение обновляет формат до v8, поэтому для возврата к alpha 9 или более ранней сборке понадобится отдельная копия проекта прежнего формата. Пути к медиа на диске относительные.
 
 File → **Collect portable project…** создаёт переносимую копию в новой, ещё не существующей папке. Внутри находятся `project.aperturecue.json` и `media/<asset UUID>.<extension>`. Такое именование разделяет одноимённые источники. Приложение копирует обычные media files, проверяет созданный проект и относительные ссылки, затем публикует готовую папку одним переименованием. Missing media, неподходящий source или ошибка копирования отменяют операцию; исходный проект и выбранная папка назначения не перезаписываются.
 

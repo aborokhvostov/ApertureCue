@@ -77,6 +77,7 @@ public enum ProjectStore {
         if portable.version < 5 { migrateLegacyTimeline(&portable) }
         if portable.version < 6 { clearLegacyCueExtensions(&portable) }
         if portable.version < 7 { portable.montages=[] }
+        if portable.version < 8 { portable.geometryLockedSurfaceIDs = [] }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
@@ -185,6 +186,9 @@ public enum ProjectStore {
         for cue in project.cues { try CueSelection.validate(cue) }
         try GroupEngine.validate(project)
         try validateSurfaces(project.surfaces, mediaIDs:mediaIDs, outputIDs:outputIDs)
+        if project.version >= 8, !project.geometryLockedSurfaceIDs.isSubset(of: Set(project.surfaces.map(\.id))) {
+            throw ProjectError.invalid("geometry lock refers to a missing current surface")
+        }
         try FixtureSampler.validate(fixtures:project.fixtures)
         var totalCueSurfaces = 0
         for cue in project.cues {

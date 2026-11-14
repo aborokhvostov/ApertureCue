@@ -71,6 +71,36 @@ final class ProjectTests: XCTestCase {
         XCTAssertThrowsError(try ProjectStore.load(from:url)) { XCTAssertEqual($0 as? ProjectError,.tooLarge) }
     }
 
+    func testGeometryLocksPersistAndVersionSevenIgnoresLockExtensions() throws {
+        let url = scratch.appendingPathComponent("locked.aperturecue.json")
+        var project = Project.demo()
+        project.geometryLockedSurfaceIDs = Set(project.surfaces.map(\.id))
+        try ProjectStore.save(project,to:url)
+        XCTAssertEqual(try ProjectStore.load(from:url),project)
+        try ProjectStore.saveRecovery(project,for:url)
+        XCTAssertEqual(try ProjectStore.loadRecovery(for:url),project)
+        let collected = try ProjectStore.collect(project,to:scratch.appendingPathComponent("Portable"))
+        XCTAssertEqual(try ProjectStore.load(from:collected),project)
+
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:url)) as? [String:Any])
+        let locks = try XCTUnwrap(json["geometryLockedSurfaceIDs"] as? [String])
+        XCTAssertEqual(locks,project.geometryLockedSurfaceIDs.map(\.uuidString).sorted())
+        func write() throws { try JSONSerialization.data(withJSONObject:json).write(to:url) }
+        json["geometryLockedSurfaceIDs"] = [locks[0],locks[0]]
+        try write()
+        XCTAssertThrowsError(try ProjectStore.load(from:url))
+        json["geometryLockedSurfaceIDs"] = [UUID().uuidString]
+        try write()
+        XCTAssertThrowsError(try ProjectStore.load(from:url))
+        json["geometryLockedSurfaceIDs"] = "unknown extension"
+        try write()
+        XCTAssertThrowsError(try ProjectStore.load(from:url))
+        json["version"] = 7
+        try write()
+        project.geometryLockedSurfaceIDs = []
+        XCTAssertEqual(try ProjectStore.load(from:url),project)
+    }
+
     func testUndoRedoBranchAndBoundedHistory() {
         let h=EditHistory(capacity:2)
         var a=Project(name:"A"), b=a; b.name="B"
