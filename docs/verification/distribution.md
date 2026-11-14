@@ -127,4 +127,6 @@ Ad hoc arm64 only, not notarized/universal. macOS 13 target; runtime observed on
 
 No new sustained throughput, external display, audible output, or lighting hardware measurements were made for this candidate.
 
+Published as [alpha 10](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.10). The tag resolves to `2562a854eca6d5e59f352effbb8a1776e6ad4406`. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/43585769766) passed 92 actual XCTest on each platform, with zero failures. The reported suite durations were 6.196 s on macOS and 2.891 s on Linux. The macOS SwiftPM release and native package/archive/artifact steps passed. The release ZIP hash matches the fresh extraction above. GitHub reports `SHA256SUMS` as 94 bytes with SHA-256 `94d52511aa14acce98ebdabcf637015d6c54c78da2cb278bcbb914c4949875b7`. Both assets are uploaded.
+
 [Alpha 9 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.9) is a prerelease. ZIP and SHA256SUMS were confirmed uploaded; both server SHA-256 digests and ZIP size match local evidence, and the tag resolves to the exact source above. Previous releases remain available.
