@@ -149,4 +149,6 @@ Published as [alpha 11](https://github.com/aborokhvostov/ApertureCue/releases/ta
 - In the visible editor, the two-surface procedural demo opened one standalone preview without a display assigned, then opened fullscreen on the built-in Retina display. Escape closed each window, and reopening Outputs selected the assigned display. Changes to the built-in demo were discarded.
 - Physical hotplug, projector output and extended runtime remain outside this release's evidence.
 
+Published as [alpha 12](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.12) from `d58ff0052299bd68d1c342b5712adde6f548bc22`. [CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/43714450518) passed 95 XCTest on each platform with zero failures. The suites reported 5.399 s on macOS and 4.094 s on Linux. The macOS release build, native app, archive and artifact passed. GitHub's ZIP digest and size match the verified archive. The uploaded SHA256SUMS has 94 bytes and SHA-256 `22eb162a057a794140efd85ea33d3273bd863bb4ceb7c20d0d68d4e2b3664107`.
+
 [Alpha 9 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.9) is a prerelease. ZIP and SHA256SUMS were confirmed uploaded; both server SHA-256 digests and ZIP size match local evidence, and the tag resolves to the exact source above. Previous releases remain available.
