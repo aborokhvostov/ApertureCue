@@ -166,6 +166,45 @@ enum SelfTest {
                 checks.append("\(shape.rawValue) shape-aware feather numerical oracle")
             }
 
+            var custom = perspective
+            custom.shape = .triangle
+            custom.triangleVertices = [Point2(0.1,0.1),Point2(0.1,0.7),Point2(0.8,0.1)]
+            custom.input = [Point2(0.1,0.2),Point2(0.8,0.2),Point2(0.8,0.9),Point2(0.1,0.9)]
+            for warped in [false,true] {
+                var display = custom
+                if warped {
+                    display.meshColumns=2; display.meshRows=2
+                    display.mesh=try Geometry.regularMesh(quad:quad,columns:2,rows:2)
+                    display.mesh[4].x += 0.08
+                    let group = SurfaceGroup(name:"Mirrored triangle",transform:Affine2D(a:-1,b:0,c:0,d:1,tx:1,ty:0))
+                    display.groupID=group.id
+                    display=try GroupEngine.resolve(surfaces:[display],groups:[group])[0]
+                }
+                image=try frame([display])
+                var original=display; original.shape = .quad
+                let uncroppedShape=try frame([original])
+                var inside=0, outside=0
+                for y in stride(from:10,to:85,by:4) { for x in stride(from:8,to:121,by:4) {
+                    let p=Point2((Double(x)+0.5)/128,(Double(y)+0.5)/96)
+                    guard let local=try? SurfaceGeometry.localPoint(output:p,surface:display) else { continue }
+                    let edge=min(local.x-0.1,local.y-0.1,1-(local.x-0.1)/0.7-(local.y-0.1)/0.6)
+                    if edge>0.04 {
+                        inside += 1
+                        try expect(pixel(image,x,y)==pixel(uncroppedShape,x,y),"Triangle vertices remapped gradient UV")
+                    } else if edge < -0.04 {
+                        outside += 1
+                        try expect(pixel(image,x,y)[0...2].allSatisfy { $0==0 },"Pixel outside custom triangle remained visible")
+                    }
+                } }
+                try expect(inside>10 && outside>10,"Custom triangle pixel oracle sampled too few points")
+                display.triangleVertices.reverse()
+                let reversed=try frame([display])
+                for y in stride(from:10,to:85,by:5) { for x in stride(from:8,to:121,by:5) {
+                    try expect(near(pixel(image,x,y),pixel(reversed,x,y),tolerance:1),"Triangle winding changed coverage")
+                } }
+            }
+            checks.append("custom triangle GPU matches independent local edge and UV oracles with a perspective cage, mirrored group and displaced mesh")
+
             // Independent dense CPU centerline oracle. This deliberately does
             // not use StrokeGeometry.hit/samples, so GPU distance, UV and cubic
             // flattening errors do not share an implementation with the oracle.

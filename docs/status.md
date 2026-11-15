@@ -1,6 +1,6 @@
 # Текущее состояние ApertureCue
 
-Обновлено: 14 ноября 2026 (Europe/Moscow), macOS first. Исследование начато 25 октября. Полное функциональное равенство MadMapper **не достигнуто**. Задача продолжается по [roadmap](roadmap.md); [матрица](feature-matrix.md) различает исследование, реализацию, автоматические, ручные и аппаратные проверки.
+Обновлено: 15 ноября 2026 (Europe/Moscow), macOS first. Исследование начато 25 октября. Полное функциональное равенство MadMapper **не достигнуто**. Задача продолжается по [roadmap](roadmap.md); [матрица](feature-matrix.md) различает исследование, реализацию, автоматические, ручные и аппаратные проверки.
 
 ## Окружение и референс
 
@@ -18,6 +18,8 @@ AppKit editor, Metal compositor, PNG/images и AVFoundation video, textured line
 Отдельные output windows с display selection/routing/blackout; full/selective surface snapshots with 13 atomic field masks and a native Scenes editor; графический parameter timeline с Hold/Linear/Bezier, independent show clock, loop/continuation и Pause/Scene markers; latest-frame AVCapture adapter; fixed MIDI input profile, OSC localhost control с bounded main-thread mailbox; basic RGB/GRB/RGBW strips, asynchronous composition sampling, simulator и opt-in IPv4 ArtDmx/sACN. OBJ импортируется как статическая pinhole-проекция в editable quad patches, без depth buffer и сохранения исходной 3D-сцены. PNG still export.
 
 ## Текущий этап
+
+Schema 9 adds three individually editable triangle vertices inside the projective cage. Source UV, mesh and group transforms keep their own controls. Full and selective Shape cues switch vertices at the midpoint. Projects v0–v8 retain canonical triangle coverage on load. Local standalone core passed 94 methods including migration, scene recall, both windings and invalid-geometry rejection. The native build passed 54 editor, 47 Metal/media and 11 lighting/UDP checks. In the visible editor, a vertex drag moved only the upper point and left the cage and lower vertices in place. Undo, Redo and Reset triangle vertices were verified on the built-in procedural demo.
 
 Schema 8 adds project-level geometry locks per current surface. In the editor the lock keeps selection available and blocks canvas handles and direct geometry controls for output, input, mesh, mask, shape, and stroke. Scenes, automation and group operations keep their existing behavior. Projects from v0–v7 load unlocked and save as v8. Local verification on Apple M2 / macOS 26.6.2 passed 92 standalone core methods, 53 editor checks, 27 montage checks, 46 GPU/media checks, 11 lighting/UDP checks and OSC/MIDI parser loopback. In the visible editor, Lock geometry hid output handles, disabled the inspector controls and blocked dragging the same corner that moved after Unlock geometry. The built-in demo was discarded after the check. Alpha 9 evidence below belongs to the published montage revision.
 
@@ -45,7 +47,7 @@ Portable Collect проверен отдельными core tests: проект 
 
 ## Незавершённое
 
-Базовый desktop workflow проверен автоматически и через GUI на текущем дисплее. Открыты: длительный soak, точный multi-source timing/PTS/drift, стабильные display IDs/hotplug, внешние проекторы; broader recording tools, reverse/crossfade, audio/MIDI/OSC montage/Conductor, free vertices/freehand/Bézier mesh/masks, group perspective/isolation/FX/automation, полноценный edge blending, audio engine/routing/analysis, расширенные fixtures/recording, external SDK adapters, live 3D/calibration/scanner, offline video/light export и standalone player, Windows/Linux desktop.
+Базовый desktop workflow проверен автоматически и через GUI на текущем дисплее. Открыты: длительный soak, точный multi-source timing/PTS/drift, стабильные display IDs/hotplug, внешние проекторы; broader recording tools, reverse/crossfade, audio/MIDI/OSC montage/Conductor, freehand/Bézier mesh/masks, group perspective/isolation/FX/automation, полноценный edge blending, audio engine/routing/analysis, расширенные fixtures/recording, external SDK adapters, live 3D/calibration/scanner, offline video/light export и standalone player, Windows/Linux desktop.
 
 Alpha 9 was published after exact-source CI, final native workflow and fresh extracted-app verification. ZIP/SHA256SUMS are uploaded; GitHub size/digests and tag source match local evidence. Next engineering stages include reverse/crossfade/audio montage and broader recording tools; group perspective/isolation/FX/automation, Conductor and external clocks remain open. Hardware gates remain separately unverified.
 

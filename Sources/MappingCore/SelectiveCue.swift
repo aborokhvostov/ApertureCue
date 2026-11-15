@@ -102,7 +102,7 @@ public enum CueSelection {
         case .source:s.mediaID=b.mediaID;s.generator=b.generator
         case .input:s.input=b.input
         case .outputGeometry:s.output=b.output;s.mesh=b.mesh;s.meshColumns=b.meshColumns;s.meshRows=b.meshRows;s.groupID=b.groupID
-        case .shape:s.shape=b.shape;s.stroke=b.stroke
+        case .shape:s.shape=b.shape;s.stroke=b.stroke;s.triangleVertices=b.triangleVertices
         case .mask:s.mask=b.mask
         case .routing:s.outputID=b.outputID
         }

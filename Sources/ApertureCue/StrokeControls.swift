@@ -3,8 +3,9 @@ import AppKit
 import MappingCore
 
 extension EditorController {
-    func setStrokeEditing(_ enabled:Bool) {
+    func setShapePointEditing(_ enabled:Bool) {
         guard editableGeometryIndex != nil else { return }
+        overlay.finishDrag()
         modePicker.selectItem(at:0); overlay.meshMode=false; overlay.maskMode=false
         overlay.pathMode=enabled; updateRender(); refreshInspector()
     }

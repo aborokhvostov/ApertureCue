@@ -258,7 +258,7 @@ import MappingCore
             guard let self, self.dragBefore != nil, let i = self.editableGeometryIndex, self.project.surfaces[i].id == id else { return }
             do {
                 var edited = self.project.surfaces[i]
-                if self.overlay.pathMode && !input { try self.editStrokeHandles(surfaceID:id,world:points); return }
+                if self.overlay.pathMode && !input && edited.shape.isStroke { try self.editStrokeHandles(surfaceID:id,world:points); return }
                 if self.overlay.maskMode { edited.mask = points }
                 else if input { try Geometry.validateQuad(points); edited.input = points }
                 else {
@@ -276,6 +276,20 @@ import MappingCore
                 self.project.surfaces[i] = edited; self.editError = ""
             } catch { self.editError = error.localizedDescription; return }
             self.updateRender()
+        }
+        overlay.onTriangleDrag = { [weak self] id,vertex,world in
+            guard let self, self.dragBefore != nil, let i = self.editableGeometryIndex,
+                  self.project.surfaces[i].id == id, let frame = self.resolvedBaseSurfaces.first(where: { $0.id == id }),
+                  frame.shape == .triangle, self.overlay.pathMode, !self.inputMode,
+                  frame.triangleVertices.indices.contains(vertex) else { return }
+            do {
+                var vertices = frame.triangleVertices
+                vertices[vertex] = try SurfaceGeometry.localPoint(output:world,surface:frame)
+                _ = try TriangleGeometry(vertices:vertices)
+                self.project.surfaces[i].triangleVertices = vertices
+                self.editError = ""
+                self.updateRender()
+            } catch { self.editError = error.localizedDescription }
         }
         overlay.onEnd = { [weak self] in
             guard let self, let before = self.dragBefore else { return }
@@ -341,7 +355,10 @@ import MappingCore
             s.shape = .quad; s.mesh = []; s.meshColumns = 0; s.meshRows = 0; s.mask = []; s.feather = 0; s.opacity = 1; s.brightness = 1; s.gamma = 1; s.color = [1,1,1]; s.enabled = true
             renderer.surfaces = [s]
         } else { renderer.surfaces = effective }
-        if selectedIndex.map({ !project.surfaces[$0].shape.isStroke }) ?? true { overlay.pathMode=false }
+        if let i = selectedIndex {
+            let shape = project.surfaces[i].shape
+            if !shape.isStroke && shape != .triangle { overlay.pathMode=false }
+        } else { overlay.pathMode=false }
         overlay.geometryLockedSurfaceIDs = project.geometryLockedSurfaceIDs
         overlay.inputMode = inputMode; overlay.selectedID = selectedID; overlay.surfaces = resolvedBaseSurfaces
         renderer.blackout = false
@@ -370,8 +387,19 @@ import MappingCore
         add(label("Shape · four-corner frame",size:11))
         let shapes: [SurfaceShape] = [.quad,.triangle,.ellipse,.line,.bezier]
         geometryControl(ActionPopUp(items:["Quad","Triangle","Ellipse","Line","Bézier"],selected:shapes.firstIndex(of:surface.shape) ?? 0) { [weak self] v in self?.setSurfaceShape(shapes[v]) })
+        if surface.shape == .triangle {
+            geometryControl(ActionButton(overlay.pathMode ? "Edit cage corners" : "Edit triangle vertices") { [weak self] in
+                guard let self else { return }; self.setShapePointEditing(!self.overlay.pathMode)
+            })
+            let reset = ActionButton("Reset triangle vertices") { [weak self] in
+                guard let self, let i = self.editableGeometryIndex, self.project.surfaces[i].shape == .triangle else { return }
+                self.editSurface("Reset triangle vertices") { $0.triangleVertices = TriangleGeometry.canonical }
+            }
+            reset.isEnabled = !locked && surface.triangleVertices != TriangleGeometry.canonical
+            add(reset)
+        }
         if surface.shape.isStroke {
-            geometryControl(ActionButton(overlay.pathMode ? "Edit cage corners" : "Edit path points") { [weak self] in guard let self else { return }; self.setStrokeEditing(!self.overlay.pathMode) })
+            geometryControl(ActionButton(overlay.pathMode ? "Edit cage corners" : "Edit path points") { [weak self] in guard let self else { return }; self.setShapePointEditing(!self.overlay.pathMode) })
             geometryControl(ActionButton("Path nodes…") { [weak self] in self?.configureStroke() })
             add(label(String(format:"Stroke width  %.2f",surface.stroke.width),size:11))
             geometryControl(ActionSlider(value:surface.stroke.width,min:0.001,max:0.5) { [weak self] width in
@@ -510,7 +538,7 @@ import MappingCore
             var s = Surface(name:"\(shape == .quad ? "Surface" : shape.rawValue.capitalized) \(p.surfaces.count+1)")
             s.shape = shape; s.stroke = shape == .bezier ? .bezier : .line; p.surfaces.append(s); selectedID = s.id
         }
-        if shape.isStroke { setStrokeEditing(true) }
+        if shape.isStroke { setShapePointEditing(true) }
     }
     func changeSurfaceShape(_ shape:SurfaceShape) throws {
         guard let i=editableGeometryIndex else { return }

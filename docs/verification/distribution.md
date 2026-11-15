@@ -129,4 +129,13 @@ No new sustained throughput, external display, audible output, or lighting hardw
 
 Published as [alpha 10](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.10). The tag resolves to `2562a854eca6d5e59f352effbb8a1776e6ad4406`. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/43585769766) passed 92 actual XCTest on each platform, with zero failures. The reported suite durations were 6.196 s on macOS and 2.891 s on Linux. The macOS SwiftPM release and native package/archive/artifact steps passed. The release ZIP hash matches the fresh extraction above. GitHub reports `SHA256SUMS` as 94 bytes with SHA-256 `94d52511aa14acce98ebdabcf637015d6c54c78da2cb278bcbb914c4949875b7`. Both assets are uploaded.
 
+## Alpha 11
+
+15 November 2026 on Apple M2 / arm64 / macOS 26.6.2. Three editable triangle vertices live inside the projective cage. Schema 9 stores them in the surface and the Shape cue field. Older projects open with their original triangle outline. The build targets macOS 13+ on Apple Silicon and uses ad hoc signing.
+
+- Local standalone harness passed 94 core methods. The native editor passed 54 checks including editing on a mirrored group and displaced mesh, keeping the last valid drag point, geometry locking, save and reopen. The Metal/media suite passed 47 checks including pixels and UV on asymmetric triangles in perspective and mirrored mesh frames, with sampled colors at 128×96. The 11 lighting checks use local UDP. Media regressions use original generated H.264 MOV.
+- The visible editor run used two built-in procedural layers and one new triangle, with zero external outputs. It confirmed three handles, a single moving vertex inside the unchanged cage, Undo, Redo and Reset. The demo modifications were discarded. Physical displays and sustained throughput were outside this test scope.
+- The arm64 ZIP has 27 entries and 1,441,570 bytes. CRC, original demo byte comparison, executable and library byte comparison, and strict app signature passed after fresh extraction. SHA-256 `faae663757f858fb533c6da9902088c1f53aacc78e73b732ea977443d4f8dcf7`.
+- The extracted executable passed all 54 editor and 47 Metal/media checks.
+
 [Alpha 9 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.9) is a prerelease. ZIP and SHA256SUMS were confirmed uploaded; both server SHA-256 digests and ZIP size match local evidence, and the tag resolves to the exact source above. Previous releases remain available.

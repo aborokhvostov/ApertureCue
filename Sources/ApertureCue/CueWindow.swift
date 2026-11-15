@@ -315,7 +315,7 @@ import MappingCore
         case .source: return "Media / generator"
         case .input: return "Input UV"
         case .outputGeometry: return "Output / mesh / parent"
-        case .shape: return "Shape / stroke"
+        case .shape: return "Shape / vertices / stroke"
         case .mask: return "Source UV mask"
         case .routing: return "Output routing"
         }
@@ -339,6 +339,8 @@ import MappingCore
             let parent = surface.groupID.map { String($0.uuidString.prefix(8)) } ?? "none"
             return "\(points(surface.output)); mesh \(surface.meshColumns)×\(surface.meshRows): \(points(surface.mesh)); parent \(parent)"
         case .shape:
+            if surface.shape == .triangle { return "Triangle · \(points(surface.triangleVertices))" }
+            if !surface.shape.isStroke { return surface.shape.rawValue }
             let nodes = surface.stroke.nodes.map { "a:\(points([$0.anchor])) in:\(points([$0.incoming])) out:\(points([$0.outgoing]))" }.joined(separator: "; ")
             return "\(surface.shape.rawValue) · width \(n(surface.stroke.width)) · \(surface.stroke.closed ? "closed" : "open"); \(nodes)"
         case .mask: return surface.mask.isEmpty ? "No mask" : points(surface.mask)

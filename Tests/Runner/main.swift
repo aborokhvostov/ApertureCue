@@ -45,6 +45,8 @@ runCase("Shape.projective hit input independence", ShapeTests.self) { try $0.tes
 runCase("Shape.mesh fold hit", ShapeTests.self) { try $0.testMeshInterpolationAndFoldedPrimitiveHitTesting() }
 runCase("Shape.legacy future migration", ShapeTests.self) { try $0.testLegacyQuadMigrationAndFutureShapeRejection() }
 runCase("Shape.cue collect history roundtrip", ShapeTests.self) { try $0.testShapesRoundTripCuesCollectAndHistory() }
+runCase("Shape.custom triangle persistence and cues", ShapeTests.self) { try $0.testCustomTrianglePersistenceMigrationAndSelectiveCue() }
+runCase("Shape.custom triangle winding and validation", ShapeTests.self) { try $0.testCustomTriangleWindingProjectionAndInvalidVertices() }
 runCase("Group.affine inverse aspect", GroupTests.self) { try $0.testAffineCompositionInverseReflectionAndAspectRotation() }
 runCase("Group.hierarchy mesh appearance", GroupTests.self) { try $0.testHierarchyResolvesMeshAppearanceAndIndependentSource() }
 runCase("Group.assign reparent world delta", GroupTests.self) { try $0.testAssignReparentAndWorldDeltaPreserveLocalGeometry() }

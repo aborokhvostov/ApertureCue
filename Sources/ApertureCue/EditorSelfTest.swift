@@ -377,7 +377,7 @@ enum EditorSelfTest {
             strokePicker.selectItem(at:3); strokePicker.actionBlock?(3)
             try expect(e.project.surfaces.last?.shape == .line && e.project.surfaces.last?.stroke == createdStroke.stroke,"Shape picker lost editable node data")
             e.undoEdit(); try expect(e.project.surfaces.last == createdStroke,"Undo shape picker did not restore Bezier")
-            e.setStrokeEditing(true)
+            e.setShapePointEditing(true)
             let beforeInsert=e.project
             try e.insertStrokeNode(after:0)
             try expect(e.project.surfaces.last?.stroke.nodes.count == 3,"Insert did not split its cubic")
@@ -411,7 +411,7 @@ enum EditorSelfTest {
             let strokeGroup=SurfaceGroup(name:"Stroke frame",transform:Affine2D.rotation(degrees:8,aspectRatio:16.0/9.0).concatenating(.scale(x:0.9,y:0.85)))
             strokeFixture.groupID=strokeGroup.id
             e.mutate("Stroke drag fixture") {$0=Project(surfaces:[strokeFixture],groups:[strokeGroup])}
-            e.selectedID=strokeID; e.setStrokeEditing(true); e.refresh()
+            e.selectedID=strokeID; e.setShapePointEditing(true); e.refresh()
             let strokeBeforeDrag=e.project
             let resolvedStroke=try required(e.resolvedBaseSurfaces.first,"Resolved stroke missing")
             var pathHandles=e.overlay.pathControlPoints(resolvedStroke)
@@ -610,6 +610,46 @@ enum EditorSelfTest {
             e.deleteSurface(); try expect(e.project.geometryLockedSurfaceIDs.isEmpty,"Deletion left an orphan lock")
             e.undoEdit(); try expect(e.project==savedLock,"Delete Undo failed to restore layer and lock")
             passed("scene and automation still render locked layers; lock and unlock round trip with save, reopen and history")
+
+            let triangleGroup=SurfaceGroup(name:"Triangle frame",transform:Affine2D(a:-0.8,b:0.05,c:0.1,d:0.8,tx:0.85,ty:0.05))
+            var triangle=Surface(name:"Editable triangle",input:crop,output:output,shape:.triangle,groupID:triangleGroup.id)
+            triangle.meshColumns=2; triangle.meshRows=2
+            triangle.mesh=try Geometry.regularMesh(quad:output,columns:2,rows:2)
+            triangle.mesh[4].x += 0.06
+            e.mutate("Triangle vertices fixture") { $0=Project(surfaces:[triangle],groups:[triangleGroup]) }
+            e.selectedID=triangle.id; e.refresh()
+            try geometryButton("Edit triangle vertices").performClick(nil)
+            try expect(e.overlay.pathMode && !e.inputMode,"Triangle inspector button did not enter vertex editing")
+            let triangleFrame=try required(e.resolvedBaseSurfaces.first,"Triangle frame missing")
+            let targetVertex=Point2(0.27,0.25)
+            let vertexWorld=try SurfaceGeometry.outputPoint(local:targetVertex,surface:triangleFrame)
+            let collapsedWorld=try SurfaceGeometry.outputPoint(local:Point2(0.5,1),surface:triangleFrame)
+            e.overlay.onBegin?()
+            e.overlay.onTriangleDrag?(triangle.id,0,vertexWorld)
+            let movedTriangle=e.project.surfaces[0]
+            e.overlay.onTriangleDrag?(triangle.id,0,collapsedWorld)
+            e.overlay.onEnd?()
+            try expect(e.project.surfaces[0]==movedTriangle && pointsNear([movedTriangle.triangleVertices[0]],[targetVertex]),
+                       "Triangle vertex drag lost its last valid point in the group/mesh frame")
+            var expectedTriangle=triangle
+            expectedTriangle.triangleVertices[0]=movedTriangle.triangleVertices[0]
+            try expect(movedTriangle==expectedTriangle && e.history.undoLabel=="Move control point",
+                       "Triangle drag changed a stationary vertex, cage, mesh or input")
+            e.undoEdit(); try expect(e.project.surfaces[0]==triangle,"Triangle vertex Undo did not restore all points")
+            e.redoEdit(); try expect(e.project.surfaces[0]==movedTriangle,"Triangle vertex Redo did not restore edited points")
+            try geometryButton("Reset triangle vertices").performClick(nil)
+            try expect(e.project.surfaces[0]==triangle,"Reset triangle vertices changed other fields")
+            e.undoEdit()
+            try geometryButton("Lock geometry").performClick(nil)
+            try expect(!(try geometryButton("Reset triangle vertices")).isEnabled,"Locked triangle offers an enabled reset")
+            e.overlay.onBegin?(); e.overlay.onTriangleDrag?(triangle.id,0,collapsedWorld); e.overlay.onEnd?()
+            try expect(e.project.surfaces[0]==movedTriangle && e.history.undoLabel=="Lock geometry","Locked triangle accepted a drag")
+            let triangleURL=directory.appendingPathComponent("triangle-vertices.aperturecue.json")
+            e.saveTo(triangleURL)
+            let savedTriangle=e.project
+            e.newProject(); e.openProject(triangleURL)
+            try expect(e.project==savedTriangle && !e.overlay.pathMode,"Custom vertices and lock did not survive reopening")
+            passed("triangle vertex editing through mirrored group and mesh changes only its active vertex, with lock, reset, Undo/Redo and reopen")
 
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count

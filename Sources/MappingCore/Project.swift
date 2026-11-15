@@ -23,6 +23,11 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
     public var generator: String
     public var shape: SurfaceShape
     public var stroke: StrokePath
+    private var customTriangleVertices: [Point2]?
+    public var triangleVertices: [Point2] {
+        get { customTriangleVertices ?? TriangleGeometry.canonical }
+        set { customTriangleVertices = newValue == TriangleGeometry.canonical ? nil : newValue }
+    }
 
     public init(id: UUID = UUID(), name: String = "Surface", mediaID: UUID? = nil,
                 input: [Point2] = Point2.unitQuad, output: [Point2] = Point2.insetQuad,
@@ -30,17 +35,21 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
                 blendMode: String = "normal", feather: Double = 0, gamma: Double = 1,
                 color: [Double] = [1,1,1], mask: [Point2] = [],
                 meshColumns: Int = 0, meshRows: Int = 0, mesh: [Point2] = [],
-                group: String = "", outputID: UUID? = nil, generator: String = "checker", shape: SurfaceShape = .quad, groupID: UUID? = nil, stroke: StrokePath = .line) {
+                group: String = "", outputID: UUID? = nil, generator: String = "checker", shape: SurfaceShape = .quad, groupID: UUID? = nil, stroke: StrokePath = .line,
+                triangleVertices: [Point2] = TriangleGeometry.canonical) {
         self.id=id; self.name=name; self.mediaID=mediaID; self.input=input; self.output=output
         self.opacity=opacity; self.brightness=brightness; self.enabled=enabled; self.blendMode=blendMode
         self.feather=feather; self.gamma=gamma; self.color=color; self.mask=mask
         self.meshColumns=meshColumns; self.meshRows=meshRows; self.mesh=mesh
         self.group=group; self.outputID=outputID; self.generator=generator; self.shape=shape; self.groupID=groupID; self.stroke=stroke
+        self.triangleVertices = triangleVertices
     }
     private enum CodingKeys: String, CodingKey {
         case id,name,mediaID,input,output,opacity,brightness,enabled,blendMode,feather,gamma,color,mask,meshColumns,meshRows,mesh,group,outputID,generator,shape,groupID,stroke
+        case customTriangleVertices = "triangleVertices"
     }
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws { try self.init(from:decoder,legacyTriangle:false) }
+    init(from decoder: Decoder, legacyTriangle: Bool) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.init(id: try c.decodeIfPresent(UUID.self, forKey:.id) ?? UUID(),
                   name: try c.decodeIfPresent(String.self, forKey:.name) ?? "Surface",
@@ -63,7 +72,17 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
                   generator: try c.decodeIfPresent(String.self, forKey:.generator) ?? "checker",
                   shape: try c.decodeIfPresent(SurfaceShape.self, forKey:.shape) ?? .quad,
                   groupID: try c.decodeIfPresent(UUID.self, forKey:.groupID),
-                  stroke: try c.decodeIfPresent(StrokePath.self, forKey:.stroke) ?? .line)
+                  stroke: try c.decodeIfPresent(StrokePath.self, forKey:.stroke) ?? .line,
+                  triangleVertices: legacyTriangle ? TriangleGeometry.canonical :
+                      try c.decodeIfPresent([Point2].self, forKey:.customTriangleVertices) ?? TriangleGeometry.canonical)
+    }
+
+    static func decodeLegacyTriangles(from entries: inout UnkeyedDecodingContainer) throws -> [Surface] {
+        var surfaces: [Surface] = []
+        while !entries.isAtEnd {
+            surfaces.append(try Surface(from:entries.superDecoder(),legacyTriangle:true))
+        }
+        return surfaces
     }
 }
 
@@ -115,13 +134,18 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
         self.scope=scope; self.bindings=bindings
     }
     private enum CodingKeys:String,CodingKey { case id,name,surfaces,duration,followAfter,scope,bindings }
-    public init(from decoder:Decoder) throws { try self.init(from:decoder,legacy:false) }
+    public init(from decoder:Decoder) throws { try self.init(from:decoder,legacy:false,legacyTriangle:false) }
     /// Extension keys in older schemas have no selective-cue meaning, even when
     /// their values cannot be decoded as the schema-6 types.
-    init(from decoder:Decoder,legacy:Bool) throws {
+    init(from decoder:Decoder,legacy:Bool,legacyTriangle:Bool) throws {
         let c=try decoder.container(keyedBy:CodingKeys.self)
+        let surfaces: [Surface]
+        if legacyTriangle {
+            var entries = try c.nestedUnkeyedContainer(forKey:.surfaces)
+            surfaces = try Surface.decodeLegacyTriangles(from:&entries)
+        } else { surfaces = try c.decode([Surface].self,forKey:.surfaces) }
         self.init(id:try c.decode(UUID.self,forKey:.id),name:try c.decode(String.self,forKey:.name),
-                  surfaces:try c.decode([Surface].self,forKey:.surfaces),
+                  surfaces:surfaces,
                   duration:try c.decode(Double.self,forKey:.duration),
                   followAfter:try c.decodeIfPresent(Double.self,forKey:.followAfter),
                   scope:legacy ? .full : try c.decode(CueScope.self,forKey:.scope),
@@ -130,7 +154,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 8
+    public static let currentVersion = 9
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]
@@ -179,12 +203,17 @@ public struct Project: Codable, Equatable, Sendable {
         var cues:[Cue]=[]
         if c.contains(.cues) {
             var entries=try c.nestedUnkeyedContainer(forKey:.cues)
-            while !entries.isAtEnd { cues.append(try Cue(from:entries.superDecoder(),legacy:version < 6)) }
+            while !entries.isAtEnd { cues.append(try Cue(from:entries.superDecoder(),legacy:version < 6,legacyTriangle:version < 9)) }
         }
+        let surfaces: [Surface]
+        if version < 9, c.contains(.surfaces), try !c.decodeNil(forKey:.surfaces) {
+            var entries = try c.nestedUnkeyedContainer(forKey:.surfaces)
+            surfaces = try Surface.decodeLegacyTriangles(from:&entries)
+        } else { surfaces = try c.decodeIfPresent([Surface].self,forKey:.surfaces) ?? [] }
         self.init(version: version,
                   name: try c.decodeIfPresent(String.self, forKey:.name) ?? "Untitled",
                   assets: try c.decodeIfPresent([MediaAsset].self, forKey:.assets) ?? [],
-                  surfaces: try c.decodeIfPresent([Surface].self, forKey:.surfaces) ?? [],
+                  surfaces: surfaces,
                   outputs: try c.decodeIfPresent([OutputConfig].self, forKey:.outputs) ?? [],
                   cues: cues,
                   fixtures: try c.decodeIfPresent([Fixture].self, forKey:.fixtures) ?? [],

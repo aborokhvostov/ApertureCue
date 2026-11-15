@@ -20,6 +20,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         var properties: SIMD4<Float>; var tint: SIMD4<Float>; var misc: SIMD4<Float>
         var shape: SIMD4<Float>
         var mediaX:SIMD4<Float>;var mediaY:SIMD4<Float>
+        var triangleA: SIMD4<Float>; var triangleB: SIMD4<Float>; var triangleC: SIMD4<Float>
     }
 
     let device: MTLDevice
@@ -276,6 +277,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         let tint = surface.color.count >= 3 ? surface.color : [1, 1, 1]
         let polygon = Array(surface.mask.prefix(128)).map { SIMD2<Float>(Float($0.x), Float($0.y)) }
         let stroke = surface.shape.isStroke ? try strokeResources(surface) : nil
+        let planes = surface.shape == .triangle ? try TriangleGeometry(vertices:surface.triangleVertices).planes : []
+        func plane(_ index: Int) -> SIMD4<Float> {
+            guard !planes.isEmpty else { return .zero }
+            let p = planes[index]
+            return SIMD4(Float(p.x),Float(p.y),Float(p.z),0)
+        }
         var uniforms = Uniforms(
             sourceX: row(source, 0), sourceY: row(source, 3), sourceW: row(source, 6),
             localX: row(local, 0), localY: row(local, 3), localW: row(local, 6),
@@ -284,7 +291,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             tint: SIMD4(Float(tint[0]), Float(tint[1]), Float(tint[2]), 1),
             misc: SIMD4(generator, Float(polygon.count), hasMesh ? 1 : 0, Float(media.currentTime)),
             shape: SIMD4(surface.shape.isStroke ? 3 : (surface.shape == .triangle ? 1 : (surface.shape == .ellipse ? 2 : 0)), Float(surface.stroke.width), Float(stroke?.count ?? 0), 0),
-            mediaX:mediaTransform.x,mediaY:mediaTransform.y)
+            mediaX:mediaTransform.x,mediaY:mediaTransform.y,
+            triangleA:plane(0),triangleB:plane(1),triangleC:plane(2))
         guard let pipeline = pipelines[surface.blendMode] ?? pipelines["normal"] else { return }
         encoder.setRenderPipelineState(pipeline)
         // set*Bytes is limited to 4 KiB; a dense mesh gets an ordinary buffer.
@@ -342,6 +350,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         float4 properties; float4 tint; float4 misc;
         float4 shape;
         float4 mediaX;float4 mediaY;
+        float4 triangleA; float4 triangleB; float4 triangleC;
     };
     vertex Raster mappingVertex(const device Vertex* vertices [[buffer(0)]], uint id [[vertex_id]]) {
         Raster out;
@@ -385,8 +394,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             coverage = clamp(edge/max(fwidth(edge),1e-7)+0.5,0.0,1.0);
         } else if (u.shape.x > 0.5) {
             if (u.shape.x < 1.5) {
-                edge = min(min((local.y - 2.0 * local.x + 1.0) / sqrt(5.0),
-                               (local.y + 2.0 * local.x - 1.0) / sqrt(5.0)), 1.0 - local.y);
+                float3 p = float3(local, 1.0);
+                edge = min(min(dot(u.triangleA.xyz,p),dot(u.triangleB.xyz,p)),dot(u.triangleC.xyz,p));
             } else { edge = 0.5 - length(local - float2(0.5)); }
             // One fragment footprint at the boundary; no fixed-resolution tessellation.
             coverage = clamp(edge / max(fwidth(edge), 1e-7) + 0.5, 0.0, 1.0);

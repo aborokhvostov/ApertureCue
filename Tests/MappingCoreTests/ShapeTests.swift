@@ -10,6 +10,72 @@ final class ShapeTests: XCTestCase {
     }
     override func tearDownWithError() throws { try FileManager.default.removeItem(at:scratch) }
 
+    func testCustomTrianglePersistenceMigrationAndSelectiveCue() throws {
+        let vertices = [Point2(0.1,0.1), Point2(0.8,0.1), Point2(0.1,0.7)]
+        let shape = Surface(shape:.triangle,triangleVertices:vertices)
+        let full = Cue(name:"Triangle",surfaces:[shape])
+        let selected = try CueSelection.capture(name:"Triangle shape",surfaces:[shape],
+            bindings:[CueBinding(surfaceID:shape.id,parameters:[.shape])])
+        let url = scratch.appendingPathComponent("triangle.aperturecue.json")
+        let current = Project(surfaces:[shape],cues:[full,selected],geometryLockedSurfaceIDs:[shape.id])
+        try ProjectStore.save(current,to:url)
+        XCTAssertEqual(try ProjectStore.load(from:url),current)
+
+        var legacy = current
+        legacy.version = 8
+        let data = try JSONEncoder().encode(legacy)
+        var root = try XCTUnwrap(JSONSerialization.jsonObject(with:data) as? [String:Any])
+        var layers = try XCTUnwrap(root["surfaces"] as? [[String:Any]])
+        layers[0]["triangleVertices"] = "undefined"
+        root["surfaces"] = layers
+        var cues = try XCTUnwrap(root["cues"] as? [[String:Any]])
+        for i in cues.indices { cues[i]["surfaces"] = layers }
+        root["cues"] = cues
+        try JSONSerialization.data(withJSONObject:root).write(to:url)
+        let migrated = try ProjectStore.load(from:url)
+        XCTAssertEqual(migrated.surfaces[0].triangleVertices,TriangleGeometry.canonical)
+        XCTAssertTrue(migrated.cues.allSatisfy { $0.surfaces[0].triangleVertices == TriangleGeometry.canonical })
+        XCTAssertEqual(migrated.geometryLockedSurfaceIDs,[shape.id])
+        root["version"] = Project.currentVersion
+        try JSONSerialization.data(withJSONObject:root).write(to:url)
+        XCTAssertThrowsError(try ProjectStore.load(from:url))
+
+        var base = shape
+        base.triangleVertices = TriangleGeometry.canonical
+        base.input = Point2.insetQuad
+        base.output = Point2.unitQuad
+        let recalled = try XCTUnwrap(CueSelection.destination(from:[base],cue:selected).first)
+        XCTAssertEqual(recalled.triangleVertices,vertices)
+        XCTAssertEqual(recalled.input,base.input)
+        XCTAssertEqual(recalled.output,base.output)
+        let engine = CueEngine()
+        for cue in [full,selected] {
+            engine.begin(from:[base],cue:cue,at:0)
+            XCTAssertEqual(engine.sample(at:0.49)?.first?.triangleVertices,TriangleGeometry.canonical)
+            XCTAssertEqual(engine.sample(at:0.5)?.first?.triangleVertices,vertices)
+        }
+    }
+
+    func testCustomTriangleWindingProjectionAndInvalidVertices() throws {
+        let vertices = [Point2(0.1,0.1), Point2(0.8,0.1), Point2(0.1,0.7)]
+        var surface = Surface(shape:.triangle,triangleVertices:vertices)
+        let inside = try SurfaceGeometry.outputPoint(local:Point2(0.2,0.2),surface:surface)
+        let outside = try SurfaceGeometry.outputPoint(local:Point2(0.6,0.65),surface:surface)
+        for winding in [vertices,Array(vertices.reversed())] {
+            surface.triangleVertices = winding
+            XCTAssertTrue(SurfaceGeometry.contains(output:inside,surface:surface))
+            XCTAssertFalse(SurfaceGeometry.contains(output:outside,surface:surface))
+            XCTAssertEqual(try SurfaceGeometry.outputOutline(surface:surface),
+                           try winding.map { try SurfaceGeometry.outputPoint(local:$0,surface:surface) })
+        }
+        for invalid in [[Point2(0.1,0.1),Point2(0.5,0.1),Point2(0.9,0.1)],
+                        [Point2(.nan,0),vertices[1],vertices[2]],
+                        [Point2(-0.01,0),vertices[1],vertices[2]], [vertices[0],vertices[1]]] {
+            surface.triangleVertices = invalid
+            XCTAssertThrowsError(try ProjectStore.validate(Project(surfaces:[surface])))
+        }
+    }
+
     func testPrimitiveDistancesBoundariesAndBoundedOutlines() throws {
         XCTAssertEqual(SurfaceShape.quad.signedDistance(at:Point2(0.5,0.5)),0.5,accuracy:1e-12)
         XCTAssertEqual(SurfaceShape.ellipse.signedDistance(at:Point2(0.8,0.9)),0,accuracy:1e-12)

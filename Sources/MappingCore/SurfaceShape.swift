@@ -25,7 +25,7 @@ public enum SurfaceShape: String, Codable, CaseIterable, Sendable {
     public func outline(segments: Int = 64) -> [Point2] {
         switch self {
         case .quad,.line,.bezier: return Point2.unitQuad
-        case .triangle: return [Point2(0.5,0), Point2(1,1), Point2(0,1)]
+        case .triangle: return TriangleGeometry.canonical
         case .ellipse:
             let count = max(8,min(256,segments))
             return (0..<count).map { index in
@@ -34,6 +34,36 @@ public enum SurfaceShape: String, Codable, CaseIterable, Sendable {
             }
         }
     }
+}
+
+/// Three vertices in the unit cage. Edge planes use normalized local distance,
+/// positive on the inside for either winding.
+public struct TriangleGeometry: Sendable {
+    public static let canonical = [Point2(0.5,0), Point2(1,1), Point2(0,1)]
+    public let planes: [SIMD3<Double>]
+
+    public init(vertices: [Point2]) throws {
+        guard vertices.count == 3,
+              vertices.allSatisfy({ (0...1).contains($0.x) && (0...1).contains($0.y) }) else {
+            throw ProjectError.invalid("triangle requires three vertices inside its unit cage")
+        }
+        let a = vertices[0], b = vertices[1], c = vertices[2]
+        let area = (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x)
+        guard abs(area) >= 1e-6 else { throw ProjectError.invalid("triangle vertices must enclose an area") }
+        let direction = area > 0 ? 1.0 : -1.0
+        planes = vertices.indices.map { index in
+            let start = vertices[index], end = vertices[(index+1)%3]
+            let dx = end.x-start.x, dy = end.y-start.y
+            let scale = direction/hypot(dx,dy)
+            let x = -dy*scale, y = dx*scale
+            return SIMD3(x,y,-x*start.x-y*start.y)
+        }
+    }
+
+    public func contains(_ point: Point2) -> Bool {
+        planes.allSatisfy { $0.x*point.x+$0.y*point.y+$0.z >= -1e-10 }
+    }
+
 }
 
 /// Matches the renderer's projective cage and the exact two-triangle split of
@@ -81,7 +111,13 @@ public enum SurfaceGeometry {
     /// Straight edges split at every mesh cell/diagonal boundary, preserving their
     /// exact piecewise-linear shape. Ellipses use 8...256 local curve samples.
     public static func outputOutline(surface: Surface, segments: Int = 64) throws -> [Point2] {
-        let local=surface.shape.outline(segments:segments)
+        let local: [Point2]
+        if surface.shape == .triangle {
+            _ = try TriangleGeometry(vertices:surface.triangleVertices)
+            local = surface.triangleVertices
+        } else {
+            local = surface.shape.outline(segments:segments)
+        }
         if surface.mesh.isEmpty {
             let projection=try Homography.solve(from:Point2.unitQuad,to:surface.output)
             return try local.map { try projection.applying($0) }
@@ -155,10 +191,15 @@ public enum SurfaceGeometry {
     /// mask. Those are appearance controls, not cage selection restrictions.
     public static func contains(output: Point2, surface: Surface) -> Bool {
         guard output.x.isFinite, output.y.isFinite else { return false }
+        let triangle = surface.shape == .triangle ? try? TriangleGeometry(vertices:surface.triangleVertices) : nil
+        func containsLocal(_ local: Point2) -> Bool {
+            if surface.shape == .triangle { return triangle?.contains(local) ?? false }
+            return surface.shape.isStroke ? StrokeGeometry.contains(local:local,surface:surface) : surface.shape.contains(local)
+        }
         if surface.mesh.isEmpty {
             guard let inverse=try? Homography.solve(from:surface.output,to:Point2.unitQuad),
                   let local=try? inverse.applying(output) else { return false }
-            return containsLocal(local,surface:surface)
+            return containsLocal(local)
         }
         guard validMesh(surface) else { return false }
         let columns=surface.meshColumns, rows=surface.meshRows
@@ -168,16 +209,12 @@ public enum SurfaceGeometry {
                 let u=Double(x)/Double(columns), v=Double(y)/Double(rows)
                 let u1=Double(x+1)/Double(columns), v1=Double(y+1)/Double(rows)
                 if let weights=barycentric(output,surface.mesh[a],surface.mesh[b],surface.mesh[c]),
-                   containsLocal(interpolate(Point2(u,v),Point2(u1,v),Point2(u1,v1),weights.0,weights.1,weights.2),surface:surface) { return true }
+                   containsLocal(interpolate(Point2(u,v),Point2(u1,v),Point2(u1,v1),weights.0,weights.1,weights.2)) { return true }
                 if let weights=barycentric(output,surface.mesh[a],surface.mesh[c],surface.mesh[d]),
-                   containsLocal(interpolate(Point2(u,v),Point2(u1,v1),Point2(u,v1),weights.0,weights.1,weights.2),surface:surface) { return true }
+                   containsLocal(interpolate(Point2(u,v),Point2(u1,v1),Point2(u,v1),weights.0,weights.1,weights.2)) { return true }
             }
         }
         return false
-    }
-
-    private static func containsLocal(_ local:Point2,surface:Surface) -> Bool {
-        surface.shape.isStroke ? StrokeGeometry.contains(local:local,surface:surface) : surface.shape.contains(local)
     }
 
     private static func validMesh(_ surface: Surface) -> Bool {

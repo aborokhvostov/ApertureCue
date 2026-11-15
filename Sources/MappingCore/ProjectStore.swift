@@ -78,6 +78,12 @@ public enum ProjectStore {
         if portable.version < 6 { clearLegacyCueExtensions(&portable) }
         if portable.version < 7 { portable.montages=[] }
         if portable.version < 8 { portable.geometryLockedSurfaceIDs = [] }
+        if portable.version < 9 {
+            for i in portable.surfaces.indices { portable.surfaces[i].triangleVertices = TriangleGeometry.canonical }
+            for i in portable.cues.indices {
+                for j in portable.cues[i].surfaces.indices { portable.cues[i].surfaces[j].triangleVertices = TriangleGeometry.canonical }
+            }
+        }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
@@ -211,6 +217,9 @@ public enum ProjectStore {
             try Geometry.validateQuad(s.input); try Geometry.validateQuad(s.output)
             try StrokeGeometry.validate(s.stroke)
             if s.shape.isStroke { _ = try StrokeGeometry.samples(surface:s) }
+            if s.shape == .triangle || s.triangleVertices != TriangleGeometry.canonical {
+                _ = try TriangleGeometry(vertices:s.triangleVertices)
+            }
             let allPoints = s.input + s.output + s.mesh + s.mask
             guard allPoints.allSatisfy({ $0.x.isFinite && $0.y.isFinite && abs($0.x) <= 10000 && abs($0.y) <= 10000 }) else { throw ProjectError.invalid("coordinate outside finite working range") }
             guard s.name.utf8.count <= 4096, s.group.utf8.count <= 4096 else { throw ProjectError.invalid("surface label is too long") }

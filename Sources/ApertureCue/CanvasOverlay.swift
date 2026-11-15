@@ -16,8 +16,9 @@ final class CanvasOverlay: NSView {
     var onSelect: ((UUID) -> Void)?
     var onBegin: (() -> Void)?
     var onChange: ((UUID, [Point2], Bool, Bool) -> Void)?
+    var onTriangleDrag: ((UUID, Int, Point2) -> Void)?
     var onEnd: (() -> Void)?
-    private var drag: (id: UUID, index: Int, points: [Point2])?
+    private var drag: (id: UUID, index: Int, points: [Point2], triangle: Bool)?
     override var isOpaque: Bool { false }
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
@@ -32,6 +33,9 @@ final class CanvasOverlay: NSView {
     private func vertices(_ s: Surface) -> [Point2] {
         if maskMode { return s.mask }
         if inputMode { return s.input }
+        if pathMode && s.shape == .triangle {
+            return (try? s.triangleVertices.map { try SurfaceGeometry.outputPoint(local:$0,surface:s) }) ?? []
+        }
         if pathMode && s.shape.isStroke { return pathControlPoints(s) }
         if meshMode && !s.mesh.isEmpty { return s.mesh }
         return s.output
@@ -85,7 +89,8 @@ final class CanvasOverlay: NSView {
                 centerlines.move(to:cg(first)); projected.dropFirst().forEach {centerlines.addLine(to:cg($0))}
             }
             if selected {
-                selectedTitle = surface.name + (inputMode ? " · INPUT" : (pathMode ? " · PATH" : " · OUTPUT"))
+                let outputMode = pathMode ? (surface.shape == .triangle ? "VERTICES" : "PATH") : "OUTPUT"
+                selectedTitle = surface.name + " · " + (inputMode ? "INPUT" : outputMode)
                 if geometryLockedSurfaceIDs.contains(surface.id) {
                     selectedTitle = surface.name + (inputMode ? " · INPUT LOCKED" : " · OUTPUT LOCKED")
                     continue
@@ -122,7 +127,8 @@ final class CanvasOverlay: NSView {
         if let surface = surfaces.first(where: { $0.id == selectedID }), !geometryLockedSurfaceIDs.contains(surface.id) {
             let handles = vertices(surface)
             if let index = handles.indices.min(by: { hypot(point(handles[$0]).x-p.x, point(handles[$0]).y-p.y) < hypot(point(handles[$1]).x-p.x, point(handles[$1]).y-p.y) }), hypot(point(handles[index]).x-p.x, point(handles[index]).y-p.y) < 18 {
-                drag = (surface.id, index, handles); onBegin?(); return
+                let triangle = pathMode && !inputMode && !maskMode && surface.shape == .triangle
+                drag = (surface.id, index, handles, triangle); onBegin?(); return
             }
         }
         if !inputMode {
@@ -136,7 +142,8 @@ final class CanvasOverlay: NSView {
         surfaces.reversed().first { $0.enabled && $0.opacity > 0 && SurfaceGeometry.contains(output:output,surface:$0) }?.id
     }
     override func mouseDragged(with event: NSEvent) {
-        guard let (id, i, original) = drag, id == selectedID, !geometryLockedSurfaceIDs.contains(id) else { return }
+        guard let (id, i, original, triangle) = drag, id == selectedID, !geometryLockedSurfaceIDs.contains(id) else { return }
+        if triangle { onTriangleDrag?(id,i,normalized(event)); return }
         var pts = original; pts[i] = normalized(event)
         if pathMode,let surface=surfaces.first(where:{$0.id == id}),surface.shape == .bezier,i%3 == 0 {
             let delta=Point2(pts[i].x-original[i].x,pts[i].y-original[i].y)
