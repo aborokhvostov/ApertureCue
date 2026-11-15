@@ -138,4 +138,6 @@ Published as [alpha 10](https://github.com/aborokhvostov/ApertureCue/releases/ta
 - The arm64 ZIP has 27 entries and 1,441,570 bytes. CRC, original demo byte comparison, executable and library byte comparison, and strict app signature passed after fresh extraction. SHA-256 `faae663757f858fb533c6da9902088c1f53aacc78e73b732ea977443d4f8dcf7`.
 - The extracted executable passed all 54 editor and 47 Metal/media checks.
 
+Published as [alpha 11](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.11) from `70849fbcf2c6b389346ff19edc10d40d9c602cf9`. The [CI run](https://github.com/aborokhvostov/ApertureCue/actions/runs/43698976241) passed 94 XCTest on each platform with zero failures. The suites reported 5.500 s on macOS and 4.522 s on Linux. macOS release build, app, archive and artifact passed. GitHub's ZIP digest and size match the verified archive. The uploaded SHA256SUMS has 94 bytes and SHA-256 `6eaa77175e6ff952b082ac045ce52e773fc99bfbc396841ead4c03803b3d727b`.
+
 [Alpha 9 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.9) is a prerelease. ZIP and SHA256SUMS were confirmed uploaded; both server SHA-256 digests and ZIP size match local evidence, and the tag resolves to the exact source above. Previous releases remain available.
