@@ -140,4 +140,13 @@ Published as [alpha 10](https://github.com/aborokhvostov/ApertureCue/releases/ta
 
 Published as [alpha 11](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.11) from `70849fbcf2c6b389346ff19edc10d40d9c602cf9`. The [CI run](https://github.com/aborokhvostov/ApertureCue/actions/runs/43698976241) passed 94 XCTest on each platform with zero failures. The suites reported 5.500 s on macOS and 4.522 s on Linux. macOS release build, app, archive and artifact passed. GitHub's ZIP digest and size match the verified archive. The uploaded SHA256SUMS has 94 bytes and SHA-256 `6eaa77175e6ff952b082ac045ce52e773fc99bfbc396841ead4c03803b3d727b`.
 
+## Alpha 12
+
+15 November 2026 on Apple M2 / arm64 / macOS 26.6.2. Schema 10 adds fullscreen display assignment by UUID. Preview and fullscreen can coexist for one logical output. Disconnect, mirrored mode and ambiguous identifiers close the applicable fullscreen window on screen configuration change. Reconnect requires an explicit reopen.
+
+- The arm64 ZIP has 27 entries and 1,477,495 bytes. CRC, original demo byte comparison, executable and library byte comparison, and strict app signature passed after fresh extraction. SHA-256 `585816f7d39ac96e010af9efbe3cbec093d3f298a1f534e34c1f002e220b7b6a`. The archive targets macOS 13+ and uses ad hoc signing. File Provider attached metadata to the work directory's copy. The packaged app and freshly extracted app passed strict signature validation.
+- The local standalone harness passed 95 core methods. The extracted app passed 56 editor and 47 Metal/media checks, including original generated H.264 MOV media. On one logged-in display, two hidden native previews showed red and green routed layers at 32×18. The three-window fixture included two previews and one hidden fullscreen. Injected display reorder, disconnect, mirroring, duplicate identities and Undo/Redo exercised the production reconciliation method without changing physical topology.
+- In the visible editor, the two-surface procedural demo opened one standalone preview without a display assigned, then opened fullscreen on the built-in Retina display. Escape closed each window, and reopening Outputs selected the assigned display. Changes to the built-in demo were discarded.
+- Physical hotplug, projector output and extended runtime remain outside this release's evidence.
+
 [Alpha 9 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.9) is a prerelease. ZIP and SHA256SUMS were confirmed uploaded; both server SHA-256 digests and ZIP size match local evidence, and the tag resolves to the exact source above. Previous releases remain available.

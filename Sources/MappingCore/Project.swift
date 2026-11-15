@@ -110,11 +110,27 @@ public struct MediaAsset: Codable, Equatable, Identifiable, Sendable {
 public struct OutputConfig: Codable, Equatable, Identifiable, Sendable {
     public var id: UUID
     public var name: String
+    /// Legacy display position. Fullscreen routing uses displayUUID.
     public var screenIndex: Int
+    public var displayUUID: UUID?
     public var width: Int
     public var height: Int
-    public init(id: UUID = UUID(), name: String = "Output", screenIndex: Int = 0, width: Int = 1920, height: Int = 1080) {
+    public init(id: UUID = UUID(), name: String = "Output", screenIndex: Int = 0, width: Int = 1920, height: Int = 1080,
+                displayUUID: UUID? = nil) {
         self.id=id; self.name=name; self.screenIndex=screenIndex; self.width=width; self.height=height
+        self.displayUUID=displayUUID
+    }
+
+    private enum CodingKeys: String, CodingKey { case id,name,screenIndex,width,height,displayUUID }
+    public init(from decoder: Decoder) throws { try self.init(from:decoder,legacyDisplay:false) }
+    init(from decoder: Decoder, legacyDisplay: Bool) throws {
+        let fields = try decoder.container(keyedBy:CodingKeys.self)
+        self.init(id:try fields.decode(UUID.self,forKey:.id),
+                  name:try fields.decode(String.self,forKey:.name),
+                  screenIndex:try fields.decode(Int.self,forKey:.screenIndex),
+                  width:try fields.decode(Int.self,forKey:.width),
+                  height:try fields.decode(Int.self,forKey:.height),
+                  displayUUID:legacyDisplay ? nil : try fields.decodeIfPresent(UUID.self,forKey:.displayUUID))
     }
 }
 
@@ -154,7 +170,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 9
+    public static let currentVersion = 10
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]
@@ -210,11 +226,16 @@ public struct Project: Codable, Equatable, Sendable {
             var entries = try c.nestedUnkeyedContainer(forKey:.surfaces)
             surfaces = try Surface.decodeLegacyTriangles(from:&entries)
         } else { surfaces = try c.decodeIfPresent([Surface].self,forKey:.surfaces) ?? [] }
+        var outputs: [OutputConfig] = []
+        if version < 10, c.contains(.outputs), try !c.decodeNil(forKey:.outputs) {
+            var entries = try c.nestedUnkeyedContainer(forKey:.outputs)
+            while !entries.isAtEnd { outputs.append(try OutputConfig(from:entries.superDecoder(),legacyDisplay:true)) }
+        } else { outputs = try c.decodeIfPresent([OutputConfig].self,forKey:.outputs) ?? [] }
         self.init(version: version,
                   name: try c.decodeIfPresent(String.self, forKey:.name) ?? "Untitled",
                   assets: try c.decodeIfPresent([MediaAsset].self, forKey:.assets) ?? [],
                   surfaces: surfaces,
-                  outputs: try c.decodeIfPresent([OutputConfig].self, forKey:.outputs) ?? [],
+                  outputs: outputs,
                   cues: cues,
                   fixtures: try c.decodeIfPresent([Fixture].self, forKey:.fixtures) ?? [],
                   timeline: try c.decodeIfPresent([AutomationTrack].self, forKey:.timeline) ?? [],

@@ -13,6 +13,7 @@ runCase("Project.recovery", ProjectTests.self) { try $0.testRecoveryDoesNotOverw
 runCase("Project.version migration", ProjectTests.self) { try $0.testVersionMigrationAndFutureVersionRejection() }
 runCase("Project.malformed rejection", ProjectTests.self) { try $0.testMalformedDocumentsAndReferencesRejected() }
 runCase("Project.geometry lock persistence and migration", ProjectTests.self) { try $0.testGeometryLocksPersistAndVersionSevenIgnoresLockExtensions() }
+runCase("Project.fullscreen display binding and legacy routing", ProjectTests.self) { try $0.testDisplayBindingPersistsAndLegacyOutputsKeepTheirRoutes() }
 runCase("Project.undo redo", ProjectTests.self) { $0.testUndoRedoBranchAndBoundedHistory() }
 runCase("Transport.play pause seek loop", ShowTests.self) { $0.testPlayPauseSeekAndLoopWithInjectedHostTime() }
 runCase("Transport.nonloop end", ShowTests.self) { $0.testNonLoopingEndAndRestart() }

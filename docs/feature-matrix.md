@@ -56,8 +56,8 @@
 
 | ID / функция / источник | Сценарий; вход → результат | Границы | Платформа / оборудование | Приёмка собственной реализации | Статус |
 |---|---|---|---|---|---|
-| O01 Output window, R01/R11 | Вывести проектор; screen/mode → clean fullscreen | Retina, смена layout, один display | macOS сначала; внешний экран для H | Editor и output отдельны; Escape закрывает output; screen назначается явно | D · I · A (hidden constructor/Escape) · M (native built-in display); projector H absent |
-| O02 Multiple outputs, R01 | Разные области; routes → независимые окна | Разные FPS/DPI, hotplug | GPU/дисплеи | Два окна имеют разные content/routes; disconnect не теряет проект | D · I · A (route filtering); multiwindow M pending; H absent |
+| O01 Output window, R01/R11 | Вывести проектор; screen/mode → clean fullscreen | Retina, смена layout, один display | macOS сначала; внешний экран для H | Editor и output отдельны; Escape закрывает output; screen назначается явно | D · I · A (UUID assignment, migration, hidden frame and Escape) · M (native built-in display and assignment); projector H absent |
+| O02 Multiple outputs, R01 | Разные области; routes → независимые окна | Разные FPS/DPI, hotplug | GPU/дисплеи | Два окна имеют разные content/routes; disconnect не теряет проект | D · I · A (two simultaneous routed previews, simulated topology changes and preview/fullscreen coexistence); physical hotplug H absent |
 | O03 Preview/test pattern, R01/R11 | Настроить без проектора; selection/view → preview | Aspect ratio, overlays, output resolution | ПК/GPU | Preview соответствует output render без editor handles | D · I · A (production renderer) · M (GUI) |
 | O04 Loopback/buffers, R15 | Повторно обработать результат; output → source | Цикл, feedback history | ПК/GPU | Цикл либо явно one-frame delayed, либо запрещён; нет deadlock | D |
 | O05 Master/freeze/blackout, R23 | Быстро управлять шоу; level/freeze → состояние выхода | Продолжение audio/time, recover | ПК | Семантика freeze определена; blackout даёт чёрный и возвращается обратимо | D · I partial: blackout · A (GPU) |

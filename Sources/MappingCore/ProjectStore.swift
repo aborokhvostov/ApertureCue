@@ -84,6 +84,9 @@ public enum ProjectStore {
                 for j in portable.cues[i].surfaces.indices { portable.cues[i].surfaces[j].triangleVertices = TriangleGeometry.canonical }
             }
         }
+        if portable.version < 10 {
+            for i in portable.outputs.indices { portable.outputs[i].displayUUID = nil }
+        }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL

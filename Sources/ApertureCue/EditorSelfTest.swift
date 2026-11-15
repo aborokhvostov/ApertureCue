@@ -176,7 +176,7 @@ enum EditorSelfTest {
 
             let config=try required(e.project.outputs.first,"Output fixture configuration is missing")
             e.openOutput(config,fullscreen:false,showWindow:false)
-            let constructed=try required(e.outputWindows[config.id],"Production output constructor did not register its window")
+            let constructed=try required(e.outputWindows[.preview(config.id)],"Production output constructor did not register its window")
             let outputWindow=constructed.0,outputRenderer=constructed.1
             (outputWindow.contentView?.subviews.first { $0 is MTKView } as? MTKView)?.isPaused=true
             e.toggleBlackout()
@@ -191,12 +191,16 @@ enum EditorSelfTest {
             try ProjectStore.validate(e.project)
             passed("production hidden output constructor shares media, receives blackout and closes")
 
+            let connectedDisplays=ProjectionDisplay.connected
+            let selectedDisplay=try required(connectedDisplays.first {
+                ProjectionDisplay.target($0.id,in:connectedDisplays) != nil
+            },"No active, non-mirrored display for the hidden fullscreen check")
             e.openOutput(config,fullscreen:true,showWindow:false)
-            let fullscreen=try required(e.outputWindows[config.id],"Production fullscreen constructor did not register its hidden window")
-            guard let projection=fullscreen.0 as? ProjectionWindow else { throw Failure(message:"Fullscreen output is not a ProjectionWindow") }
-            let targetScreen:NSScreen
-            if NSScreen.screens.indices.contains(config.screenIndex) { targetScreen=NSScreen.screens[config.screenIndex] }
-            else { targetScreen=try required(NSScreen.main,"No selected screen is available") }
+            try expect(e.outputWindows.isEmpty,"Unassigned fullscreen fell back to a display index")
+            try e.presentOutput(id:config.id,fullscreen:true,displayUUID:selectedDisplay.id,showWindow:false)
+            let fullscreen=try required(e.outputWindows[.fullscreen(config.id)],"Production fullscreen constructor did not register its hidden window")
+            let projection=fullscreen.0
+            let targetScreen=selectedDisplay.screen
             try expect(projection.styleMask == .borderless,"Fullscreen output retained a window border or title bar")
             try expect(projection.frame == targetScreen.frame,"Fullscreen output does not cover the selected screen's full frame")
             try expect(projection.level.rawValue > NSWindow.Level.mainMenu.rawValue,"Fullscreen output remains below the system menu level")
@@ -208,6 +212,57 @@ enum EditorSelfTest {
             report["hiddenFullscreenConfigurationVerified"]=true
             report["fullscreenPresentationVerified"]=false
             passed("hidden production fullscreen frame, borderless style, menu-level coverage and Escape cleanup")
+
+            let secondOutput=OutputConfig(name:config.name,screenIndex:config.screenIndex)
+            let outputLayerA=Surface(name:"Only A",output:Point2.unitQuad,color:[1,0,0],outputID:config.id,generator:"solid")
+            let outputLayerB=Surface(name:"Only B",output:Point2.unitQuad,color:[0,1,0],outputID:secondOutput.id,generator:"solid")
+            let beforeDisplayFixture=e.project
+            e.mutate("Two output fixtures") {
+                $0.outputs.append(secondOutput)
+                $0.surfaces += [outputLayerA,outputLayerB]
+            }
+            let routeProject=e.project
+            try e.presentOutput(id:config.id,fullscreen:false,displayUUID:nil,showWindow:false)
+            try e.presentOutput(id:secondOutput.id,fullscreen:false,displayUUID:selectedDisplay.id,showWindow:false)
+            try expect(e.project==routeProject && e.outputWindows.count==2,"Opening two previews changed bindings or collapsed the routes")
+            for (candidate, rgb) in [(config,[UInt8(255),0,0]),(secondOutput,[UInt8(0),255,0])] {
+                let output=try required(e.outputWindows[.preview(candidate.id)],"Independent routed preview is missing")
+                let bitmap=try required(output.1.snapshot(width:32,height:18),"Independent routed Metal frame missing")
+                let bytes=try required(bitmap.bitmapData,"Independent preview pixel bytes missing")
+                let offset=9*bitmap.bytesPerRow+16*4
+                try expect(Array(UnsafeBufferPointer(start:bytes+offset,count:3))==rgb,"Two previews did not show independently routed surfaces")
+            }
+            passed("two hidden output previews on one display show distinct routed Metal pixels without changing bindings")
+
+            try e.presentOutput(id:config.id,fullscreen:true,displayUUID:selectedDisplay.id,showWindow:false)
+            do {
+                try e.presentOutput(id:secondOutput.id,fullscreen:true,displayUUID:selectedDisplay.id,showWindow:false)
+                throw Failure(message:"Two fullscreen outputs occupied the same display")
+            } catch is Failure { throw Failure(message:"Two fullscreen outputs occupied the same display") }
+            catch { try expect(e.project==routeProject,"Rejected display selection changed the project") }
+            try expect(e.outputWindows.count==3 && e.outputWindows[.preview(config.id)] != nil,
+                       "Opening fullscreen dismissed the preview for the same route")
+            let distractor=ProjectionDisplay(id:UUID(),screen:targetScreen,allowsFullscreen:true)
+            e.reconcileOutputWindows(displays:[distractor,selectedDisplay])
+            e.reconcileOutputWindows(displays:[selectedDisplay,distractor])
+            try expect(e.outputWindows[.fullscreen(config.id)]?.displayUUID==selectedDisplay.id,"Reordering displays changed the fullscreen route")
+            for topology in [[distractor],[selectedDisplay,selectedDisplay],
+                             [ProjectionDisplay(id:selectedDisplay.id,screen:targetScreen,allowsFullscreen:false)]] {
+                e.reconcileOutputWindows(displays:topology)
+                try expect(e.project==routeProject && e.outputWindows[.fullscreen(config.id)]==nil && e.outputWindows[.preview(secondOutput.id)]?.displayUUID==nil &&
+                           e.outputWindows.count==2 && !e.outputMessage.isEmpty,"Missing, ambiguous or mirrored display did not close only fullscreen")
+                e.reconcileOutputWindows(displays:connectedDisplays)
+                try expect(e.outputWindows[.fullscreen(config.id)]==nil,"Returning display reopened fullscreen without a user action")
+                try e.presentOutput(id:config.id,fullscreen:true,displayUUID:selectedDisplay.id,showWindow:false)
+            }
+            e.undoEdit()
+            try expect(e.project==beforeDisplayFixture && e.outputWindows[.preview(secondOutput.id)]==nil,"Undo removal retained an output window")
+            e.undoEdit()
+            try expect(e.project.outputs.first?.displayUUID==nil && e.outputWindows[.fullscreen(config.id)]==nil,"Undo assignment retained fullscreen")
+            e.redoEdit()
+            try expect(e.project.outputs.first?.displayUUID==selectedDisplay.id && e.outputWindows[.fullscreen(config.id)]==nil,"Redo reopened a fullscreen window")
+            e.closeOutputs()
+            passed("simulated display reorder, disconnect, duplicate, mirror and history changes preserve routes and require explicit fullscreen reopen")
 
             e.addSurface(shape:.triangle)
             let shapeID=try required(e.selectedID,"Shape creation lost selection")
@@ -336,7 +391,7 @@ enum EditorSelfTest {
             passed("group opacity follows automation; dissolve preserves scene references and rejects unsafe tracks")
 
             e.openOutput(config,fullscreen:false,showWindow:false)
-            let groupedOutput=try required(e.outputWindows[config.id],"Grouped output missing").1
+            let groupedOutput=try required(e.outputWindows[.preview(config.id)],"Grouped output missing").1
             try expect(groupedOutput.surfaces == e.effectiveSurfaces && groupedOutput.media === e.media,"Independent output received local rather than resolved group geometry")
             e.lighting.isSampling=true; e.lighting.isSending=false
             e.mutate("Grouped sampling fixture") {$0.fixtures=[Fixture(name:"Group sampling",universe:1,address:1,points:[Point2(0.5,0.5)],channelOrder:"RGB")]}
@@ -455,7 +510,7 @@ enum EditorSelfTest {
             e.seekShow(to:1);try expect(e.renderer.surfaces[0].opacity==0,"Hold timeline did not retain outgoing value")
             e.seekShow(to:4);try expect(abs(e.renderer.surfaces[0].opacity-0.5)<1e-9,"Bezier timeline did not evaluate against master show time")
             e.openOutput(showOutput,fullscreen:false,showWindow:false)
-            let showOutputRenderer=try required(e.outputWindows[showOutput.id],"Timeline output missing").1
+            let showOutputRenderer=try required(e.outputWindows[.preview(showOutput.id)],"Timeline output missing").1
             try expect(showOutputRenderer.surfaces == e.renderer.surfaces,"Timeline output used a different time/program")
             let showPixels=try editorPixels()
             try expect(abs(Int(showPixels[(48*128+64)*4])-128)<=1,"Timeline opacity did not reach actual Metal output")

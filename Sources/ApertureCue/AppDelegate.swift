@@ -18,6 +18,9 @@ import MappingCore
         NSApp.activate(ignoringOtherApps: true)
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    func applicationDidChangeScreenParameters(_ notification: Notification) {
+        editor?.reconcileOutputWindows()
+    }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard editor.confirmDiscard() else { return .terminateCancel }
         editor.showRuntime.pause(); editor.media.pause(); editor.network?.stop(); editor.midi?.stop()
@@ -93,7 +96,8 @@ import MappingCore
     var modePicker: ActionPopUp!
     var cuePicker: ActionPopUp!
     var playButton: ActionButton!
-    var outputWindows: [UUID: (NSWindow, MetalRenderer)] = [:]
+    var outputWindows: [ProjectionWindowKey: (ProjectionWindow, MetalRenderer, displayUUID: UUID?)] = [:]
+    var outputMessage = ""
     var timer: Timer?
     var dragBefore: Project?
     var cueFrom: [Surface] = [], cueTarget: Cue?, cueStart: Double = 0
@@ -329,6 +333,7 @@ import MappingCore
         }
     }
     func reconcile() {
+        reconcileOutputWindows()
         updateActiveMedia()
         media.reconcile(assets:project.assets,baseURL:baseURL)
         do { try montagePool.reconcile(montages:project.montages,assets:project.assets,baseURL:baseURL) }
@@ -427,10 +432,13 @@ import MappingCore
         add(ActionButton("Group controls…") { [weak self] in self?.selectedGroupID = surface.groupID; self?.configureGroups() })
         let groupToggle = ActionButton("Toggle entire group") { [weak self] in self?.toggleGroup() }
         groupToggle.isEnabled = surface.groupID != nil; add(groupToggle)
-        let outputNames = ["All outputs"] + project.outputs.map(\.name)
-        let outIndex = surface.outputID.flatMap { id in project.outputs.firstIndex(where:{$0.id == id}).map { $0 + 1 } } ?? 0
+        let outputs = project.outputs
+        let outputNames = ["All outputs"] + outputTitles(outputs)
+        let outIndex = surface.outputID.flatMap { id in outputs.firstIndex(where:{$0.id == id}).map { $0 + 1 } } ?? 0
         add(ActionPopUp(items:outputNames,selected:outIndex) { [weak self] v in
-            guard let self else { return }; let id = v > 0 ? self.project.outputs[v-1].id : nil
+            guard let self, outputNames.indices.contains(v) else { return }
+            let id = v > 0 ? outputs[v-1].id : nil
+            if let id, !self.project.outputs.contains(where: { $0.id == id }) { return }
             self.editSurface("Route output") { $0.outputID = id }
         })
         add(label("Geometry",bold:true))
@@ -625,39 +633,9 @@ import MappingCore
         timeLabel.stringValue = "\(time(playhead)) / \(time(project.timelineSettings.duration))\(playhead>project.timelineSettings.duration ? " +" : "")"
         playButton.title = showRuntime.isPlaying ? "Ⅱ Pause" : "▶ Play"
         let error = (montagePool.diagnostics.values.first ?? media.errorMessages.values.first).map { " · \($0)" } ?? ""
-        status.stringValue = "\(renderer.statistics) · \(project.surfaces.count) surfaces · \(outputWindows.count) output windows\(blackout ? " · BLACKOUT" : "")\(error)\(renderer.errorDescription.isEmpty ? "" : " · Last render error: " + renderer.errorDescription)\(renderError.isEmpty ? "" : " · " + renderError)\(editError.isEmpty ? "" : " · " + editError)\(workMessage.isEmpty ? "" : " · " + workMessage)\(timelineEventWarning.isEmpty ? "" : " · " + timelineEventWarning)\(cueMessage.isEmpty ? "" : " · " + cueMessage)\(isRecordingAutomation ? " · REC INPUT" : "")"
+        status.stringValue = "\(renderer.statistics) · \(project.surfaces.count) surfaces · \(outputWindows.count) output windows\(blackout ? " · BLACKOUT" : "")\(error)\(renderer.errorDescription.isEmpty ? "" : " · Last render error: " + renderer.errorDescription)\(renderError.isEmpty ? "" : " · " + renderError)\(editError.isEmpty ? "" : " · " + editError)\(workMessage.isEmpty ? "" : " · " + workMessage)\(outputMessage.isEmpty ? "" : " · " + outputMessage)\(timelineEventWarning.isEmpty ? "" : " · " + timelineEventWarning)\(cueMessage.isEmpty ? "" : " · " + cueMessage)\(isRecordingAutomation ? " · REC INPUT" : "")"
         if dirty, now-lastRecovery > 10, let url = projectURL { try? ProjectStore.saveRecovery(project,for:url); lastRecovery = now }
     }
-    func configureOutputs() {
-        let a = NSAlert(); a.messageText = "Projection output"; a.informativeText = "Create an independent output on a selected display. Escape closes its fullscreen window."
-        let picker = ActionPopUp(items:NSScreen.screens.enumerated().map { "\($0.offset): \($0.element.localizedName)" },action:{_ in})
-        a.accessoryView = picker; picker.frame = NSRect(x:0,y:0,width:330,height:28)
-        a.addButton(withTitle:"Open fullscreen"); a.addButton(withTitle:"Open preview window"); a.addButton(withTitle:"Close outputs"); a.addButton(withTitle:"Cancel")
-        let response = a.runModal()
-        if response == .alertFirstButtonReturn || response == .alertSecondButtonReturn {
-            let screen = max(0,picker.indexOfSelectedItem)
-            var config = project.outputs.first(where:{$0.screenIndex == screen})
-            if config == nil { config = OutputConfig(name:"Display \(screen+1)",screenIndex:screen); mutate("Add output") { $0.outputs.append(config!) } }
-            openOutput(config!,fullscreen:response == .alertFirstButtonReturn)
-        } else if response == .alertThirdButtonReturn { closeOutputs() }
-    }
-    func openOutput(_ config:OutputConfig,fullscreen:Bool,showWindow:Bool = true) {
-        if let old = outputWindows[config.id] { old.0.close(); outputWindows.removeValue(forKey:config.id) }
-        let screen = NSScreen.screens.indices.contains(config.screenIndex) ? NSScreen.screens[config.screenIndex] : NSScreen.main!
-        let w = ProjectionWindow(contentRect:NSRect(x:screen.frame.minX+60,y:screen.frame.minY+60,width:960,height:540),styleMask:fullscreen ? [.borderless] : [.titled,.closable,.resizable],backing:.buffered,defer:false,screen:screen)
-        w.title = "ApertureCue · \(config.name)"; w.backgroundColor = .black; w.isReleasedWhenClosed = false
-        let v = MTKView(frame:.zero,device:metalView.device)
-        guard let r = MetalRenderer(view:v,media:media) else { return }; r.outputID = config.id; r.surfaces = effectiveSurfaces; r.blackout = blackout
-        fill(v,in:w.contentView!); outputWindows[config.id] = (w,r)
-        w.onClose = { [weak self] in self?.outputWindows.removeValue(forKey:config.id) }
-        if fullscreen {
-            w.setFrame(screen.frame,display:true)
-            w.level = NSWindow.Level(rawValue:NSWindow.Level.mainMenu.rawValue+1)
-            w.collectionBehavior = [.canJoinAllSpaces,.fullScreenAuxiliary]
-        }
-        if showWindow { w.makeKeyAndOrderFront(nil) }
-    }
-    func closeOutputs() { let windows = Array(outputWindows.values); outputWindows.removeAll(); windows.forEach { $0.0.close() } }
     func toggleBlackout() { blackout.toggle(); updateRender() }
     @objc func exportPNG() {
         let p = NSSavePanel(); p.allowedContentTypes = [.png]; p.nameFieldStringValue = "ApertureCue-frame.png"

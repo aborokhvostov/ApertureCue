@@ -101,6 +101,31 @@ final class ProjectTests: XCTestCase {
         XCTAssertEqual(try ProjectStore.load(from:url),project)
     }
 
+    func testDisplayBindingPersistsAndLegacyOutputsKeepTheirRoutes() throws {
+        let display = UUID()
+        let output = OutputConfig(name:"Stage",screenIndex:2,displayUUID:display)
+        let layer = Surface(outputID:output.id)
+        let cue = Cue(name:"Stage cue",surfaces:[layer])
+        let project = Project(surfaces:[layer],outputs:[output],cues:[cue])
+        let url = scratch.appendingPathComponent("output.aperturecue.json")
+        try ProjectStore.save(project,to:url)
+        XCTAssertEqual(try ProjectStore.load(from:url),project)
+        let collected = try ProjectStore.collect(project,to:scratch.appendingPathComponent("Portable"))
+        XCTAssertEqual(try ProjectStore.load(from:collected),project)
+
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with:Data(contentsOf:url)) as? [String:Any])
+        var outputs = try XCTUnwrap(json["outputs"] as? [[String:Any]])
+        outputs[0]["displayUUID"] = "unknown extension"
+        json["outputs"] = outputs
+        try JSONSerialization.data(withJSONObject:json).write(to:url)
+        XCTAssertThrowsError(try ProjectStore.load(from:url))
+        json["version"] = 9
+        try JSONSerialization.data(withJSONObject:json).write(to:url)
+        var upgraded = project
+        upgraded.outputs[0].displayUUID = nil
+        XCTAssertEqual(try ProjectStore.load(from:url),upgraded)
+    }
+
     func testUndoRedoBranchAndBoundedHistory() {
         let h=EditHistory(capacity:2)
         var a=Project(name:"A"), b=a; b.name="B"
