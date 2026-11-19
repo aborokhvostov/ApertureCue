@@ -118,7 +118,7 @@ public final class CueEngine {
         s.enabled=a.enabled || b.enabled
         s.brightness=mix(a.brightness,b.brightness); s.gamma=mix(a.gamma,b.gamma); s.feather=mix(a.feather,b.feather)
         if a.color.count == b.color.count { s.color=zip(a.color,b.color).map(mix) }
-        if a.mask.count == b.mask.count { s.mask=zip(a.mask,b.mask).map { Point2.interpolate($0,$1,t:u) } }
+        PolygonMaskGeometry.interpolate(a,b,t:u,into:&s)
         return s
     }
 }

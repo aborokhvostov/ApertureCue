@@ -1,6 +1,6 @@
 # Текущее состояние ApertureCue
 
-Обновлено: 15 ноября 2026 (Europe/Moscow), macOS first. Исследование начато 25 октября. Полное функциональное равенство MadMapper **не достигнуто**. Задача продолжается по [roadmap](roadmap.md); [матрица](feature-matrix.md) различает исследование, реализацию, автоматические, ручные и аппаратные проверки.
+Обновлено: 19 ноября 2026 (Europe/Moscow), macOS first. Исследование начато 25 октября. Полное функциональное равенство MadMapper **не достигнуто**. Задача продолжается по [roadmap](roadmap.md); [матрица](feature-matrix.md) различает исследование, реализацию, автоматические, ручные и аппаратные проверки.
 
 ## Окружение и референс
 
@@ -18,6 +18,10 @@ AppKit editor, Metal compositor, PNG/images и AVFoundation video, textured line
 Отдельные output windows с display selection/routing/blackout; full/selective surface snapshots with 13 atomic field masks and a native Scenes editor; графический parameter timeline с Hold/Linear/Bezier, independent show clock, loop/continuation и Pause/Scene markers; latest-frame AVCapture adapter; fixed MIDI input profile, OSC localhost control с bounded main-thread mailbox; basic RGB/GRB/RGBW strips, asynchronous composition sampling, simulator и opt-in IPv4 ArtDmx/sACN. OBJ импортируется как статическая pinhole-проекция в editable quad patches, без depth buffer и сохранения исходной 3D-сцены. PNG still export.
 
 ## Текущий этап
+
+Schema 11 adds per-layer polygon mask coordinates (source UV or output canvas), inversion and independent inward feather. Existing projects preserve source-mask behavior, including scene snapshots. Full/selective Mask cues own the polygon and its settings together; changing coordinate systems or inversion switches the whole mask at the midpoint. Geometry lock guards every new mask control. [Behavior and limitations](polygon-mask-spec.md).
+
+Local checks on Apple M2 / arm64 / macOS 26.6.2 passed 98 standalone core methods (not XCTest), 58 production editor checks, 50 Metal/media checks and 11 lighting/UDP localhost checks. The mask pixel oracle samples crop, displaced mesh and a reflected group in both spaces and inversion modes; adjacent layers, output routing and blackout remain independent. Editor checks cover native controls, direct world-space mask points, Undo/Redo, lock and save/reopen. Visible native GUI verified Add mask, automatic input/output view selection, inversion, feather 0.120 and Undo/Redo on the built-in two-surface procedural demo, then discarded its changes. No physical device, long-duration timing, mask performance or extra antialiasing claim. Remote XCTest and archive evidence will be recorded separately after verification.
 
 Schema 10 stores the macOS display UUID for fullscreen outputs separately from the logical route ID. Legacy projects retain their routes and open with fullscreen displays unassigned. Fullscreen and preview windows can coexist. Display configuration changes recheck currently active fullscreen windows using the current screen list. Disconnected, ambiguous, inactive or mirrored targets close their fullscreen windows, and explicit reopening resumes output. Local standalone core passed 95 methods including migration and Collect. The extracted app passed 56 editor and 47 Metal/media checks. Hidden native windows showed distinct Metal pixels for two routes on one screen. Simulated topology changes and Undo/Redo verified that windows close while routing remains intact and reopening requires an explicit action. Visible GUI verified preview without a display binding, built-in fullscreen, Escape and the saved display selection within the open project. Physical hotplug and external projectors remain unverified.
 
@@ -53,7 +57,7 @@ Portable Collect проверен отдельными core tests: проект 
 
 ## Незавершённое
 
-Базовый desktop workflow проверен автоматически и через GUI на текущем дисплее. Открыты: длительный soak, точный multi-source timing/PTS/drift, стабильные display IDs/hotplug, внешние проекторы; broader recording tools, reverse/crossfade, audio/MIDI/OSC montage/Conductor, freehand/Bézier mesh/masks, group perspective/isolation/FX/automation, полноценный edge blending, audio engine/routing/analysis, расширенные fixtures/recording, external SDK adapters, live 3D/calibration/scanner, offline video/light export и standalone player, Windows/Linux desktop.
+Базовый desktop workflow проверен автоматически и через GUI на текущем дисплее. Открыты: длительный soak, точный multi-source timing/PTS/drift, physical display hotplug, внешние проекторы; broader recording tools, reverse/crossfade, audio/MIDI/OSC montage/Conductor, freehand/Bézier mesh/masks, group perspective/isolation/FX/automation, полноценный edge blending, audio engine/routing/analysis, расширенные fixtures/recording, external SDK adapters, live 3D/calibration/scanner, offline video/light export и standalone player, Windows/Linux desktop.
 
 Alpha 9 was published after exact-source CI, final native workflow and fresh extracted-app verification. ZIP/SHA256SUMS are uploaded; GitHub size/digests and tag source match local evidence. Next engineering stages include reverse/crossfade/audio montage and broader recording tools; group perspective/isolation/FX/automation, Conductor and external clocks remain open. Hardware gates remain separately unverified.
 

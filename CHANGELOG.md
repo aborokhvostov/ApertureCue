@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-alpha.13 — layer polygon mask controls, 2026-11-19
+
+- Add source UV / output canvas coordinates, inversion and separate mask feather. Keep output masks fixed when a surface, mesh or group moves, applying only to that layer. Geometry lock guards all mask controls.
+- Schema 11 preserves legacy source masks and persists settings in surfaces and scene snapshots. Selective Mask owns all settings; incompatible coordinates/inversion switch together at transition midpoint.
+- Local verification: 98 standalone core methods, 58 editor, 50 Metal/media and 11 lighting/localhost checks; visible native settings and Undo/Redo verified. Publication/CI/archive evidence is recorded in docs/verification/distribution.md.
+
 ## 0.1.0-alpha.8 - recorded inspector automation, 2026-10-27
 
 - Add session-only per-track Arm and Record input for six existing scalar tracks. Continuous inspector gestures replace touched key spans with ordinary linear keys, retain outside key metadata, preview through shared rendering/light composition, and commit one Undo per gesture.

@@ -87,6 +87,12 @@ public enum ProjectStore {
         if portable.version < 10 {
             for i in portable.outputs.indices { portable.outputs[i].displayUUID = nil }
         }
+        if portable.version < 11 {
+            for i in portable.surfaces.indices { portable.surfaces[i].maskSettings = .init() }
+            for i in portable.cues.indices {
+                for j in portable.cues[i].surfaces.indices { portable.cues[i].surfaces[j].maskSettings = .init() }
+            }
+        }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
@@ -223,6 +229,7 @@ public enum ProjectStore {
             if s.shape == .triangle || s.triangleVertices != TriangleGeometry.canonical {
                 _ = try TriangleGeometry(vertices:s.triangleVertices)
             }
+            try PolygonMaskGeometry.validate(s.maskSettings)
             let allPoints = s.input + s.output + s.mesh + s.mask
             guard allPoints.allSatisfy({ $0.x.isFinite && $0.y.isFinite && abs($0.x) <= 10000 && abs($0.y) <= 10000 }) else { throw ProjectError.invalid("coordinate outside finite working range") }
             guard s.name.utf8.count <= 4096, s.group.utf8.count <= 4096 else { throw ProjectError.invalid("surface label is too long") }

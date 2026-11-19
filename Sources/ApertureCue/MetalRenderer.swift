@@ -19,6 +19,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         var localX: SIMD4<Float>; var localY: SIMD4<Float>; var localW: SIMD4<Float>
         var properties: SIMD4<Float>; var tint: SIMD4<Float>; var misc: SIMD4<Float>
         var shape: SIMD4<Float>
+        var maskStyle: SIMD4<Float>
         var mediaX:SIMD4<Float>;var mediaY:SIMD4<Float>
         var triangleA: SIMD4<Float>; var triangleB: SIMD4<Float>; var triangleC: SIMD4<Float>
     }
@@ -291,6 +292,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             tint: SIMD4(Float(tint[0]), Float(tint[1]), Float(tint[2]), 1),
             misc: SIMD4(generator, Float(polygon.count), hasMesh ? 1 : 0, Float(media.currentTime)),
             shape: SIMD4(surface.shape.isStroke ? 3 : (surface.shape == .triangle ? 1 : (surface.shape == .ellipse ? 2 : 0)), Float(surface.stroke.width), Float(stroke?.count ?? 0), 0),
+            maskStyle:SIMD4(surface.maskSettings.space == .outputCanvas ? 1 : 0, surface.maskSettings.inverted ? 1 : 0, Float(surface.maskSettings.feather), 0),
             mediaX:mediaTransform.x,mediaY:mediaTransform.y,
             triangleA:plane(0),triangleB:plane(1),triangleC:plane(2))
         guard let pipeline = pipelines[surface.blendMode] ?? pipelines["normal"] else { return }
@@ -349,6 +351,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         float4 localX; float4 localY; float4 localW;
         float4 properties; float4 tint; float4 misc;
         float4 shape;
+        float4 maskStyle;
         float4 mediaX;float4 mediaY;
         float4 triangleA; float4 triangleB; float4 triangleC;
     };
@@ -404,16 +407,25 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         float2 uv = project(u.shape.x > 2.5 ? strokeUV : (u.misc.z > 0.5 ? local : in.screen), u.sourceX, u.sourceY, u.sourceW);
         if (!all(isfinite(uv)) || any(uv < float2(0.0)) || any(uv > float2(1.0))) discard_fragment();
         int count = int(u.misc.y);
+        float maskAlpha = 1.0;
         if (count >= 3) {
+            float2 p = u.maskStyle.x > 0.5 ? in.screen : uv;
             bool inside = false;
+            float distance = INFINITY;
             for (int i = 0, j = count - 1; i < count; j = i++) {
-                float2 a = mask[i], b = mask[j];
-                if ((a.y > uv.y) != (b.y > uv.y)) {
-                    float hit = (b.x - a.x) * (uv.y - a.y) / (b.y - a.y) + a.x;
-                    if (uv.x < hit) inside = !inside;
+                float2 a = mask[i], b = mask[j], delta = b-a;
+                float squared = dot(delta,delta);
+                float t = squared > 0.0 ? clamp(dot(p-a,delta)/squared,0.0,1.0) : 0.0;
+                distance = min(distance,length(p-a-t*delta));
+                if ((a.y > p.y) != (b.y > p.y)) {
+                    float hit = (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x;
+                    if (p.x < hit) inside = !inside;
                 }
             }
-            if (!inside) discard_fragment();
+            if (distance == 0.0) inside = true;
+            bool kept = u.maskStyle.y > 0.5 ? !inside : inside;
+            maskAlpha = kept ? (u.maskStyle.z > 0.0 ? smoothstep(0.0,u.maskStyle.z,distance) : 1.0) : 0.0;
+            if (maskAlpha <= 0.0) discard_fragment();
         }
         constexpr sampler sampleFilter(coord::normalized, address::clamp_to_edge, filter::linear);
         float4 color;
@@ -434,7 +446,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             color = float4(rgb, 1.0);
         }
         float feather = u.properties.w > 0.0 ? smoothstep(0.0, u.properties.w, edge) : 1.0;
-        float alpha = clamp(color.a * u.properties.x * feather * coverage, 0.0, 1.0);
+        float alpha = clamp(color.a * u.properties.x * feather * coverage * maskAlpha, 0.0, 1.0);
         float3 rgb = pow(max(color.rgb * u.tint.rgb * u.properties.y, float3(0.0)), float3(1.0 / u.properties.z));
         return float4(rgb * alpha, alpha);
     }

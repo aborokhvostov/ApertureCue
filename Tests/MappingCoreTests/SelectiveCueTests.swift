@@ -28,11 +28,11 @@ final class SelectiveCueTests:XCTestCase {
                              mask:[Point2(0,0),Point2(1,0),Point2(0.5,1)],meshColumns:1,meshRows:1,mesh:Point2.unitQuad,
                              outputID:UUID(),generator:"gradient",shape:.bezier,groupID:UUID(),stroke:.bezier)
         // Differing legacy metadata must never be recalled by any selective mask.
-        snapshot.group="Dormant label"
+        snapshot.group="Dormant label"; snapshot.maskSettings=PolygonMaskSettings(space:.outputCanvas,inverted:true,feather:0.1)
         let keys:[CueParameter:Set<String>]=[
             .opacity:["opacity"],.brightness:["brightness"],.gamma:["gamma"],.color:["color"],.feather:["feather"],
             .blendMode:["blendMode"],.visibility:["enabled"],.source:["mediaID","generator"],.input:["input"],
-            .outputGeometry:["output","mesh","meshRows","meshColumns","groupID"],.shape:["shape","stroke"],.mask:["mask"],.routing:["outputID"]]
+            .outputGeometry:["output","mesh","meshRows","meshColumns","groupID"],.shape:["shape","stroke"],.mask:["mask","maskSettings"],.routing:["outputID"]]
         let before=try object(original),saved=try object(snapshot)
         let unrelated=Surface(name:"New layer"),first=Surface(name:"First")
         for parameter in CueParameter.allCases {

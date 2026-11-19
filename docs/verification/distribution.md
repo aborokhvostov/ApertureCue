@@ -152,3 +152,11 @@ Published as [alpha 11](https://github.com/aborokhvostov/ApertureCue/releases/ta
 Published as [alpha 12](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.12) from `d58ff0052299bd68d1c342b5712adde6f548bc22`. [CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/43714450518) passed 95 XCTest on each platform with zero failures. The suites reported 5.399 s on macOS and 4.094 s on Linux. The macOS release build, native app, archive and artifact passed. GitHub's ZIP digest and size match the verified archive. The uploaded SHA256SUMS has 94 bytes and SHA-256 `22eb162a057a794140efd85ea33d3273bd863bb4ceb7c20d0d68d4e2b3664107`.
 
 [Alpha 9 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.9) is a prerelease. ZIP and SHA256SUMS were confirmed uploaded; both server SHA-256 digests and ZIP size match local evidence, and the tag resolves to the exact source above. Previous releases remain available.
+
+## Alpha 13 candidate
+
+19 November 2026, Apple M2 / arm64 / macOS 26.6.2, macOS 13+ target. Schema 11 adds source/output-canvas layer polygon masks, inversion and independent feather. See [specification](../polygon-mask-spec.md). Older binaries reject schema 11; use Save As to retain an older project copy.
+
+Local standalone core: 98 methods, zero failed assertions; separate from XCTest. Production native editor: 58 checks. Metal/media: 50 checks, including numerical mask oracle at 128×96 with crop, displaced mesh and mirrored group; generated H.264 MOV tests retained. Lighting/UDP localhost: 11 checks. Hidden routing fixtures still use two previews and one fullscreen on one available display. These short suites do not establish throughput, physical hotplug, external projectors, real light fixtures, drift or show-length stability.
+
+Manual GUI: the built-in two-surface procedural demo showed Source UV coordinates / Input region, then Output canvas coordinates / Output geometry, inversion and feather 0.120. Undo restored 0.000 and Redo restored 0.120. Screenshot showed an inverted feathered checker layer while its adjacent gradient remained intact. This test did not manually save/relaunch; production hidden integration and core check persistence separately. The test demo was discarded on quit.

@@ -103,7 +103,7 @@ public enum CueSelection {
         case .input:s.input=b.input
         case .outputGeometry:s.output=b.output;s.mesh=b.mesh;s.meshColumns=b.meshColumns;s.meshRows=b.meshRows;s.groupID=b.groupID
         case .shape:s.shape=b.shape;s.stroke=b.stroke;s.triangleVertices=b.triangleVertices
-        case .mask:s.mask=b.mask
+        case .mask:s.mask=b.mask;s.maskSettings=b.maskSettings
         case .routing:s.outputID=b.outputID
         }
     }
@@ -141,7 +141,7 @@ public enum CueSelection {
                     }
                     s.stroke=StrokePath(nodes:nodes,width:mix(a.stroke.width,b.stroke.width),closed:a.stroke.closed)
                 }
-            case .mask:if a.mask.count == b.mask.count { s.mask=points(a.mask,b.mask) }
+            case .mask:PolygonMaskGeometry.interpolate(a,b,t:u,into:&s)
             case .visibility,.source,.blendMode,.routing:break
             }
         }

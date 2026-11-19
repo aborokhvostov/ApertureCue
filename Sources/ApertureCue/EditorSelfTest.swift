@@ -706,6 +706,45 @@ enum EditorSelfTest {
             try expect(e.project==savedTriangle && !e.overlay.pathMode,"Custom vertices and lock did not survive reopening")
             passed("triangle vertex editing through mirrored group and mesh changes only its active vertex, with lock, reset, Undo/Redo and reopen")
 
+            var maskSurface=Surface(name:"Mask editor",input:crop,output:output,groupID:triangleGroup.id)
+            maskSurface.meshColumns=2; maskSurface.meshRows=2
+            maskSurface.mesh=try Geometry.regularMesh(quad:output,columns:2,rows:2)
+            e.mutate("Mask fixture") { $0=Project(surfaces:[maskSurface],groups:[triangleGroup]) }
+            e.selectedID=maskSurface.id; e.refresh()
+            try geometryButton("Add polygon mask").performClick(nil)
+            try expect(e.overlay.maskMode && e.inputMode,"Source mask did not open in input view")
+            let sourceMaskProject=e.project
+            let maskPicker=try required(e.inspector.arrangedSubviews.compactMap { $0 as? ActionPopUp }.first(where:{$0.itemTitles.contains("Output canvas coordinates")}),"Mask coordinate picker missing")
+            maskPicker.actionBlock?(1)
+            try expect(e.project.surfaces[0].maskSettings.space == .outputCanvas && !e.inputMode && e.overlay.maskMode,"Output mask did not switch to output canvas")
+            let outputMask=e.project
+            e.undoEdit(); try expect(e.project==sourceMaskProject && e.inputMode,"Undo coordinate space did not restore input mask view")
+            e.redoEdit(); try expect(e.project==outputMask && !e.inputMode,"Redo coordinate space did not restore output mask view")
+            var draggedMask=outputMask.surfaces[0].mask; draggedMask[0]=Point2(0.17,0.23)
+            e.overlay.onBegin?(); e.overlay.onChange?(maskSurface.id,draggedMask,false,false); e.overlay.onEnd?()
+            var expectedMask=outputMask.surfaces[0]; expectedMask.mask=draggedMask
+            try expect(e.project.surfaces[0]==expectedMask,"Output mask drag applied group inverse or changed UV/mesh/cage")
+            e.undoEdit(); try expect(e.project==outputMask,"Mask drag Undo differs")
+            e.redoEdit()
+            try geometryButton("Invert mask: OFF").performClick(nil)
+            let maskSlider=try required(e.inspector.arrangedSubviews.compactMap {$0 as? ActionSlider}.last,"Mask feather slider missing")
+            maskSlider.actionBlock?(0.125)
+            try expect(e.project.surfaces[0].maskSettings == PolygonMaskSettings(space:.outputCanvas,inverted:true,feather:0.125),"Mask inspector callbacks did not persist settings")
+            let maskURL=directory.appendingPathComponent("mask-settings.aperturecue.json")
+            e.saveTo(maskURL); let savedMask=e.project
+            e.newProject(); e.openProject(maskURL)
+            try expect(e.project==savedMask && !e.overlay.maskMode,"Mask settings did not survive Save/reopen")
+            try geometryButton("Lock geometry").performClick(nil)
+            let protectedMask=e.project
+            let disabledPicker=try required(e.inspector.arrangedSubviews.compactMap {$0 as? ActionPopUp}.first(where:{$0.itemTitles.contains("Output canvas coordinates")}),"Locked mask picker missing")
+            let disabledFeather=try required(e.inspector.arrangedSubviews.compactMap {$0 as? ActionSlider}.last,"Locked mask slider missing")
+            let disabledInvert=try geometryButton("Invert mask: ON")
+            try expect(!disabledPicker.isEnabled && !disabledFeather.isEnabled && !disabledInvert.isEnabled,"Locked mask controls remained enabled")
+            disabledPicker.actionBlock?(0); disabledFeather.actionBlock?(0.4); disabledInvert.actionBlock?(); e.editPolygonMask()
+            try expect(e.project==protectedMask && !e.overlay.maskMode,"Locked mask accepted direct inspector callbacks")
+            passed("mask space switches editing view with Undo/Redo; output points stay in canvas coordinates through group and mesh")
+            passed("mask inversion/feather native controls, save/reopen and geometry-lock guards")
+
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count
             try writeReport()

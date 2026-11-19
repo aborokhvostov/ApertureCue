@@ -355,6 +355,9 @@ import MappingCore
         let effective = effectiveSurfaces
         do { resolvedBaseSurfaces = try GroupEngine.resolve(surfaces:project.surfaces,groups:project.groups) }
         catch { resolvedBaseSurfaces = []; renderError = error.localizedDescription }
+        if overlay.maskMode, let i = selectedIndex {
+            modePicker.selectItem(at:project.surfaces[i].maskSettings.space == .sourceUV ? 1 : 0)
+        }
         if inputMode, let i = selectedIndex {
             var s = project.surfaces[i]; s.input = Point2.unitQuad; s.output = Point2.unitQuad
             s.shape = .quad; s.mesh = []; s.meshColumns = 0; s.meshRows = 0; s.mask = []; s.feather = 0; s.opacity = 1; s.brightness = 1; s.gamma = 1; s.color = [1,1,1]; s.enabled = true
@@ -458,14 +461,25 @@ import MappingCore
             if self.overlay.meshMode { self.modePicker.selectItem(at:0) }
             self.overlay.maskMode = false; self.overlay.pathMode = false; self.updateRender(); self.refreshInspector()
         })
-        geometryControl(ActionButton(surface.mask.isEmpty ? "Add polygon mask" : "Edit polygon mask") { [weak self] in
-            guard let self, self.editableGeometryIndex != nil else { return }
-            self.editSurface("Mask") { s in if s.mask.isEmpty { s.mask = [Point2(0.1,0.1),Point2(0.9,0.1),Point2(0.8,0.9),Point2(0.2,0.9)] } }
-            self.modePicker.selectItem(at:1); self.overlay.maskMode = true; self.overlay.meshMode = false; self.overlay.pathMode = false; self.updateRender()
+        add(label("Polygon mask · this layer",bold:true))
+        let spaces = PolygonMaskSpace.allCases
+        geometryControl(ActionPopUp(items:["Source UV coordinates", "Output canvas coordinates"],selected:spaces.firstIndex(of:surface.maskSettings.space) ?? 0) { [weak self] index in
+            guard spaces.indices.contains(index) else { return }
+            self?.setMaskSpace(spaces[index])
         })
+        geometryControl(ActionButton(surface.maskSettings.inverted ? "Invert mask: ON" : "Invert mask: OFF") { [weak self] in
+            guard let self, self.editableGeometryIndex != nil else { return }
+            self.overlay.finishDrag(); self.editSurface("Invert mask") { $0.maskSettings.inverted.toggle() }
+        })
+        add(label(String(format:"Mask feather  %.3f",surface.maskSettings.feather),size:11))
+        geometryControl(ActionSlider(value:surface.maskSettings.feather,min:0,max:0.5) { [weak self] value in
+            guard let self, self.editableGeometryIndex != nil else { return }
+            self.editSurface("Mask feather") { $0.maskSettings.feather = value }
+        })
+        geometryControl(ActionButton(surface.mask.isEmpty ? "Add polygon mask" : "Edit polygon mask") { [weak self] in self?.editPolygonMask() })
         geometryControl(ActionButton("Remove mask") { [weak self] in
             guard let self, self.editableGeometryIndex != nil else { return }
-            self.overlay.maskMode = false; self.editSurface("Remove mask") { $0.mask = [] }
+            self.overlay.finishDrag(); self.overlay.maskMode = false; self.editSurface("Remove mask") { $0.mask = [] }
         })
         if let a = project.assets.first(where:{$0.id == surface.mediaID}) {
             add(label("MEDIA · \(a.name)",size:11,bold:true))

@@ -98,6 +98,49 @@ enum SelfTest {
             try expect(pixel(image, 2, 48)[0] < 20 && pixel(image, 64, 48)[0] == 255, "Edge feather ramp differs")
             checks += ["polygon mask", "edge feather"]
 
+            // Independent normalized-coordinate distance oracle over the real
+            // shader: crop, displaced mesh, reflected parent and two mask spaces.
+            let maskGroup=SurfaceGroup(name:"Mask frame",transform:Affine2D(a:-0.9,b:0.03,c:0.04,d:0.85,tx:0.94,ty:0.04))
+            var maskLayer=Surface(name:"Mask coordinates",input:[Point2(0.25,0.1),Point2(0.9,0.1),Point2(0.9,0.85),Point2(0.25,0.85)],output:unit,
+                                  color:[1,0,0],mask:[Point2(0.2,0.2),Point2(0.7,0.2),Point2(0.7,0.4),Point2(0.45,0.4),Point2(0.45,0.8),Point2(0.2,0.8)],generator:"solid",groupID:maskGroup.id)
+            maskLayer.meshColumns=2; maskLayer.meshRows=2
+            maskLayer.mesh=try Geometry.regularMesh(quad:unit,columns:2,rows:2); maskLayer.mesh[4].x += 0.08
+            let maskUV=try Homography.solve(from:unit,to:maskLayer.input)
+            for space in PolygonMaskSpace.allCases {
+                for inverted in [false,true] {
+                    maskLayer.maskSettings=PolygonMaskSettings(space:space,inverted:inverted,feather:0.12)
+                    let resolved=try GroupEngine.resolve(surfaces:[maskLayer],groups:[maskGroup])[0]
+                    image=try frame([resolved])
+                    var samples=0
+                    for y in stride(from:8,to:88,by:7) {
+                        for x in stride(from:10,to:118,by:7) {
+                            let output=Point2((Double(x)+0.5)/128,(Double(y)+0.5)/96)
+                            guard let local=try? SurfaceGeometry.localPoint(output:output,surface:resolved),local.x>0.01,local.x<0.99,local.y>0.01,local.y<0.99 else { continue }
+                            let uv=try maskUV.applying(local)
+                            let p=space == .sourceUV ? uv : output
+                            let alpha=PolygonMaskGeometry.alpha(at:p,polygon:maskLayer.mask,settings:maskLayer.maskSettings)
+                            try expect(abs(pixel(image,x,y)[0]-Int((255*alpha).rounded()))<=2,"Mask coordinate/inversion/feather oracle differs")
+                            samples += 1
+                        }
+                    }
+                    try expect(samples>80,"Mask oracle had too few interior samples")
+                }
+            }
+            checks.append("source/output polygon mask distance oracle through crop, mesh and mirrored group, both inversion modes")
+            var hole=red; hole.mask=Point2.insetQuad; hole.maskSettings=PolygonMaskSettings(space:.outputCanvas,inverted:true)
+            image=try frame([blue,hole])
+            try expect(near(pixel(image,64,48),[0,0,128,255]) && near(pixel(image,3,48),[255,0,0,255]),"Inverted layer mask affected its neighbor")
+            hole.mask=[]
+            image=try frame([hole]); try expect(pixel(image,64,48)[0]==255,"Empty inverted mask hid the surface")
+            checks.append("inverted mask reveals neighboring layer; empty mask passes through")
+            hole.mask=Point2.insetQuad; hole.maskSettings.feather=0.1
+            let maskRoute=UUID(); hole.outputID=maskRoute
+            renderer.outputID=UUID(); image=try frame([hole]); try expect(pixel(image,3,48)[0]==0,"Mask bypassed route filtering")
+            renderer.outputID=maskRoute; image=try frame([hole]); try expect(pixel(image,3,48)[0]>0 && pixel(image,64,48)[0]==0,"Output route lost inverted mask")
+            renderer.blackout=true; image=try frame([hole]); try expect(pixel(image,3,48)[0]==0,"Blackout bypassed mask output")
+            renderer.blackout=false; renderer.outputID=nil
+            checks.append("mask settings survive output routing and blackout")
+
             let quad = [Point2(0.08, 0.1), Point2(0.92, 0.2), Point2(0.8, 0.92), Point2(0.22, 0.8)]
             let perspective = Surface(name: "Projective UV reference", output: quad, generator: "gradient")
             image = try frame([perspective])

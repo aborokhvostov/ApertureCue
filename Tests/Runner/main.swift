@@ -96,4 +96,7 @@ runCase("Montage.schema seven migration", MontageTests.self) { try $0.testLegacy
 runCase("Montage.current cue references", MontageTests.self) { try $0.testMontageReferencesAcrossCurrentFullAndSelectiveCueSnapshots() }
 runCase("Montage.persistence collect history", MontageTests.self) { try $0.testPersistenceRecoveryCollectAndHistoryRetainOnlyRealAssetFiles() }
 runCase("Montage.shared asset isolation", MontageTests.self) { try $0.testSharedAssetMultipleMontagesHaveIndependentSourcePositions() }
+runCase("PolygonMask.distance inversion feather", PolygonMaskTests.self) { try $0.testConcaveInvertedFeatherAndDegenerateSegments() }
+runCase("PolygonMask.atomic cues coordinate frames", PolygonMaskTests.self) { try $0.testMaskCueAtomicityAndCoordinateSwitching() }
+runCase("PolygonMask.schema eleven persistence", PolygonMaskTests.self) { try $0.testSchemaElevenMigrationStrictnessSaveCollectAndHistory() }
 exit(finishTests())
