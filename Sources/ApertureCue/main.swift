@@ -3,6 +3,8 @@ import Foundation
 import AppKit
 
 MainActor.assumeIsolated {
+if CommandLine.arguments.contains("--live-editor-test") {exit(LiveEditorSelfTest.run())}
+if CommandLine.arguments.contains("--live-composition-test") {exit(LiveCompositionSelfTest.run())}
 if CommandLine.arguments.contains("--composition-test") {exit(CompositionSelfTest.run())}
 if CommandLine.arguments.contains("--self-test") {
     exit(SelfTest.run())
@@ -22,7 +24,13 @@ if CommandLine.arguments.contains("--montage-test") {
 if CommandLine.arguments.contains("--editor-test") {
     exit(EditorSelfTest.run())
 }
-if CommandLine.arguments.contains("--generate-demo") {
+if CommandLine.arguments.contains("--generate-composition-demo") {
+    do {
+        let path=CommandLine.arguments.dropFirst(2).first ?? "examples/Demo"
+        try DemoGenerator.generateComposition(at:URL(fileURLWithPath:path,isDirectory:true))
+        print("Created original composition demo in \(path)")
+    } catch {fputs("\(error)\n",stderr);exit(1)}
+} else if CommandLine.arguments.contains("--generate-demo") {
     do {
         let target = CommandLine.arguments.dropFirst(2).first ?? "examples/Demo"
         try DemoGenerator.generate(at: URL(fileURLWithPath: target, isDirectory: true))

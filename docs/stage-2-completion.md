@@ -1,69 +1,58 @@
-# Stage 2 completion ledger
+# Stage 2 acceptance ledger
 
-The active user request is to complete the whole **Geometry and composition**
-stage, rather than stop after another isolated alpha. The existing roadmap and
-feature matrix remain the acceptance contract. Hardware evidence stays separate.
-No stage-complete claim precedes its frame, persistence and editor gates.
+Scope: **Geometry and composition**, G04–G19, V07–V11 and O02/O04.
+The roadmap and feature matrix define the declared software acceptance criteria;
+this does not establish full reference parity. Hardware H gates stay separate.
 
-## Paused checkpoint — 26 November 2026
+## Software workstreams
 
-The user paused local work to move and close the laptop. Development is stopped;
-there is no background continuation scheduled. Cloud environment discovery found
-a ready default configuration with no attached repositories, but the available
-thread handoff explicitly does not support cloud and thread creation only offers
-local/worktree execution. No cloud task was started.
-
-The published, verified baseline remains alpha 14 (`b2b2b73`); the prior local
-documentation commit is `4a0f19f`. All stage 2 changes below are an unpublished
-integration checkpoint, not a completed stage or a release candidate.
-
-Implementation now includes schema 12 and stored-cue migration, projective and
-isolated groups, Bézier/source warps, mesh linking, freehand/nudge commands,
-layer/group/global polygon and cubic masks, material expressions and the declared
-ISF subset, key/color effects, SVG import, video walls, edge ramps and bounded
-previous-frame feedback. Native controls and production self-tests are wired in.
-
-Automatic evidence: the final `scripts/test-core.sh` run completed **133 standalone
-test methods, zero failed assertions**. These are the shared test bodies through
-the assertion harness, **not XCTest execution**. Its log is
-`/tmp/aperture-stage2-core-final.log` (temporary local evidence). `git diff --check`
-passes. No core-check compiler or runner remained active at pause. Earlier runs
-whose input files changed during compilation do not count as successful evidence.
-
-Native integration remains unverified. A semantic typecheck found the timeline
-default argument typo, now corrected to `ProcessInfo.processInfo.systemUptime`;
-the integrated app has not been rebuilt after the final edits. The existing
-`dist` app/archive are alpha 14, not stage 2 builds. No stage 2 GUI, full production
-Metal/editor/lighting regression, remote macOS/Linux XCTest or hardware result
-has been claimed. Subagents have finished and are idle.
-
-Resume by reading this ledger together with status, roadmap and feature matrix;
-build using `scripts/build.sh`, resolve integration errors, then run the documented
-production checks including the new `--composition-test` and extended editor
-self-test in a logged-in graphics session. Verify feedback/resource bounds,
-source mapping and group/mask pixel oracles before GUI workflows. Finish missing
-acceptance work, update status/matrix and user documentation, run exact-source CI,
-then audit original content and build a fresh archive before publication. Keep
-hardware and physical seam/hotplug evidence separate from simulator/localhost.
-
-| Workstream | Required behavior | State |
+| Workstream | Implemented behavior | Automatic evidence |
 |---|---|---|
-| G04–G11 geometry/editor | Retain tested primitives, groups, history and regular mesh; add direct numeric/nudge transforms and freehand path capture | Alpha14 baseline verified; additions pending |
-| G12/G13 | Bounded Bézier warp, actual screen-space error certificate, explicit source/output link and UV preservation | Core module in progress |
-| G08/G14/G15 | Projective groups, isolated group opacity/FX, multiple layer/group/global masks, closed cubic mask editing | Integration in progress |
-| G17 | Complementary edge ramps with numeric GPU oracle; physical seam measurements remain separate | Core module in progress |
-| G18/G19 | Bounded original SVG import with explicit unsupported errors; deterministic tiled outputs/bezel crops | Core module in progress |
-| V08 | Chroma/luma key, spill and bounded color FX with CPU/GPU pixel oracle | Core module in progress |
-| V10/V11 | Working material expression editor, parameters, last-good pipeline on error and genuine declared single-pass ISF subset | Core/parser module in progress |
-| O02/O04 | Preserve independent routed outputs; explicit previous-frame feedback with bounded buffers and cycle-safe resets | Integration pending |
-| Integration | Schema migration including stored cues; save/collect/recovery; native controls and generated demos | Pending |
-| Completion | Core + actual macOS/Linux XCTest, production Metal/editor/lighting regressions, GUI workflows, fresh archive and provenance scan | Pending |
+| G04–G11 | Retained primitive/path/group/history behavior; freehand capture, numeric transforms/nudge, independent regular input/output meshes | Core, production editor and GPU regressions |
+| G12/G13 | Bounded rational Bézier warp, conforming error certificate, explicit source/output link; cage edits carry lattices and preserve unlinked source UV | Dense core certificate, analytic Metal UV, linked editor/history/persistence |
+| G08/G14/G15 | Projective groups, isolated opacity/blend/FX, multiple layer/group/global polygon and cubic masks | CPU/Metal scope, alpha/blend/AA and native mask/group commands |
+| G17 | Output ramps, power/gamma/black level; complementary simulated overlaps | Independent CPU/GPU channel oracle and pair/four-tile sums; optical H open |
+| G18/G19 | Strict original SVG subset to owned PNG; deterministic bezel/overlap crops and independent routed clones | Exact raster pixels, media/Metal import, tile coverage/routes and history |
+| V08 | Chroma/luma key, spill and declared color FX before tint | CPU/GPU numerical oracle and native edit/rejection/history |
+| V10/V11 | Typed expression editor/parameters, last-good accepted pipelines and declared ISF expression subset | Parser/CPU/Metal, import provenance, native assignment/delete/scene/history |
+| O02/O04 | Independent routed views, immutable previous-generation feedback, reset/backpressure/dimension limits | Hidden routed frames, self/cross-loop GPU oracle, stale completion and deletion/Undo |
+| Live presentation | One pending background drawable acquisition; main owns scene/media/encoding, stale view/window/size cancellation and three GPU slots | Five live/delayed/nil/cancellation/lifetime checks |
+| Persistence | Schema 12, current/stored-cue migration, 15 selective fields, save/reopen/recovery/Collect and original demos | Core and production controller checks |
 
-Parent owns shared project schema, group/render integration and native adapters.
-Independent subagents own pure geometry, material parsing/FX, and SVG/blend/wall
-utilities in separate files. A single schema boundary will ignore undefined new
-keys in legacy documents before decoding, for current and stored scene surfaces.
+## Completion gates — 26 November 2026
 
-All distributed media/shaders/SVG examples are original. No proprietary SDK or
-MadMapper assets are part of this work. Physical projectors and hotplug remain
-outside available equipment evidence; simulation cannot close those H gates.
+- Core: **133 standalone methods, zero failed assertions**. This is the shared
+  assertion harness, not XCTest execution. Core sources are unchanged since this run.
+- Optimized native app: **81 editor**, **25 composition**, **51 GPU/media**,
+  **27 montage**, **11 lighting/UDP**, OSC/MIDI loopback and **5 live presentation** and **3 full-editor live checks** — PASS.
+- Final ZIP: CRC, signature, executable mode and exact app/demo/example bytes — PASS.
+  Extracted app passed **81 editor**, **25 composition**, **5 live presentation**
+  and **3 full-editor live checks**; [raw reports](verification/stage-2/).
+- Visible final GUI: original Composition rendering, numeric warp edit/Undo/Redo,
+  material and FX edits, Save/Quit/relaunch/reopen and Play/Pause — PASS within
+  the [documented manual scope](verification/composition-workflow.md#manual-checks).
+- Exact-source macOS/Linux XCTest and publication: pending. No release-complete
+  claim precedes actual remote results and confirmed uploaded assets.
+
+CPU cache requested payloads share 64 MiB; each renderer uses at most 16 MiB and
+overlay tessellation at most 16 MiB, with 256-entry LRU bounds. GPU payload leases
+have a separate 256 MiB limit. Feedback has eight referenced routes, 4096 per axis,
+16M total pixels, one pending command and at most four retained generations.
+These are software payload limits, not measurements of driver/RSS/hardware capacity.
+
+## Observations and retained limits
+
+Checkpoint `ff2c742` saved the unfinished stage before the user's pause; no cloud
+continuation ran. Resumption found and fixed malformed mesh-weight indexing,
+legacy cage/reset/mode integration, Input-preview PNG export, last-feedback
+history cleanup, full-cue interior collapse and exact explicit-cage storage.
+A visible Composition opening then exposed main-thread `nextDrawable` waiting;
+the separate acquisition queue and new live checks address that path. Initial
+failed/diagnostic runs are not counted as final production evidence.
+
+All distributed code/media/shaders/SVG are original. No proprietary SDK or
+MadMapper assets are included. Filled FreeDraw/alternate joins, arbitrary shader
+programs/full ISF, broader SVG/FX and shared group automation remain explicitly
+outside the declared subset. Physical seams, display hotplug/refresh, external
+projectors and long-show timing/throughput remain separate open hardware/run gates.
+The next software stage after acceptance is media timing and durability.

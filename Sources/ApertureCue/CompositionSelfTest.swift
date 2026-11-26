@@ -22,7 +22,7 @@ import MappingCore
             "platform":ProcessInfo.processInfo.operatingSystemVersionString,
             "hardwareVerification":false,"windowsShown":false,
             "scope":"Actual Metal composition, bounded expression/ISF/FX, scoped masks, group isolation, edge attenuation and previous-generation loopback; original procedural sources only.",
-            "frameSize":[128,96],"additionalFrameSizes":[[64,64],[320,180]],"feedbackSize":[32,18],"maximumFixtureOutputs":2,"maximumFixtureSurfaces":4,
+            "frameSize":[128,96],"additionalFrameSizes":[[64,64],[127,95],[320,180]],"feedbackSize":[32,18],"maximumFixtureOutputs":2,"maximumFixtureSurfaces":4,
             "outputMeaning":"Offscreen logical routes only; no physical displays.",
             "codecs":"none; procedural sources only","unmeasured":"Physical devices, optical seams/refresh, throughput, long-run stability, decoder/audio timing and GPU utilization."
         ]
@@ -58,6 +58,29 @@ import MappingCore
             return condition()
         }
         do {
+            let cacheBudget=CompositionCPUCacheBudget(maximumBytes:16)
+            let first=CompositionCPUCache<[UInt8]>(maximumBytes:12,maximumEntries:2,budget:cacheBudget)
+            let second=CompositionCPUCache<[UInt8]>(maximumBytes:8,budget:cacheBudget)
+            let refused=CompositionCPUCache<[UInt8]>(maximumBytes:4,budget:cacheBudget)
+            let one=UUID(),two=UUID(),three=UUID(),other=UUID(),value:[UInt8]=[1,2,3,4]
+            try expect(first.insert(value,for:one,bytes:4) && first.insert(value,for:two,bytes:4),"Cache fixture admission failed")
+            _=first[one]
+            try expect(first.insert(value,for:three,bytes:4),"Local cache did not evict an old entry")
+            try expect(first.count==2 && first.usedBytes==8 && first[one]==value && first[two]==nil && first[three]==value,"Cache LRU/entry/byte accounting differs")
+            try expect(second.insert(value,for:other,bytes:8) && cacheBudget.usedBytes==16,"Shared CPU cache budget did not account across owners")
+            try expect(!refused.insert(value,for:other,bytes:4) && refused.count==0 && cacheBudget.usedBytes==16,"Shared cache admitted excess payload")
+            first.removeAll()
+            try expect(cacheBudget.usedBytes==8 && refused.insert(value,for:other,bytes:4),"Cache eviction did not release the shared lease")
+            refused.retain(keys:[]);second.removeAll()
+            try expect(cacheBudget.usedBytes==0 && !refused.insert(value,for:other,bytes:5),"Pruning or oversized cache admission changed accounting")
+            do {
+                let temporary=CompositionCPUCache<[UInt8]>(maximumBytes:4,budget:cacheBudget)
+                try expect(temporary.insert(value,for:one,bytes:4),"Temporary cache admission failed")
+                try withExtendedLifetime(temporary) {try expect(cacheBudget.usedBytes==4,"Live cache lease was released early")}
+            }
+            try expect(cacheBudget.usedBytes==0,"Cache destruction retained its shared payload lease")
+            passed("CPU cache payload and entry limits enforce LRU, cross-owner refusal, pruning and lease cleanup")
+
             _=NSApplication.shared;NSApplication.shared.setActivationPolicy(.prohibited)
             guard let device=MTLCreateSystemDefaultDevice() else {throw Failure(message:"No Metal device in logged-in session")}
             report["gpu"]=device.name
@@ -229,6 +252,18 @@ import MappingCore
             image=try frame([blue,halfRed],masks:[global])
             try expect(near(pixel(image,40,48),[255,0,0,255]) && near(pixel(image,90,48),[0,0,255,255]) && near(pixel(image,120,48),[0,0,0,255]),"Global mask was not applied after all layers")
             passed("group-local masks stay in group scope and global masks attenuate the complete composition")
+
+            var horizonGroup=SurfaceGroup(name:"Safe group with external inverse horizon",transform:Affine2D(a:0.5,d:1,px:1))
+            horizonGroup.masks=[CompositionMask(points:unit,settings:.init(space:.sourceUV))]
+            var horizonRed=red;horizonRed.groupID=horizonGroup.id
+            image=try frame([blue,horizonRed],groups:[horizonGroup],width:127,height:95)
+            try expect(near(pixel(image,12,20),[255,0,0,255]),"Safe projective group lost its masked interior")
+            // H maps the unit group to x=0...0.25; its inverse horizon is x=0.5.
+            // Odd width puts a fragment center exactly on that unrelated line.
+            for y in 0..<95 {for x in 32..<127 {
+                try expect(near(pixel(image,x,y),[0,0,255,255]),"Inverse mask horizon corrupted pixels outside its group")
+            }}
+            passed("projective group-local mask inverse horizon preserves every unrelated backdrop pixel")
 
             var holes=white
             holes.masks=[CompositionMask(points:Point2.insetQuad),CompositionMask(points:[Point2(0.3,0.3),Point2(0.7,0.3),Point2(0.7,0.7),Point2(0.3,0.7)],settings:.init(space:.outputCanvas,inverted:true))]

@@ -1,0 +1,9 @@
+{
+  "scope": "Tracked and candidate project sources, documentation, examples and sanitized reports before publication",
+  "sensitivePatternScanPassed": true,
+  "buildOutputsExcluded": true,
+  "recoverySidecarsExcluded": true,
+  "binaryAssets": ["examples/Demo/calibration.png", "examples/Demo/motion.mov"],
+  "assetProvenance": "Original generated demo media; original material expressions and SVG; no MadMapper assets or optional proprietary SDKs",
+  "manualObservation": "Only the app workflow was documented; unrelated system file-panel sidebar content was excluded"
+}

@@ -1,0 +1,3232 @@
+{
+  "assets" : [
+
+  ],
+  "cues" : [
+    {
+      "bindings" : [
+
+      ],
+      "duration" : 0,
+      "id" : "AFE636A7-2648-4398-867A-E8F68B28F375",
+      "name" : "Original spectrum",
+      "scope" : "full",
+      "surfaces" : [
+        {
+          "blendMode" : "normal",
+          "brightness" : 0.35,
+          "color" : [
+            0.25,
+            0.35,
+            0.55
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "grid",
+          "group" : "",
+          "id" : "884FBCC2-187B-4C02-936A-D456791A1875",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialValues" : {
+
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "01 · shared navy grid",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        },
+        {
+          "bezierWarp" : {
+            "columns" : 1,
+            "controls" : [
+              {
+                "x" : 0,
+                "y" : 0
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : -0.12
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : -0.12
+              },
+              {
+                "x" : 1,
+                "y" : 0
+              },
+              {
+                "x" : 0,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 1,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 0,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 1,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0,
+                "y" : 1
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 1.08
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 1.08
+              },
+              {
+                "x" : 1,
+                "y" : 1
+              }
+            ],
+            "rows" : 1
+          },
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "gradient",
+          "group" : "",
+          "groupID" : "B463C544-359B-4E8E-8E2B-CFE40B859C01",
+          "id" : "4B4ECC90-ABFB-479C-B110-5248086464F9",
+          "input" : [
+            {
+              "x" : 0.05,
+              "y" : 0.05
+            },
+            {
+              "x" : 0.9500000000000001,
+              "y" : 0.05
+            },
+            {
+              "x" : 0.9500000000000001,
+              "y" : 0.9500000000000001
+            },
+            {
+              "x" : 0.05,
+              "y" : 0.9500000000000001
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarp" : {
+            "columns" : 1,
+            "controls" : [
+              {
+                "x" : 0,
+                "y" : 0
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 0
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 0
+              },
+              {
+                "x" : 1,
+                "y" : 0
+              },
+              {
+                "x" : 0,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 0.46,
+                "y" : 0.26
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 1,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 0,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0.56,
+                "y" : 0.76
+              },
+              {
+                "x" : 1,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0,
+                "y" : 1
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 1
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 1
+              },
+              {
+                "x" : 1,
+                "y" : 1
+              }
+            ],
+            "rows" : 1
+          },
+          "inputWarpTransform" : {
+            "a" : 0.9,
+            "b" : 3.925231146709436e-18,
+            "c" : -4.1399878962499944e-33,
+            "d" : 0.9,
+            "pw" : 1,
+            "px" : 7.850462293418876e-17,
+            "py" : -4.357881996052625e-33,
+            "tx" : 0.050000000000000044,
+            "ty" : 0.04999999999999999
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialID" : "5745A012-6552-46C1-9098-BC9D55FB3869",
+          "materialValues" : {
+            "speed" : [
+              0.8
+            ]
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "02 · output + source Bezier",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.07,
+              "y" : 0.15
+            },
+            {
+              "x" : 0.56,
+              "y" : 0.15
+            },
+            {
+              "x" : 0.56,
+              "y" : 0.76
+            },
+            {
+              "x" : 0.07,
+              "y" : 0.76
+            }
+          ],
+          "outputID" : "C9C252F3-BE1D-4C63-B875-67094DB39772",
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 0.49,
+            "b" : 0,
+            "c" : 0,
+            "d" : 0.61,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0.07000000000000003,
+            "ty" : 0.14999999999999997
+          }
+        },
+        {
+          "blendMode" : "screen",
+          "brightness" : 1,
+          "color" : [
+            0.1,
+            0.85,
+            1
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1.35,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "gradient",
+          "group" : "",
+          "groupID" : "B463C544-359B-4E8E-8E2B-CFE40B859C01",
+          "id" : "7AABCC69-EDC0-43BC-B3D5-54C23D707011",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialValues" : {
+
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "03 · overlapping screen ellipse",
+          "opacity" : 0.72,
+          "output" : [
+            {
+              "x" : 0.29,
+              "y" : 0.3
+            },
+            {
+              "x" : 0.63,
+              "y" : 0.3
+            },
+            {
+              "x" : 0.63,
+              "y" : 0.79
+            },
+            {
+              "x" : 0.29,
+              "y" : 0.79
+            }
+          ],
+          "outputID" : "C9C252F3-BE1D-4C63-B875-67094DB39772",
+          "shape" : "ellipse",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        },
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 5,
+            "saturation" : 0.35,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0.025,
+          "gamma" : 1,
+          "generator" : "gradient",
+          "group" : "",
+          "id" : "6E6185D7-CDD1-484A-B72B-D24CD6DFDFA2",
+          "input" : [
+            {
+              "x" : 0.1,
+              "y" : 0
+            },
+            {
+              "x" : 0.95,
+              "y" : 0
+            },
+            {
+              "x" : 0.95,
+              "y" : 1
+            },
+            {
+              "x" : 0.1,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+            {
+              "curve" : {
+                "nodes" : [
+                  {
+                    "anchor" : {
+                      "x" : 0.5,
+                      "y" : 0.1
+                    },
+                    "incoming" : {
+                      "x" : 0.2790861000676826,
+                      "y" : 0.1
+                    },
+                    "outgoing" : {
+                      "x" : 0.7209138999323174,
+                      "y" : 0.1
+                    }
+                  },
+                  {
+                    "anchor" : {
+                      "x" : 0.9,
+                      "y" : 0.5
+                    },
+                    "incoming" : {
+                      "x" : 0.9,
+                      "y" : 0.2790861000676826
+                    },
+                    "outgoing" : {
+                      "x" : 0.9,
+                      "y" : 0.7209138999323174
+                    }
+                  },
+                  {
+                    "anchor" : {
+                      "x" : 0.5,
+                      "y" : 0.9
+                    },
+                    "incoming" : {
+                      "x" : 0.7209138999323174,
+                      "y" : 0.9
+                    },
+                    "outgoing" : {
+                      "x" : 0.2790861000676826,
+                      "y" : 0.9
+                    }
+                  },
+                  {
+                    "anchor" : {
+                      "x" : 0.1,
+                      "y" : 0.5
+                    },
+                    "incoming" : {
+                      "x" : 0.1,
+                      "y" : 0.7209138999323174
+                    },
+                    "outgoing" : {
+                      "x" : 0.1,
+                      "y" : 0.2790861000676826
+                    }
+                  }
+                ]
+              },
+              "enabled" : true,
+              "id" : "4B1B8A40-24BC-4F7B-BF96-725DE117DB61",
+              "name" : "Layer cubic aperture",
+              "points" : [
+                {
+                  "x" : 0.1,
+                  "y" : 0.1
+                },
+                {
+                  "x" : 0.9,
+                  "y" : 0.1
+                },
+                {
+                  "x" : 0.9,
+                  "y" : 0.9
+                },
+                {
+                  "x" : 0.1,
+                  "y" : 0.9
+                }
+              ],
+              "settings" : {
+                "feather" : 0.015,
+                "inverted" : false,
+                "space" : "sourceUV"
+              }
+            }
+          ],
+          "materialID" : "5745A012-6552-46C1-9098-BC9D55FB3869",
+          "materialValues" : {
+            "speed" : [
+              1.4
+            ]
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "04 · material + posterize FX",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.67,
+              "y" : 0.17
+            },
+            {
+              "x" : 0.9400000000000001,
+              "y" : 0.17
+            },
+            {
+              "x" : 0.9400000000000001,
+              "y" : 0.75
+            },
+            {
+              "x" : 0.67,
+              "y" : 0.75
+            }
+          ],
+          "outputID" : "1C08C829-9166-4BE5-B84E-95C92907F9CA",
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        },
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            0.58,
+            0.16
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "solid",
+          "group" : "",
+          "id" : "75D363C4-05A3-41BC-91C9-9EA2547B75F5",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialValues" : {
+
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "05 · shared original cubic accent",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.08,
+              "y" : 0.78
+            },
+            {
+              "x" : 0.9299999999999999,
+              "y" : 0.78
+            },
+            {
+              "x" : 0.9299999999999999,
+              "y" : 0.9400000000000001
+            },
+            {
+              "x" : 0.08,
+              "y" : 0.9400000000000001
+            }
+          ],
+          "shape" : "bezier",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.03,
+                  "y" : 0.65
+                },
+                "incoming" : {
+                  "x" : 0.03,
+                  "y" : 0.65
+                },
+                "outgoing" : {
+                  "x" : 0.3,
+                  "y" : 0.08
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.97,
+                  "y" : 0.35
+                },
+                "incoming" : {
+                  "x" : 0.7,
+                  "y" : 0.92
+                },
+                "outgoing" : {
+                  "x" : 0.97,
+                  "y" : 0.35
+                }
+              }
+            ],
+            "width" : 0.065
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        }
+      ]
+    },
+    {
+      "bindings" : [
+
+      ],
+      "duration" : 0.5,
+      "id" : "20AFEEF8-6CD1-4C44-94CF-1A722DD2AA5F",
+      "name" : "Alternate layer FX",
+      "scope" : "full",
+      "surfaces" : [
+        {
+          "blendMode" : "normal",
+          "brightness" : 0.35,
+          "color" : [
+            0.25,
+            0.35,
+            0.55
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "grid",
+          "group" : "",
+          "id" : "884FBCC2-187B-4C02-936A-D456791A1875",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialValues" : {
+
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "01 · shared navy grid",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        },
+        {
+          "bezierWarp" : {
+            "columns" : 1,
+            "controls" : [
+              {
+                "x" : 0,
+                "y" : 0
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : -0.12
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : -0.12
+              },
+              {
+                "x" : 1,
+                "y" : 0
+              },
+              {
+                "x" : 0,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 1,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 0,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 1,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0,
+                "y" : 1
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 1.08
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 1.08
+              },
+              {
+                "x" : 1,
+                "y" : 1
+              }
+            ],
+            "rows" : 1
+          },
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "gradient",
+          "group" : "",
+          "groupID" : "B463C544-359B-4E8E-8E2B-CFE40B859C01",
+          "id" : "4B4ECC90-ABFB-479C-B110-5248086464F9",
+          "input" : [
+            {
+              "x" : 0.05,
+              "y" : 0.05
+            },
+            {
+              "x" : 0.9500000000000001,
+              "y" : 0.05
+            },
+            {
+              "x" : 0.9500000000000001,
+              "y" : 0.9500000000000001
+            },
+            {
+              "x" : 0.05,
+              "y" : 0.9500000000000001
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarp" : {
+            "columns" : 1,
+            "controls" : [
+              {
+                "x" : 0,
+                "y" : 0
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 0
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 0
+              },
+              {
+                "x" : 1,
+                "y" : 0
+              },
+              {
+                "x" : 0,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 0.46,
+                "y" : 0.26
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 1,
+                "y" : 0.3333333333333333
+              },
+              {
+                "x" : 0,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0.56,
+                "y" : 0.76
+              },
+              {
+                "x" : 1,
+                "y" : 0.6666666666666666
+              },
+              {
+                "x" : 0,
+                "y" : 1
+              },
+              {
+                "x" : 0.3333333333333333,
+                "y" : 1
+              },
+              {
+                "x" : 0.6666666666666666,
+                "y" : 1
+              },
+              {
+                "x" : 1,
+                "y" : 1
+              }
+            ],
+            "rows" : 1
+          },
+          "inputWarpTransform" : {
+            "a" : 0.9,
+            "b" : 3.925231146709436e-18,
+            "c" : -4.1399878962499944e-33,
+            "d" : 0.9,
+            "pw" : 1,
+            "px" : 7.850462293418876e-17,
+            "py" : -4.357881996052625e-33,
+            "tx" : 0.050000000000000044,
+            "ty" : 0.04999999999999999
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialID" : "5745A012-6552-46C1-9098-BC9D55FB3869",
+          "materialValues" : {
+            "speed" : [
+              1.8
+            ]
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "02 · output + source Bezier",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.07,
+              "y" : 0.15
+            },
+            {
+              "x" : 0.56,
+              "y" : 0.15
+            },
+            {
+              "x" : 0.56,
+              "y" : 0.76
+            },
+            {
+              "x" : 0.07,
+              "y" : 0.76
+            }
+          ],
+          "outputID" : "C9C252F3-BE1D-4C63-B875-67094DB39772",
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 0.49,
+            "b" : 0,
+            "c" : 0,
+            "d" : 0.61,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0.07000000000000003,
+            "ty" : 0.14999999999999997
+          }
+        },
+        {
+          "blendMode" : "screen",
+          "brightness" : 1,
+          "color" : [
+            0.1,
+            0.85,
+            1
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1.35,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "gradient",
+          "group" : "",
+          "groupID" : "B463C544-359B-4E8E-8E2B-CFE40B859C01",
+          "id" : "7AABCC69-EDC0-43BC-B3D5-54C23D707011",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialValues" : {
+
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "03 · overlapping screen ellipse",
+          "opacity" : 0.72,
+          "output" : [
+            {
+              "x" : 0.29,
+              "y" : 0.3
+            },
+            {
+              "x" : 0.63,
+              "y" : 0.3
+            },
+            {
+              "x" : 0.63,
+              "y" : 0.79
+            },
+            {
+              "x" : 0.29,
+              "y" : 0.79
+            }
+          ],
+          "outputID" : "C9C252F3-BE1D-4C63-B875-67094DB39772",
+          "shape" : "ellipse",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        },
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            1,
+            1
+          ],
+          "effects" : {
+            "inverted" : true,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 8,
+            "saturation" : 1.3,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0.025,
+          "gamma" : 1,
+          "generator" : "gradient",
+          "group" : "",
+          "id" : "6E6185D7-CDD1-484A-B72B-D24CD6DFDFA2",
+          "input" : [
+            {
+              "x" : 0.1,
+              "y" : 0
+            },
+            {
+              "x" : 0.95,
+              "y" : 0
+            },
+            {
+              "x" : 0.95,
+              "y" : 1
+            },
+            {
+              "x" : 0.1,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+            {
+              "curve" : {
+                "nodes" : [
+                  {
+                    "anchor" : {
+                      "x" : 0.5,
+                      "y" : 0.1
+                    },
+                    "incoming" : {
+                      "x" : 0.2790861000676826,
+                      "y" : 0.1
+                    },
+                    "outgoing" : {
+                      "x" : 0.7209138999323174,
+                      "y" : 0.1
+                    }
+                  },
+                  {
+                    "anchor" : {
+                      "x" : 0.9,
+                      "y" : 0.5
+                    },
+                    "incoming" : {
+                      "x" : 0.9,
+                      "y" : 0.2790861000676826
+                    },
+                    "outgoing" : {
+                      "x" : 0.9,
+                      "y" : 0.7209138999323174
+                    }
+                  },
+                  {
+                    "anchor" : {
+                      "x" : 0.5,
+                      "y" : 0.9
+                    },
+                    "incoming" : {
+                      "x" : 0.7209138999323174,
+                      "y" : 0.9
+                    },
+                    "outgoing" : {
+                      "x" : 0.2790861000676826,
+                      "y" : 0.9
+                    }
+                  },
+                  {
+                    "anchor" : {
+                      "x" : 0.1,
+                      "y" : 0.5
+                    },
+                    "incoming" : {
+                      "x" : 0.1,
+                      "y" : 0.7209138999323174
+                    },
+                    "outgoing" : {
+                      "x" : 0.1,
+                      "y" : 0.2790861000676826
+                    }
+                  }
+                ]
+              },
+              "enabled" : true,
+              "id" : "4B1B8A40-24BC-4F7B-BF96-725DE117DB61",
+              "name" : "Layer cubic aperture",
+              "points" : [
+                {
+                  "x" : 0.1,
+                  "y" : 0.1
+                },
+                {
+                  "x" : 0.9,
+                  "y" : 0.1
+                },
+                {
+                  "x" : 0.9,
+                  "y" : 0.9
+                },
+                {
+                  "x" : 0.1,
+                  "y" : 0.9
+                }
+              ],
+              "settings" : {
+                "feather" : 0.015,
+                "inverted" : false,
+                "space" : "sourceUV"
+              }
+            }
+          ],
+          "materialID" : "5745A012-6552-46C1-9098-BC9D55FB3869",
+          "materialValues" : {
+            "speed" : [
+              1.4
+            ]
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "04 · material + posterize FX",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.67,
+              "y" : 0.17
+            },
+            {
+              "x" : 0.9400000000000001,
+              "y" : 0.17
+            },
+            {
+              "x" : 0.9400000000000001,
+              "y" : 0.75
+            },
+            {
+              "x" : 0.67,
+              "y" : 0.75
+            }
+          ],
+          "outputID" : "1C08C829-9166-4BE5-B84E-95C92907F9CA",
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        },
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            0.58,
+            0.16
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "solid",
+          "group" : "",
+          "id" : "75D363C4-05A3-41BC-91C9-9EA2547B75F5",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialValues" : {
+
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "05 · shared original cubic accent",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.08,
+              "y" : 0.78
+            },
+            {
+              "x" : 0.9299999999999999,
+              "y" : 0.78
+            },
+            {
+              "x" : 0.9299999999999999,
+              "y" : 0.9400000000000001
+            },
+            {
+              "x" : 0.08,
+              "y" : 0.9400000000000001
+            }
+          ],
+          "shape" : "bezier",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.03,
+                  "y" : 0.65
+                },
+                "incoming" : {
+                  "x" : 0.03,
+                  "y" : 0.65
+                },
+                "outgoing" : {
+                  "x" : 0.3,
+                  "y" : 0.08
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.97,
+                  "y" : 0.35
+                },
+                "incoming" : {
+                  "x" : 0.7,
+                  "y" : 0.92
+                },
+                "outgoing" : {
+                  "x" : 0.97,
+                  "y" : 0.35
+                }
+              }
+            ],
+            "width" : 0.065
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        }
+      ]
+    }
+  ],
+  "fixtures" : [
+
+  ],
+  "geometryLockedSurfaceIDs" : [
+
+  ],
+  "globalMasks" : [
+    {
+      "enabled" : true,
+      "id" : "F97C0CF4-B21D-4A80-8A47-1EA80AE918E7",
+      "name" : "Global canvas inset",
+      "points" : [
+        {
+          "x" : 0.015,
+          "y" : 0.025
+        },
+        {
+          "x" : 0.985,
+          "y" : 0.025
+        },
+        {
+          "x" : 0.985,
+          "y" : 0.975
+        },
+        {
+          "x" : 0.015,
+          "y" : 0.975
+        }
+      ],
+      "settings" : {
+        "feather" : 0.008,
+        "inverted" : false,
+        "space" : "outputCanvas"
+      }
+    }
+  ],
+  "groups" : [
+    {
+      "blendMode" : "normal",
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "id" : "B463C544-359B-4E8E-8E2B-CFE40B859C01",
+      "isolated" : true,
+      "masks" : [
+        {
+          "curve" : {
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.34,
+                  "y" : 0.14200000000000002
+                },
+                "incoming" : {
+                  "x" : 0.19861510404331684,
+                  "y" : 0.14200000000000002
+                },
+                "outgoing" : {
+                  "x" : 0.48138489595668316,
+                  "y" : 0.14200000000000002
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.5960000000000001,
+                  "y" : 0.47
+                },
+                "incoming" : {
+                  "x" : 0.5960000000000001,
+                  "y" : 0.28885060205549973
+                },
+                "outgoing" : {
+                  "x" : 0.5960000000000001,
+                  "y" : 0.6511493979445002
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.34,
+                  "y" : 0.798
+                },
+                "incoming" : {
+                  "x" : 0.48138489595668316,
+                  "y" : 0.798
+                },
+                "outgoing" : {
+                  "x" : 0.19861510404331684,
+                  "y" : 0.798
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.084,
+                  "y" : 0.47
+                },
+                "incoming" : {
+                  "x" : 0.084,
+                  "y" : 0.6511493979445002
+                },
+                "outgoing" : {
+                  "x" : 0.084,
+                  "y" : 0.28885060205549973
+                }
+              }
+            ]
+          },
+          "enabled" : true,
+          "id" : "77AFCED1-9B9E-4070-A541-C2626E27B88A",
+          "name" : "Cubic group lens",
+          "points" : [
+            {
+              "x" : 0.1,
+              "y" : 0.1
+            },
+            {
+              "x" : 0.9,
+              "y" : 0.1
+            },
+            {
+              "x" : 0.9,
+              "y" : 0.9
+            },
+            {
+              "x" : 0.1,
+              "y" : 0.9
+            }
+          ],
+          "settings" : {
+            "feather" : 0.012,
+            "inverted" : false,
+            "space" : "sourceUV"
+          }
+        }
+      ],
+      "name" : "Isolated color lens",
+      "opacity" : 0.82,
+      "transform" : {
+        "a" : 0.9806382978723404,
+        "b" : -0.020000000000000052,
+        "c" : 0.010631850419084491,
+        "d" : 1.0115925209542231,
+        "pw" : 1,
+        "px" : 0.0006447453255963929,
+        "py" : 0.03159252095422316,
+        "tx" : 0.010000000000000005,
+        "ty" : 0.02000000000000001
+      }
+    }
+  ],
+  "materials" : [
+    {
+      "credit" : "ApertureCue contributors; GPL-3.0-or-later; original procedural expression",
+      "expression" : "vec4(0.15+0.75*uv.x,0.25+0.55*uv.y,0.55+0.2*sin(time*speed),1)",
+      "id" : "5745A012-6552-46C1-9098-BC9D55FB3869",
+      "inputs" : [
+        {
+          "defaultValue" : [
+            0.8
+          ],
+          "kind" : "float",
+          "label" : "Spectrum clock speed",
+          "maximum" : [
+            3
+          ],
+          "minimum" : [
+            0
+          ],
+          "name" : "speed"
+        }
+      ],
+      "name" : "Original animated spectrum"
+    }
+  ],
+  "montages" : [
+
+  ],
+  "name" : "ApertureCue Composition · original procedural demo",
+  "outputs" : [
+    {
+      "edgeBlend" : {
+        "blackLevel" : 0,
+        "bottom" : 0,
+        "gamma" : 1,
+        "left" : 0,
+        "power" : 1,
+        "right" : 0,
+        "top" : 0
+      },
+      "height" : 720,
+      "id" : "C9C252F3-BE1D-4C63-B875-67094DB39772",
+      "name" : "Composition A · warped color",
+      "screenIndex" : 0,
+      "width" : 1280
+    },
+    {
+      "edgeBlend" : {
+        "blackLevel" : 0,
+        "bottom" : 0,
+        "gamma" : 1,
+        "left" : 0,
+        "power" : 1,
+        "right" : 0,
+        "top" : 0
+      },
+      "height" : 720,
+      "id" : "1C08C829-9166-4BE5-B84E-95C92907F9CA",
+      "name" : "Composition B · posterized color",
+      "screenIndex" : 0,
+      "width" : 1280
+    }
+  ],
+  "surfaces" : [
+    {
+      "blendMode" : "normal",
+      "brightness" : 0.35,
+      "color" : [
+        0.25,
+        0.35,
+        0.55
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "grid",
+      "group" : "",
+      "id" : "884FBCC2-187B-4C02-936A-D456791A1875",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "01 · shared navy grid",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    },
+    {
+      "bezierWarp" : {
+        "columns" : 1,
+        "controls" : [
+          {
+            "x" : 0,
+            "y" : 0
+          },
+          {
+            "x" : 0.3333333333333333,
+            "y" : -0.12
+          },
+          {
+            "x" : 0.6666666666666666,
+            "y" : -0.12
+          },
+          {
+            "x" : 1,
+            "y" : 0
+          },
+          {
+            "x" : 0,
+            "y" : 0.3333333333333333
+          },
+          {
+            "x" : 0.3333333333333333,
+            "y" : 0.3333333333333333
+          },
+          {
+            "x" : 0.6666666666666666,
+            "y" : 0.3333333333333333
+          },
+          {
+            "x" : 1,
+            "y" : 0.3333333333333333
+          },
+          {
+            "x" : 0,
+            "y" : 0.6666666666666666
+          },
+          {
+            "x" : 0.3333333333333333,
+            "y" : 0.6666666666666666
+          },
+          {
+            "x" : 0.6666666666666666,
+            "y" : 0.6666666666666666
+          },
+          {
+            "x" : 1,
+            "y" : 0.6666666666666666
+          },
+          {
+            "x" : 0,
+            "y" : 1
+          },
+          {
+            "x" : 0.3333333333333333,
+            "y" : 1.08
+          },
+          {
+            "x" : 0.6666666666666666,
+            "y" : 1.08
+          },
+          {
+            "x" : 1,
+            "y" : 1
+          }
+        ],
+        "rows" : 1
+      },
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "gradient",
+      "group" : "",
+      "groupID" : "B463C544-359B-4E8E-8E2B-CFE40B859C01",
+      "id" : "4B4ECC90-ABFB-479C-B110-5248086464F9",
+      "input" : [
+        {
+          "x" : 0.05,
+          "y" : 0.05
+        },
+        {
+          "x" : 0.9500000000000001,
+          "y" : 0.05
+        },
+        {
+          "x" : 0.9500000000000001,
+          "y" : 0.9500000000000001
+        },
+        {
+          "x" : 0.05,
+          "y" : 0.9500000000000001
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarp" : {
+        "columns" : 1,
+        "controls" : [
+          {
+            "x" : 0,
+            "y" : 0
+          },
+          {
+            "x" : 0.3333333333333333,
+            "y" : 0
+          },
+          {
+            "x" : 0.6666666666666666,
+            "y" : 0
+          },
+          {
+            "x" : 1,
+            "y" : 0
+          },
+          {
+            "x" : 0,
+            "y" : 0.3333333333333333
+          },
+          {
+            "x" : 0.46,
+            "y" : 0.26
+          },
+          {
+            "x" : 0.6666666666666666,
+            "y" : 0.3333333333333333
+          },
+          {
+            "x" : 1,
+            "y" : 0.3333333333333333
+          },
+          {
+            "x" : 0,
+            "y" : 0.6666666666666666
+          },
+          {
+            "x" : 0.3333333333333333,
+            "y" : 0.6666666666666666
+          },
+          {
+            "x" : 0.56,
+            "y" : 0.76
+          },
+          {
+            "x" : 1,
+            "y" : 0.6666666666666666
+          },
+          {
+            "x" : 0,
+            "y" : 1
+          },
+          {
+            "x" : 0.3333333333333333,
+            "y" : 1
+          },
+          {
+            "x" : 0.6666666666666666,
+            "y" : 1
+          },
+          {
+            "x" : 1,
+            "y" : 1
+          }
+        ],
+        "rows" : 1
+      },
+      "inputWarpTransform" : {
+        "a" : 0.9,
+        "b" : 3.925231146709436e-18,
+        "c" : -4.1399878962499944e-33,
+        "d" : 0.9,
+        "pw" : 1,
+        "px" : 7.850462293418876e-17,
+        "py" : -4.357881996052625e-33,
+        "tx" : 0.050000000000000044,
+        "ty" : 0.04999999999999999
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialID" : "5745A012-6552-46C1-9098-BC9D55FB3869",
+      "materialValues" : {
+        "speed" : [
+          0.8
+        ]
+      },
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "02 · output + source Bezier",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.07,
+          "y" : 0.15
+        },
+        {
+          "x" : 0.56,
+          "y" : 0.15
+        },
+        {
+          "x" : 0.56,
+          "y" : 0.76
+        },
+        {
+          "x" : 0.07,
+          "y" : 0.76
+        }
+      ],
+      "outputID" : "C9C252F3-BE1D-4C63-B875-67094DB39772",
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 0.49,
+        "b" : 0,
+        "c" : 0,
+        "d" : 0.61,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0.07000000000000003,
+        "ty" : 0.14999999999999997
+      }
+    },
+    {
+      "blendMode" : "screen",
+      "brightness" : 1,
+      "color" : [
+        0.1,
+        0.85,
+        1
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1.35,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "gradient",
+      "group" : "",
+      "groupID" : "B463C544-359B-4E8E-8E2B-CFE40B859C01",
+      "id" : "7AABCC69-EDC0-43BC-B3D5-54C23D707011",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "03 · overlapping screen ellipse",
+      "opacity" : 0.72,
+      "output" : [
+        {
+          "x" : 0.29,
+          "y" : 0.3
+        },
+        {
+          "x" : 0.63,
+          "y" : 0.3
+        },
+        {
+          "x" : 0.63,
+          "y" : 0.79
+        },
+        {
+          "x" : 0.29,
+          "y" : 0.79
+        }
+      ],
+      "outputID" : "C9C252F3-BE1D-4C63-B875-67094DB39772",
+      "shape" : "ellipse",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    },
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 5,
+        "saturation" : 0.35,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0.025,
+      "gamma" : 1,
+      "generator" : "gradient",
+      "group" : "",
+      "id" : "6E6185D7-CDD1-484A-B72B-D24CD6DFDFA2",
+      "input" : [
+        {
+          "x" : 0.1,
+          "y" : 0
+        },
+        {
+          "x" : 0.95,
+          "y" : 0
+        },
+        {
+          "x" : 0.95,
+          "y" : 1
+        },
+        {
+          "x" : 0.1,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+        {
+          "curve" : {
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.5,
+                  "y" : 0.1
+                },
+                "incoming" : {
+                  "x" : 0.2790861000676826,
+                  "y" : 0.1
+                },
+                "outgoing" : {
+                  "x" : 0.7209138999323174,
+                  "y" : 0.1
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.9,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.9,
+                  "y" : 0.2790861000676826
+                },
+                "outgoing" : {
+                  "x" : 0.9,
+                  "y" : 0.7209138999323174
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.5,
+                  "y" : 0.9
+                },
+                "incoming" : {
+                  "x" : 0.7209138999323174,
+                  "y" : 0.9
+                },
+                "outgoing" : {
+                  "x" : 0.2790861000676826,
+                  "y" : 0.9
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.1,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.1,
+                  "y" : 0.7209138999323174
+                },
+                "outgoing" : {
+                  "x" : 0.1,
+                  "y" : 0.2790861000676826
+                }
+              }
+            ]
+          },
+          "enabled" : true,
+          "id" : "4B1B8A40-24BC-4F7B-BF96-725DE117DB61",
+          "name" : "Layer cubic aperture",
+          "points" : [
+            {
+              "x" : 0.1,
+              "y" : 0.1
+            },
+            {
+              "x" : 0.9,
+              "y" : 0.1
+            },
+            {
+              "x" : 0.9,
+              "y" : 0.9
+            },
+            {
+              "x" : 0.1,
+              "y" : 0.9
+            }
+          ],
+          "settings" : {
+            "feather" : 0.015,
+            "inverted" : false,
+            "space" : "sourceUV"
+          }
+        }
+      ],
+      "materialID" : "5745A012-6552-46C1-9098-BC9D55FB3869",
+      "materialValues" : {
+        "speed" : [
+          1.4
+        ]
+      },
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "04 · material + posterize FX",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.67,
+          "y" : 0.17
+        },
+        {
+          "x" : 0.9400000000000001,
+          "y" : 0.17
+        },
+        {
+          "x" : 0.9400000000000001,
+          "y" : 0.75
+        },
+        {
+          "x" : 0.67,
+          "y" : 0.75
+        }
+      ],
+      "outputID" : "1C08C829-9166-4BE5-B84E-95C92907F9CA",
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    },
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        0.58,
+        0.16
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "solid",
+      "group" : "",
+      "id" : "75D363C4-05A3-41BC-91C9-9EA2547B75F5",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "05 · shared original cubic accent",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.08,
+          "y" : 0.78
+        },
+        {
+          "x" : 0.9299999999999999,
+          "y" : 0.78
+        },
+        {
+          "x" : 0.9299999999999999,
+          "y" : 0.9400000000000001
+        },
+        {
+          "x" : 0.08,
+          "y" : 0.9400000000000001
+        }
+      ],
+      "shape" : "bezier",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.03,
+              "y" : 0.65
+            },
+            "incoming" : {
+              "x" : 0.03,
+              "y" : 0.65
+            },
+            "outgoing" : {
+              "x" : 0.3,
+              "y" : 0.08
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.97,
+              "y" : 0.35
+            },
+            "incoming" : {
+              "x" : 0.7,
+              "y" : 0.92
+            },
+            "outgoing" : {
+              "x" : 0.97,
+              "y" : 0.35
+            }
+          }
+        ],
+        "width" : 0.065
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    }
+  ],
+  "timeline" : [
+
+  ],
+  "timelineSettings" : {
+    "duration" : 12,
+    "loopEnabled" : true,
+    "loopEnd" : 12,
+    "loopStart" : 0,
+    "markers" : [
+
+    ],
+    "stopAtEnd" : true
+  },
+  "version" : 12
+}

@@ -4,29 +4,50 @@ import QuartzCore
 import MappingCore
 
 final class CanvasOverlay: NSView {
-    var surfaces: [Surface] = [] { didSet { needsDisplay = true } }
-    var selectedID: UUID? { didSet { needsDisplay = true } }
+    var surfaces: [Surface] = [] {
+        didSet {
+            guard oldValue != surfaces else {return}
+            warpCache.retain(keys:Set(surfaces.filter {$0.bezierWarp != nil}.map(\.id)))
+            needsDisplay=true
+        }
+    }
+    var selectedID: UUID? { didSet {if oldValue != selectedID {needsDisplay=true}} }
     var geometryLockedSurfaceIDs: Set<UUID> = [] {
         didSet { if oldValue != geometryLockedSurfaceIDs { needsDisplay = true } }
     }
-    var inputMode = false { didSet { needsDisplay = true } }
-    var pathMode = false { didSet { needsDisplay = true } }
-    var meshMode = false
-    var maskMode = false
-    var warpMode=false
-    var drawMode=false {didSet {if !drawMode {freehand=[]};needsDisplay=true}}
+    var inputMode = false { didSet {if oldValue != inputMode {needsDisplay=true}} }
+    private enum EditingMode {case cage,path,mesh,mask,warp,freehand}
+    private var editingMode:EditingMode = .cage {
+        didSet {
+            guard oldValue != editingMode else {return}
+            if editingMode != .freehand {freehand=[]}
+            needsDisplay=true
+        }
+    }
+    private func setMode(_ mode:EditingMode,enabled:Bool) {
+        if enabled {editingMode=mode}
+        else if editingMode==mode {editingMode = .cage}
+    }
+    // One tool owns a gesture. In particular a legacy path/mask command can
+    // never leave a stale warp/freehand flag routing its points to another tool.
+    var pathMode:Bool {get {editingMode == .path} set {setMode(.path,enabled:newValue)}}
+    var meshMode:Bool {get {editingMode == .mesh} set {setMode(.mesh,enabled:newValue)}}
+    var maskMode:Bool {get {editingMode == .mask} set {setMode(.mask,enabled:newValue)}}
+    var warpMode:Bool {get {editingMode == .warp} set {setMode(.warp,enabled:newValue)}}
+    var drawMode:Bool {get {editingMode == .freehand} set {setMode(.freehand,enabled:newValue)}}
     var onWarpDrag:((UUID,Int,Point2,Bool)->Void)?
     var onFreehand:(([Point2])->Void)?
     var onNudge:((Double,Double)->Void)?
     private var freehand:[Point2]=[]
-    private var warpCache:[UUID:(Surface,Int,Int,WarpTessellation)]=[:]
+    private let warpCache=CompositionCPUCache<(Surface,Int,Int,WarpTessellation)>(maximumBytes:16*1024*1024)
     private func tessellation(_ s:Surface) -> WarpTessellation? {
         guard s.bezierWarp != nil else {return nil}
         let scale=window?.backingScaleFactor ?? 2
         let w=max(1,min(16384,Int(bounds.width*scale))),h=max(1,min(16384,Int(bounds.height*scale)))
         if let (old,cw,ch,t)=warpCache[s.id],cw==w,ch==h,old.bezierWarp==s.bezierWarp,old.warpTransform==s.warpTransform,old.inputWarp==s.inputWarp,old.inputWarpTransform==s.inputWarpTransform,old.input==s.input {return t}
         guard let t=try? SurfaceWarpGeometry.tessellation(surface:s,width:w,height:h) else {return nil}
-        warpCache[s.id]=(s,w,h,t);return t
+        let bytes=t.vertices.count*MemoryLayout<WarpVertex>.stride+t.indices.count*MemoryLayout<Int>.stride+CompositionCPUCachePayload.surface(s)
+        warpCache.insert((s,w,h,t),for:s.id,bytes:bytes);return t
     }
     var onSelect: ((UUID) -> Void)?
     var onBegin: (() -> Void)?
@@ -65,7 +86,11 @@ final class CanvasOverlay: NSView {
         return (try? SurfaceGeometry.outputPoints(local:points,surface:surface,tessellation:tessellation(surface))) ?? []
     }
     override var wantsUpdateLayer: Bool { true }
-    override func setFrameSize(_ newSize:NSSize) { super.setFrameSize(newSize); needsDisplay = true }
+    override func setFrameSize(_ newSize:NSSize) {
+        let changed=frame.size != newSize
+        super.setFrameSize(newSize)
+        if changed {needsDisplay=true}
+    }
     override func updateLayer() {
         guard let backing = layer else { return }
         CATransaction.begin(); CATransaction.setDisableActions(true)

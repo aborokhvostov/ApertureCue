@@ -109,6 +109,56 @@ public enum SurfaceEditing {
         result.surfaces[index]=surface;try ProjectStore.validate(result);return result
     }
 
+    /// Cage edits carry the existing lattice through the old-to-new homography.
+    /// Output points are in world canvas coordinates; input points are source UV.
+    /// With the link disabled the opposite geometry remains bit-for-bit unchanged.
+    public static func editingCage(surfaceID: UUID,points: [Point2],input: Bool,in project: Project) throws -> Project {
+        guard let index=editableIndex(surfaceID,in:project) else {return project}
+        try ProjectStore.validate(project)
+        try Geometry.validateQuad(points)
+        guard points.allSatisfy(SurfaceWarpGeometry.finite) else {throw ProjectError.invalid("cage edit exceeds the finite working range")}
+        let surface=project.surfaces[index]
+        let parent=try GroupEngine.worldTransform(for:surface.groupID,groups:project.groups)
+        let worldCage=try surface.output.map {try parent.applying($0)}
+        let oldCage=input ? surface.input : worldCage
+        if points==oldCage {return project}
+        let delta=try transform(from:oldCage,to:points)
+        var result=project
+        if input {
+            if surface.meshLinked {
+                let sourceToWorld=try transform(from:surface.input,to:worldCage)
+                let worldDelta=try sourceToWorld.concatenating(delta).concatenating(sourceToWorld.inverse())
+                result=try applyingWorldTransform(surfaceID:surfaceID,transform:worldDelta,in:result)
+            }
+            try applySourceTransform(delta,to:&result.surfaces[index])
+            result.surfaces[index].input=points
+        } else {
+            result=try applyingWorldTransform(surfaceID:surfaceID,transform:delta,in:result)
+            // Carry the lattice through H, but store the explicitly supplied
+            // cage rather than a numerically round-tripped copy of its corners.
+            let inverse=try parent.inverse()
+            result.surfaces[index].output=try points.map {try inverse.applying($0)}
+            if surface.meshLinked {
+                let worldToSource=try transform(from:worldCage,to:surface.input)
+                let sourceDelta=try worldToSource.concatenating(delta).concatenating(worldToSource.inverse())
+                try applySourceTransform(sourceDelta,to:&result.surfaces[index])
+            }
+        }
+        try ProjectStore.validate(result)
+        return result
+    }
+
+    private static func applySourceTransform(_ delta: Affine2D,to surface: inout Surface) throws {
+        try delta.validate()
+        let weights=(surface.input+surface.inputMesh).map {delta.px*$0.x+delta.py*$0.y+delta.pw}
+        guard weights.allSatisfy({$0>1e-12}) || weights.allSatisfy({$0 < -1e-12}) else {
+            throw ProjectError.invalid("source cage transform crosses the mesh horizon")
+        }
+        surface.input=try surface.input.map {try delta.applying($0)}
+        surface.inputMesh=try surface.inputMesh.map {try delta.applying($0)}
+        if surface.inputWarp != nil {surface.inputWarpTransform=delta.concatenating(surface.inputWarpTransform)}
+    }
+
     public static func addingFreehand(points: [Point2],name: String = "Freehand",in project: Project,tolerance: Double = 0.001) throws -> (project: Project,surfaceID: UUID) {
         let samples=try FreehandPath.fit(points:points,tolerance:tolerance)
         let minX=samples.map(\.x).min()!-0.01,maxX=samples.map(\.x).max()!+0.01

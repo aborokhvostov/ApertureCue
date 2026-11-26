@@ -1,0 +1,76 @@
+{
+  "archive": "ApertureCue-macOS-arm64.zip",
+  "sizeBytes": 1960870,
+  "sha256": "a080011e1747f631e43c38679ab5170fca078a63be1e5ec17095285bf3bb6e0e",
+  "entryCount": 34,
+  "crcPassed": true,
+  "signaturePassed": true,
+  "executableModePassed": true,
+  "appAndDemoMatch": true,
+  "productionChecks": [
+    {
+      "mode": "live-editor-test",
+      "exitCode": 0,
+      "elapsedSeconds": 8.99
+    },
+    {
+      "mode": "live-composition-test",
+      "exitCode": 0,
+      "elapsedSeconds": 7.087
+    },
+    {
+      "mode": "composition-test",
+      "exitCode": 0,
+      "elapsedSeconds": 0.299
+    },
+    {
+      "mode": "editor-test",
+      "exitCode": 0,
+      "elapsedSeconds": 46.186
+    },
+    {
+      "mode": "self-test",
+      "exitCode": 0,
+      "elapsedSeconds": 2.092
+    },
+    {
+      "mode": "montage-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.705
+    },
+    {
+      "mode": "protocol-loopback",
+      "exitCode": 0,
+      "elapsedSeconds": 0.041
+    },
+    {
+      "mode": "lighting-test",
+      "exitCode": 0,
+      "elapsedSeconds": 0.616
+    }
+  ],
+  "executableSHA256": "e7abc1f0a39240b69bd483239d948af44ce8445bd3453c7a923b04607add8518",
+  "coreLibrarySHA256": "c7786db04a2150dae775a7be58be628b24b08339c79fdfe97c5d73af9572496b",
+  "extractedChecks": [
+    {
+      "mode": "editor-test",
+      "exitCode": 0,
+      "elapsedSeconds": 74.872
+    },
+    {
+      "mode": "composition-test",
+      "exitCode": 0,
+      "elapsedSeconds": 2.494
+    },
+    {
+      "mode": "live-editor-test",
+      "exitCode": 0,
+      "elapsedSeconds": 8.295
+    },
+    {
+      "mode": "live-composition-test",
+      "exitCode": 0,
+      "elapsedSeconds": 7.271
+    }
+  ]
+}

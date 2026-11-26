@@ -9,10 +9,13 @@ ditto --norsrc --noextattr dist/ApertureCue.app "$task_release/ApertureCue.app"
 mkdir -p "$task_release/Demo"
 # Ship only the original demos and their media. Working copies and recovery
 # sidecars can exist beside them after running the editor.
-for task_demo in Demo Groups Montage Recording SelectiveCues Shapes Strokes Timeline; do
+for task_demo in Demo Composition Groups Montage Recording SelectiveCues Shapes Strokes Timeline; do
   cp "examples/Demo/$task_demo.aperturecue.json" "$task_release/Demo/"
 done
 cp examples/Demo/calibration.png examples/Demo/motion.mov "$task_release/Demo/"
+mkdir -p "$task_release/Examples/Materials" "$task_release/Examples/SVG"
+cp examples/Materials/OriginalGradient.fs examples/Materials/OriginalTint.fs "$task_release/Examples/Materials/"
+cp examples/SVG/geometry.svg "$task_release/Examples/SVG/"
 cp LICENSE THIRD_PARTY_NOTICES.md "$task_release/"
 cat > "$task_release/START-HERE.txt" <<'TEXT'
 ApertureCue 0.1.0 development preview
@@ -20,6 +23,9 @@ ApertureCue 0.1.0 development preview
 macOS 13+, current build architecture is indicated in the ZIP filename.
 Open ApertureCue.app, then choose File > Open
 and select Demo/Demo.aperturecue.json beside this file. Press Play.
+Demo/Composition.aperturecue.json demonstrates procedural materials, Bezier
+warps, scoped masks and isolated groups without external media or hardware.
+Original import examples are in Examples/Materials and Examples/SVG.
 
 This locally ad hoc signed build is not notarized. Source and complete
 build instructions: https://github.com/aborokhvostov/ApertureCue

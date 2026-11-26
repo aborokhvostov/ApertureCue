@@ -345,8 +345,8 @@ enum EditorSelfTest {
             try expect(pointsNear(e.project.surfaces.last!.mesh,try worldMesh.map { try inverse.applying($0) }),"Grouped mesh drag did not invert parent mapping")
             e.undoEdit(); try expect(e.project.surfaces.last!.mesh == meshBefore,"Undo grouped mesh drag did not preserve the mesh")
             let sourceCrop=[Point2(0.1,0.15),Point2(0.9,0.15),Point2(0.9,0.85),Point2(0.1,0.85)]
-            e.modePicker.selectItem(at:1); e.overlay.meshMode=true; e.updateRender()
-            e.overlay.onBegin?(); e.overlay.onChange?(shapeID,sourceCrop,true,true); e.overlay.onEnd?()
+            e.modePicker.selectItem(at:1); e.overlay.meshMode=false; e.updateRender()
+            e.overlay.onBegin?(); e.overlay.onChange?(shapeID,sourceCrop,true,false); e.overlay.onEnd?()
             try expect(e.project.surfaces.last!.input == sourceCrop && e.project.surfaces.last!.mesh == meshBefore,"Input/mesh flags corrupted local mesh or transformed source UV")
             let sourceMask=[Point2(0.2,0.2),Point2(0.8,0.2),Point2(0.5,0.8)]
             e.overlay.maskMode=true; e.overlay.onBegin?(); e.overlay.onChange?(shapeID,sourceMask,true,true); e.overlay.onEnd?()

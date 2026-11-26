@@ -34,6 +34,14 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     let queue: MTLCommandQueue
     var pipelines: [String: MTLRenderPipelineState] = [:]
     private let slots = DispatchSemaphore(value: 3)
+    private let drawableQueue=DispatchQueue(label:"org.aperturecue.drawable-acquisition",qos:.userInitiated)
+    private let acquireDrawable:(CAMetalLayer)->CAMetalDrawable?
+    private(set) var drawableAcquisitionPending=false
+    private(set) var drawableRequestCount:UInt64=0
+    private(set) var cancelledDrawableRequests:UInt64=0
+    private(set) var failedDrawableRequests:UInt64=0
+    private(set) var maxDrawableWaitMilliseconds:Double=0
+    private(set) var lastDrawableSize=CGSize.zero
     private let snapshotQueue = DispatchQueue(label: "org.aperturecue.frame-readback", qos: .userInitiated)
     private var asyncSnapshotPending = false
     let fallback: MTLTexture
@@ -63,17 +71,19 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     struct MaterialCache { var definition:MaterialDefinition;var program:MaterialProgram;var pipelines:[String:MTLRenderPipelineState] }
     var materialCache:[UUID:MaterialCache] = [:]
     struct GeometryCache { var surface:Surface;var width:Int;var height:Int;var sourceWidth:Int;var sourceHeight:Int;var vertices:[Vertex] }
-    var geometryCache:[UUID:GeometryCache] = [:]
+    let geometryCache=CompositionCPUCache<GeometryCache>(maximumBytes:12*1024*1024)
     struct InputGridCache {var surface:Surface;var width:Int;var height:Int;var sourceSide:Int;var columns:Int;var rows:Int;var values:[SIMD2<Float>]}
-    var inputGridCache:[UUID:InputGridCache]=[:]
+    let inputGridCache=CompositionCPUCache<InputGridCache>(maximumBytes:4*1024*1024)
     var postPipelineCache:[String:MTLRenderPipelineState]? = nil
     static var lastInitializationError = ""
     var statistics: String {
         String(format: "%.1f FPS · CPU %.2f ms · GPU %.2f ms · %llu skipped", fps, cpuMilliseconds, gpuMilliseconds, droppedFrames)
     }
 
-    init?(view: MTKView, media: MediaPool) {
+    init?(view: MTKView, media: MediaPool,
+          acquireDrawable:@escaping (CAMetalLayer)->CAMetalDrawable? = {$0.nextDrawable()}) {
         self.media = media
+        self.acquireDrawable=acquireDrawable
         device = media.device
         guard let queue = device.makeCommandQueue() else {
             Self.lastInitializationError = "Metal command queue unavailable"
@@ -101,6 +111,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         view.preferredFramesPerSecond = 60
         view.enableSetNeedsDisplay = false
         view.isPaused = false
+        // CAMetalLayer.nextDrawable always blocks. Keep its documented timeout
+        // enabled; its wait runs on drawableQueue, never on the AppKit thread.
+        if let layer=view.layer as? CAMetalLayer {layer.allowsNextDrawableTimeout=true}
         do {
             let library = try device.makeLibrary(source: Self.shaderSource, options: nil)
             for mode in ["normal", "add", "multiply", "screen"] {
@@ -128,16 +141,61 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
     func draw(in view: MTKView) {
-        let started = CACurrentMediaTime()
+        precondition(Thread.isMainThread)
+        guard !drawableAcquisitionPending else {droppedFrames += 1;return}
+        guard let layer=view.layer as? CAMetalLayer,let window=view.window,
+              window.isVisible,!view.isHiddenOrHasHiddenAncestor else {return}
+        let size=layer.drawableSize,clear=view.clearColor,wasPaused=view.isPaused
+        guard size.width>0,size.height>0 else {return}
         guard slots.wait(timeout: .now()) == .success else { droppedFrames += 1; return }
-        guard let drawable = view.currentDrawable,
-              let descriptor = view.currentRenderPassDescriptor,
-              let buffer = queue.makeCommandBuffer() else { slots.signal(); return }
+        drawableAcquisitionPending=true;drawableRequestCount &+= 1
+        let slots=self.slots,acquire=self.acquireDrawable
+        // The worker owns only a layer and the acquisition function. All view,
+        // scene, media, cache and statistics access remains on the main queue.
+        // A single pending request prevents display ticks queuing further waits.
+        drawableQueue.async { [weak self,weak view,weak window] in
+            let started=CACurrentMediaTime()
+            let drawable=autoreleasepool {acquire(layer)}
+            let waited=(CACurrentMediaTime()-started)*1000
+            DispatchQueue.main.async { [weak self,weak view,weak window] in
+                guard let self else {slots.signal();return}
+                self.drawableAcquisitionPending=false
+                self.maxDrawableWaitMilliseconds=max(self.maxDrawableWaitMilliseconds,waited)
+                guard let view,let window,view.window === window,window.isVisible,
+                      view.delegate === self,view.layer === layer,
+                      !view.isHiddenOrHasHiddenAncestor,view.isPaused==wasPaused,
+                      layer.drawableSize == size,view.drawableSize == size else {
+                    self.cancelledDrawableRequests &+= 1;self.droppedFrames &+= 1;slots.signal();return
+                }
+                guard let drawable else {
+                    self.failedDrawableRequests &+= 1;self.droppedFrames &+= 1;slots.signal();return
+                }
+                guard drawable.texture.width==Int(size.width),drawable.texture.height==Int(size.height),
+                      drawable.texture.pixelFormat == .bgra8Unorm else {
+                    self.cancelledDrawableRequests &+= 1;self.droppedFrames &+= 1;slots.signal();return
+                }
+                self.submitLive(drawable:drawable,clear:clear)
+            }
+        }
+    }
+
+    /// Encoding and submission stay serialized with document/media mutations.
+    /// An explicit color pass avoids MTKView's blocking currentDrawable getter.
+    private func submitLive(drawable:CAMetalDrawable,clear:MTLClearColor) {
+        precondition(Thread.isMainThread)
+        let started=CACurrentMediaTime()
+        guard let buffer=queue.makeCommandBuffer() else {slots.signal();return}
+        let descriptor=MTLRenderPassDescriptor()
+        descriptor.colorAttachments[0].texture=drawable.texture
+        descriptor.colorAttachments[0].loadAction = .clear
+        descriptor.colorAttachments[0].storeAction = .store
+        descriptor.colorAttachments[0].clearColor=clear
         let videoFrames = encode(descriptor: descriptor, buffer: buffer)
         buffer.present(drawable)
         let slots = self.slots
         buffer.addCompletedHandler { [weak self] command in
             withExtendedLifetime(videoFrames) {}
+            withExtendedLifetime(drawable) {}
             slots.signal()
             let milliseconds = (command.gpuEndTime - command.gpuStartTime) * 1000
             DispatchQueue.main.async {
@@ -152,6 +210,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             }
         }
         buffer.commit()
+        lastDrawableSize=CGSize(width:drawable.texture.width,height:drawable.texture.height)
         cpuMilliseconds = (CACurrentMediaTime() - started) * 1000
         totalCPUMilliseconds += cpuMilliseconds
         frameCount += 1

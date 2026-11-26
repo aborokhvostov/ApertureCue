@@ -174,3 +174,40 @@ Local standalone core passed 100 methods with zero failed assertions. Production
 The ZIP has 27 entries and 1,467,169 bytes, SHA-256 `6fb29ac9ca223ba947a221604d9c33bb909c7507f4934a4afc992dd95590c1ba`. Fresh extraction passed strict ad hoc signature, CRC, executable modes and byte equality with both built binaries and the original ten demo documents/media. No new media/SDK dependencies are included. Notarization, physical projectors/hotplug/fixtures, long-show timing and mask throughput remain unverified.
 
 Published as [alpha 14](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.14) on 26 November. Both uploaded assets match local sizes/digests. SHA256SUMS has 94 bytes and digest `4605ba61c4130ce29be6e7ca856f03cc761f47da0471ba6d0e76de3f59464ca4`. The source tag resolves to the exact verified commit above. Local suite wall duration, optical presentation, multi-output throughput, audio drift and soak stability were not measured.
+
+## Alpha 15
+
+26 November 2026, Apple M2 / arm64 / macOS 26.6.2 build 25G83, 8 GiB,
+Apple Swift 6.4.2 / installed Xcode SDK. macOS 13+ target; actual local runtime
+coverage is macOS 26.6.2. Stage 2 geometry/composition is the declared subset in
+[the ledger](../stage-2-completion.md); this is not full reference parity.
+Schema 12 adds the new geometry/composition fields and fifteen selective surface
+fields. Earlier binaries reject schema 12; keep a separate copy for downgrade.
+
+Local standalone core passed 133 methods with zero failed assertions, separately
+from actual remote XCTest. The optimized native app passed 81 editor, 25
+composition, 51 GPU/media, 27 montage, 11 lighting/UDP, 5 live presentation,
+3 full-editor live checks and OSC/MIDI localhost loopback. The fresh extracted
+app repeated 81 editor, 25 composition, 5 live presentation and 3 full-editor
+live checks. [Sanitized reports and wall durations](stage-2/distribution.json).
+Original generated H.264 fixtures remain in the media regressions. The live
+renderer test shows five procedural layers at 1920×1080 for six seconds; actual
+EditorController uses its ordinary auto-sized view. These are short behavior
+checks, not optical refresh, sustained throughput or long-show measurements.
+
+The final ZIP has **34 entries, 1,960,870 bytes**, SHA-256
+`a080011e1747f631e43c38679ab5170fca078a63be1e5ec17095285bf3bb6e0e`.
+CRC, safe archive paths, executable modes, strict ad hoc signature and exact
+executable/library/Info/demo/example bytes after fresh extraction all passed.
+The archive includes nine original demo documents and PNG/H.264 media, two
+original ISF examples, an original SVG, GPL license and notices. Recovery
+sidecars, working copies, optional proprietary SDKs and build caches are excluded.
+Arm64 only; ad hoc signed, not notarized or universal.
+
+[Manual journal](composition-workflow.md#manual-checks): separate original demo
+copies, visible Composition, output Bézier numeric edit and Undo/Redo, FX and
+material override edit, Save/Quit/relaunch/reopen, Play/Pause. The repository's
+original demo files and existing recovery snapshot were preserved. No physical
+projector, display hotplug, optical seam, audio drift, camera, MIDI device or
+lighting fixture verification is implied. Exact-source CI and publication remain
+pending and will be recorded here after their actual results.

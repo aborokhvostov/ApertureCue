@@ -97,5 +97,30 @@ final class CompositionTests:XCTestCase {
         XCTAssertThrowsError(try ProjectStore.validate(p))
         var input=Surface();input.inputWarp=try BezierWarp.regular(quad:Point2.unitQuad)
         XCTAssertThrowsError(try ProjectStore.validate(Project(surfaces:[input])))
+
+        let precisionGroup=SurfaceGroup(transform:Affine2D(a:1,d:1e-6,px:1,pw:1e-6))
+        var precisionMesh=Surface(output:Point2.unitQuad,meshColumns:1,meshRows:1,mesh:try Geometry.regularMesh(quad:Point2.unitQuad,columns:1,rows:1),groupID:precisionGroup.id)
+        precisionMesh.meshWeights=[1e-10,1,1,1]
+        XCTAssertThrowsError(try ProjectStore.validate(Project(surfaces:[precisionMesh],groups:[precisionGroup])))
+
+        let path=FileManager.default.temporaryDirectory.appendingPathComponent("ApertureCueMalformedWeights-"+UUID().uuidString+".json")
+        defer {try? FileManager.default.removeItem(at:path)}
+        var malformed=Surface(output:Point2.unitQuad,meshColumns:1,meshRows:1,
+                              mesh:try Geometry.regularMesh(quad:Point2.unitQuad,columns:1,rows:1))
+        for weights in [[1.0],[1.0,1,1],[1.0,1,1,1,1]] {
+            malformed.meshWeights=weights
+            XCTAssertThrowsError(try GroupEngine.resolve(surfaces:[malformed],groups:[]))
+            let current=Project(surfaces:[malformed])
+            let stored=Project(surfaces:[Surface()],cues:[Cue(name:"Malformed stored mesh",surfaces:[malformed])])
+            let dormant=Cue(name:"Malformed dormant mesh",surfaces:[malformed],scope:.selective,
+                            bindings:[CueBinding(surfaceID:malformed.id,parameters:[.opacity])])
+            for candidate in [current,stored,Project(cues:[dormant])] {
+                XCTAssertThrowsError(try ProjectStore.validate(candidate))
+                // A corrupted schema-12 document must fail loading, not trap
+                // before surface validation reaches the parallel-array check.
+                try JSONEncoder().encode(candidate).write(to:path,options:.atomic)
+                XCTAssertThrowsError(try ProjectStore.load(from:path))
+            }
+        }
     }
 }

@@ -162,6 +162,12 @@ public enum GroupEngine {
         return state
     }
     private static func geometry(_ surface:Surface,by transform:Affine2D) throws -> Surface {
+        // Hierarchy resolution also runs before ProjectStore's surface checks.
+        // Treat decoded parallel arrays as untrusted before indexing them here.
+        guard surface.meshWeights.isEmpty || (surface.meshWeights.count==surface.mesh.count &&
+              surface.meshWeights.allSatisfy({$0.isFinite && $0>1e-12 && $0<=10000})) else {
+            throw ProjectError.invalid("invalid projective mesh weights")
+        }
         var result=surface
         result.output=try surface.output.map { try transform.applying($0) }
         result.mesh=try surface.mesh.map { try transform.applying($0) }
@@ -171,6 +177,7 @@ public enum GroupEngine {
             }
             guard w.allSatisfy({$0>1e-12}) || w.allSatisfy({$0 < -1e-12}),let scale=w.map(abs).max(),scale>1e-12 else { throw ProjectError.invalid("group perspective crosses the mesh horizon") }
             let normalized=w.map { abs($0)/scale }
+            guard normalized.allSatisfy({$0>1e-12}) else {throw ProjectError.invalid("resolved mesh weights exceed the safe projective precision range")}
             result.meshWeights=normalized.allSatisfy({abs($0-1)<1e-14}) ? [] : normalized
         }
         if let warp=surface.bezierWarp {

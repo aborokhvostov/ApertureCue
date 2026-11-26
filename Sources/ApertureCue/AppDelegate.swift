@@ -288,50 +288,32 @@ import MappingCore
                 var edited = self.project.surfaces[i]
                 if self.overlay.pathMode && !input && edited.shape.isStroke { try self.editStrokeHandles(surfaceID:id,world:points); return }
                 if self.overlay.maskMode { edited.mask = points }
-                else if input {
-                    if mesh {
-                        guard points.count==edited.mesh.count else {throw ProjectError.invalid("input mesh topology changed")}
-                        if edited.meshLinked {
-                            var output=edited.mesh
-                            let previous=edited.inputMesh.isEmpty ? try Geometry.regularMesh(quad:edited.input,columns:edited.meshColumns,rows:edited.meshRows) : edited.inputMesh
-                            for vertex in points.indices where points[vertex] != previous[vertex] {
-                                output=try MeshLinkGeometry.movingOutputVertex(output:previous,input:output,index:vertex,to:points[vertex],outputQuad:edited.input,inputQuad:edited.output,linked:true).input
-                            }
-                            edited.mesh=output
+                else if !mesh {
+                    self.project=try SurfaceEditing.editingCage(surfaceID:id,points:points,input:input,in:self.project)
+                    self.editError="";self.updateRender();return
+                } else if input {
+                    guard points.count==edited.mesh.count else {throw ProjectError.invalid("input mesh topology changed")}
+                    if edited.meshLinked {
+                        var output=edited.mesh
+                        let previous=edited.inputMesh.isEmpty ? try Geometry.regularMesh(quad:edited.input,columns:edited.meshColumns,rows:edited.meshRows) : edited.inputMesh
+                        for vertex in points.indices where points[vertex] != previous[vertex] {
+                            output=try MeshLinkGeometry.movingOutputVertex(output:previous,input:output,index:vertex,to:points[vertex],outputQuad:edited.input,inputQuad:edited.output,linked:true).input
                         }
-                        edited.inputMesh=points
-                    } else {
-                        try Geometry.validateQuad(points)
-                        if edited.meshLinked {
-                            let map=try Homography.solve(from:edited.input,to:edited.output)
-                            edited.output=try points.map {try map.applying($0)}
-                        }
-                        edited.input=points
+                        edited.mesh=output
                     }
-                }
-                else {
-                    let inverse = try GroupEngine.worldTransform(for:edited.groupID,groups:self.project.groups).inverse()
-                    let local = try points.map { try inverse.applying($0) }
-                    guard local.allSatisfy({ abs($0.x) <= 10000 && abs($0.y) <= 10000 }) else { throw ProjectError.invalid("grouped edit exceeds the finite local working range") }
-                    if mesh {
-                        guard local.count == edited.mesh.count else { throw ProjectError.invalid("mesh edit has a different vertex count") }
-                        if edited.meshLinked {
-                            var input=edited.inputMesh.isEmpty ? try Geometry.regularMesh(quad:edited.input,columns:edited.meshColumns,rows:edited.meshRows) : edited.inputMesh
-                            for vertex in local.indices where local[vertex] != edited.mesh[vertex] {
-                                input=try MeshLinkGeometry.movingOutputVertex(output:edited.mesh,input:input,index:vertex,to:local[vertex],outputQuad:edited.output,inputQuad:edited.input,linked:true).input
-                            }
-                            edited.inputMesh=input
+                    edited.inputMesh=points
+                } else {
+                    let inverse=try GroupEngine.worldTransform(for:edited.groupID,groups:self.project.groups).inverse()
+                    let local=try points.map {try inverse.applying($0)}
+                    guard local.count==edited.mesh.count,local.allSatisfy({abs($0.x)<=10000 && abs($0.y)<=10000}) else {throw ProjectError.invalid("mesh edit exceeds its topology or finite working range")}
+                    if edited.meshLinked {
+                        var input=edited.inputMesh.isEmpty ? try Geometry.regularMesh(quad:edited.input,columns:edited.meshColumns,rows:edited.meshRows) : edited.inputMesh
+                        for vertex in local.indices where local[vertex] != edited.mesh[vertex] {
+                            input=try MeshLinkGeometry.movingOutputVertex(output:edited.mesh,input:input,index:vertex,to:local[vertex],outputQuad:edited.output,inputQuad:edited.input,linked:true).input
                         }
-                        edited.mesh = local
-                    } else {
-                        try Geometry.validateQuad(local)
-                        if edited.meshLinked {
-                            let map=try Homography.solve(from:edited.output,to:edited.input)
-                            edited.input=try local.map {try map.applying($0)}
-                        }
-                        edited.output = local;edited.bezierWarp=nil;edited.inputWarp=nil;edited.warpTransform = .identity;edited.inputWarpTransform = .identity;edited.inputMesh=[];edited.meshWeights=[]
-                        edited.mesh = []; edited.meshRows = 0; edited.meshColumns = 0
+                        edited.inputMesh=input
                     }
+                    edited.mesh=local
                 }
                 self.project.surfaces[i] = edited; self.editError = ""
             } catch { self.editError = error.localizedDescription; return }
@@ -519,17 +501,13 @@ import MappingCore
             guard let self else {return};do {try self.toggleMeshLink()} catch {self.showError(error)}
         })
         add(ActionButton("Draw freehand line") {[weak self] in self?.beginFreehand()})
-        geometryControl(ActionButton("Reset quad / input") { [weak self] in
-            guard let self, self.editableGeometryIndex != nil else { return }; self.editSurface("Reset geometry") { s in
-                if self.inputMode { s.input = Point2.unitQuad } else { s.output = Point2.insetQuad; s.mesh = []; s.meshColumns = 0; s.meshRows = 0 }
-            }
-        })
+        geometryControl(ActionButton("Reset quad / input") {[weak self] in self?.resetSelectedGeometry()})
         geometryControl(ActionButton("Create 4 × 4 warp mesh") { [weak self] in
             guard let self, self.editableGeometryIndex != nil else { return }
-            self.editSurface("Create mesh") { s in s.meshColumns = 4; s.meshRows = 4; s.mesh = (try? Geometry.regularMesh(quad:s.output,columns:4,rows:4)) ?? [];s.bezierWarp=nil;s.inputWarp=nil;s.inputMesh=[];s.meshWeights=[] }
-            self.modePicker.selectItem(at:0); self.overlay.meshMode = true; self.overlay.maskMode = false; self.overlay.pathMode = false; self.updateRender()
+            self.editSurface("Create mesh") { s in s.meshColumns = 4; s.meshRows = 4; s.mesh = (try? Geometry.regularMesh(quad:s.output,columns:4,rows:4)) ?? [];s.bezierWarp=nil;s.inputWarp=nil;s.inputMesh=[];s.meshWeights=[];s.meshLinked=false;s.warpTransform = .identity;s.inputWarpTransform = .identity }
+            self.modePicker.selectItem(at:0); self.overlay.warpMode=false; self.overlay.meshMode = true; self.overlay.maskMode = false; self.overlay.pathMode = false; self.updateRender()
         })
-        geometryControl(ActionButton(overlay.meshMode ? "Edit quad corners" : "Edit mesh points") { [weak self] in
+        let meshEditing=ActionButton(overlay.meshMode ? "Edit quad corners" : "Edit mesh points") { [weak self] in
             guard let self, self.editableGeometryIndex != nil else { return }
             if self.inputMode,self.project.surfaces[self.editableGeometryIndex!].inputMesh.isEmpty {
                 self.editSurface("Prepare input mesh") {s in
@@ -540,7 +518,8 @@ import MappingCore
             self.overlay.meshMode.toggle()
 
             self.overlay.maskMode = false; self.overlay.pathMode = false; self.updateRender(); self.refreshInspector()
-        })
+        }
+        meshEditing.isEnabled = !locked && !surface.mesh.isEmpty;add(meshEditing)
         add(label("Polygon mask · this layer",bold:true))
         let spaces = PolygonMaskSpace.allCases
         geometryControl(ActionPopUp(items:["Source UV coordinates", "Output canvas coordinates"],selected:spaces.firstIndex(of:surface.maskSettings.space) ?? 0) { [weak self] index in
@@ -621,12 +600,15 @@ import MappingCore
     @objc func importMedia() {
         let p = NSOpenPanel(); p.allowsMultipleSelection = true; p.allowedContentTypes = [.image,.movie,.video]
         guard p.runModal() == .OK else { return }
+        importMediaFiles(p.urls)
+    }
+    func importMediaFiles(_ urls:[URL]) {
         mutate("Import media") { state in
-            for url in p.urls {
+            for url in urls {
                 let ext = url.pathExtension.lowercased()
                 let kind = ["mov","mp4","m4v","avi","mkv","webm"].contains(ext) ? "video" : "image"
                 let asset = MediaAsset(name:url.lastPathComponent,path:url.path,kind:kind); state.assets.append(asset)
-                if let i = state.surfaces.firstIndex(where:{$0.id == selectedID}) { state.surfaces[i].mediaID = asset.id }
+                if let i = state.surfaces.firstIndex(where:{$0.id == selectedID}) { state.surfaces[i].mediaID = asset.id;state.surfaces[i].feedbackOutputID=nil }
                 else { let s = Surface(name:url.deletingPathExtension().lastPathComponent,mediaID:asset.id); state.surfaces.append(s); selectedID = s.id }
             }
         }
@@ -709,7 +691,13 @@ import MappingCore
         advanceShow(at:now)
         updateRecordingInspector()
         if let cue = cueTarget {
-            if let sampled = cueEngine.sample(at:now),sampled != project.surfaces { project.surfaces = sampled; dirty = true; window?.isDocumentEdited = true }
+            if let sampled=cueEngine.sample(at:now),sampled != project.surfaces {
+                do {
+                    try CompositionPlan.validateStack(surfaces:sampled,groups:project.groups)
+                    _=try GroupEngine.resolveForComposition(surfaces:sampled,groups:project.groups)
+                    project.surfaces=sampled;dirty=true;window?.isDocumentEdited=true
+                } catch {cueMessage="Scene kept its last valid geometry: "+error.localizedDescription}
+            }
             if !cueEngine.isTransitioning {
                 if cueEngine.shouldFollow(at:now), let i = project.cues.firstIndex(where:{$0.id == cue.id}), i+1 < project.cues.count { goCue(index:i+1) }
                 else if cue.followAfter == nil || (cueEngine.shouldFollow(at:now) && project.cues.last?.id == cue.id) {
@@ -720,7 +708,7 @@ import MappingCore
             updateRender()
         }
         for target in allCompositionRenderers {target.materialTime=showRuntime.time}
-        if project.surfaces.contains(where:{$0.feedbackOutputID != nil}) {advanceFeedback();updateFeedbackTextures()}
+        advanceFeedback();updateFeedbackTextures()
         if !project.timeline.isEmpty || !project.montages.isEmpty || !project.materials.isEmpty { updateRender() }; montageWindow?.updatePlayhead()
         if lighting?.isSampling == true, now-lastLighting >= 1.0/30 {
             lighting?.fixtures = project.fixtures
@@ -740,9 +728,7 @@ import MappingCore
     @objc func exportPNG() {
         let p = NSSavePanel(); p.allowedContentTypes = [.png]; p.nameFieldStringValue = "ApertureCue-frame.png"
         guard p.runModal() == .OK,let url = p.url else { return }
-        let saved = renderer.surfaces; renderer.surfaces = effectiveSurfaces
-        defer { renderer.surfaces = saved }
-        if let frame = renderer.render(width:1920,height:1080), let data = frame.representation(using:.png,properties:[:]) {
+        if let frame = compositionExportFrame(), let data = frame.representation(using:.png,properties:[:]) {
             do { try data.write(to:url,options:.atomic) } catch { showError(error) }
         }
     }

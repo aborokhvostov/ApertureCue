@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-alpha.15 — geometry and composition, 2026-11-26
+
+- Add independent regular/Bézier source and output lattices, explicit mesh linking, lattice-preserving cage edits, numeric surface transforms, keyboard nudges and bounded freehand capture. Reject exhausted precision budgets rather than emit a coarse warp.
+- Add projective and isolated groups with whole-group blend/FX, multiple layer/group/global polygon and cubic masks, chroma/luma key and color FX. Add output edge ramps, video-wall crops, bounded original SVG raster import and previous-generation feedback with cycle-safe resets.
+- Add a typed expression material editor and a declared single-pass ISF expression subset, preserving accepted material pipelines after rejected edits. Include original procedural Composition, ISF and SVG examples.
+- Schema 12 persists new fields across documents and surface cues; Material and Effects extend selective snapshots to 15 atomic fields. Keep legacy undefined fields isolated during decoding. Reset and PNG export preserve independent source/composition semantics; malformed parallel mesh arrays fail loading safely.
+- Move drawable acquisition off AppKit, preserve static overlay layers during material-clock ticks, and keep gesture tools mutually exclusive. Validate the full visible editor and resize/cancellation/recovery paths independently of offscreen frame tests.
+- Verification and remaining hardware/runtime limits are recorded in [stage ledger](docs/stage-2-completion.md), [status](docs/status.md) and the feature matrix. Earlier release archives remain available; older binaries reject schema 12.
+
 ## 0.1.0-alpha.14 — polygon vertex editor, 2026-11-26
 
 - Add numeric mask vertex coordinates, midpoint insertion on every closed edge and removal with a 3…128-point bound. Show polygon handle numbers beyond four vertices.

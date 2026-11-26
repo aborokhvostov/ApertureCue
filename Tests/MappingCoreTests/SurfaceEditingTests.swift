@@ -36,6 +36,40 @@ final class SurfaceEditingTests: XCTestCase {
         let reset=try SurfaceEditing.resettingBezierWarp(surfaceID:id,in:linkedMove)
         XCTAssertNil(reset.surfaces[0].bezierWarp);XCTAssertNil(reset.surfaces[0].inputWarp)
         XCTAssertEqual(reset.surfaces[0].output,before.output);XCTAssertEqual(reset.surfaces[0].input,before.input)
+
+        // Editing a cage carries a curved lattice instead of deleting it or its
+        // independently edited source. A source cage edit must affect the warp.
+        let independent=try SurfaceEditing.settingMeshLink(surfaceID:id,enabled:false,in:linkedMove)
+        let originalSurface=independent.surfaces[0]
+        let oldWorld=try GroupEngine.resolve(surfaces:independent.surfaces,groups:independent.groups)[0]
+        let move=Affine2D.translation(x:0.025,y:0.015)
+        let newWorldCage=try oldWorld.output.map {try move.applying($0)}
+        let cageEdit=try SurfaceEditing.editingCage(surfaceID:id,points:newWorldCage,input:false,in:independent)
+        XCTAssertEqual(cageEdit.surfaces[0].bezierWarp,originalSurface.bezierWarp)
+        XCTAssertEqual(cageEdit.surfaces[0].inputWarp,originalSurface.inputWarp)
+        XCTAssertEqual(cageEdit.surfaces[0].inputWarpTransform,originalSurface.inputWarpTransform)
+        for uv in [Point2(0.2,0.3),Point2(0.7,0.6)] {
+            XCTAssertEqual(try SurfaceGeometry.sourcePoint(local:uv,surface:cageEdit.surfaces[0]),
+                           try SurfaceGeometry.sourcePoint(local:uv,surface:originalSurface))
+        }
+        let inputMove=Affine2D.translation(x:0.03,y:-0.01)
+        let newInput=try originalSurface.input.map {try inputMove.applying($0)}
+        let sourceEdit=try SurfaceEditing.editingCage(surfaceID:id,points:newInput,input:true,in:independent)
+        XCTAssertEqual(sourceEdit.surfaces[0].output,originalSurface.output)
+        XCTAssertEqual(sourceEdit.surfaces[0].warpTransform,originalSurface.warpTransform)
+        for uv in [Point2(0.2,0.3),Point2(0.7,0.6)] {
+            let expected=try inputMove.applying(SurfaceGeometry.sourcePoint(local:uv,surface:originalSurface))
+            let actual=try SurfaceGeometry.sourcePoint(local:uv,surface:sourceEdit.surfaces[0])
+            XCTAssertEqual(actual.x,expected.x,accuracy:1e-10);XCTAssertEqual(actual.y,expected.y,accuracy:1e-10)
+        }
+        let inputToWorld=try Homography.solve(from:linkedMove.surfaces[0].input,to:oldWorld.output)
+        let coupled=try SurfaceEditing.editingCage(surfaceID:id,points:newInput,input:true,in:linkedMove)
+        let coupledWorld=try GroupEngine.resolve(surfaces:coupled.surfaces,groups:coupled.groups)[0]
+        for index in newInput.indices {
+            let expected=try inputToWorld.applying(newInput[index])
+            XCTAssertEqual(coupledWorld.output[index].x,expected.x,accuracy:1e-10)
+            XCTAssertEqual(coupledWorld.output[index].y,expected.y,accuracy:1e-10)
+        }
     }
 
     func testWorldTransformPreservesSourceAndLockedCommandsAreAtomic() throws {
@@ -59,7 +93,53 @@ final class SurfaceEditingTests: XCTestCase {
         XCTAssertEqual(try SurfaceEditing.settingMeshLink(surfaceID:id,enabled:true,in:locked),locked)
         XCTAssertEqual(try SurfaceEditing.editingWarpControl(surfaceID:id,index:0,world:Point2(.nan,0),input:false,in:locked),locked)
         XCTAssertEqual(try SurfaceEditing.applyingWorldTransform(surfaceID:id,transform:delta,in:locked),locked)
+        XCTAssertEqual(try SurfaceEditing.editingCage(surfaceID:id,points:[],input:false,in:locked),locked)
         XCTAssertThrowsError(try SurfaceEditing.editingWarpControl(surfaceID:id,index:Int.max,world:Point2(0,0),input:false,in:project))
+
+        var regular=base
+        regular.surfaces[0].meshColumns=2;regular.surfaces[0].meshRows=2
+        regular.surfaces[0].mesh=try Geometry.regularMesh(quad:regular.surfaces[0].output,columns:2,rows:2)
+        regular.surfaces[0].mesh[4].x += 0.025
+        regular=try SurfaceEditing.settingMeshLink(surfaceID:id,enabled:true,in:regular)
+        regular.surfaces[0].inputMesh[4].y += 0.02
+        regular=try SurfaceEditing.settingMeshLink(surfaceID:id,enabled:false,in:regular)
+        let regularBefore=regular.surfaces[0]
+        let oldResolved=try GroupEngine.resolve(surfaces:regular.surfaces,groups:regular.groups)[0]
+        let perspective=Affine2D(a:0.93,b:0.02,c:0.03,d:1.02,tx:0.015,ty:-0.01,px:0.2,py:0.05,pw:1)
+        let target=try oldResolved.output.map {try perspective.applying($0)}
+        let changed=try SurfaceEditing.editingCage(surfaceID:id,points:target,input:false,in:regular)
+        let resolved=try GroupEngine.resolve(surfaces:changed.surfaces,groups:changed.groups)[0]
+        XCTAssertFalse(changed.surfaces[0].meshWeights.isEmpty)
+        XCTAssertEqual(changed.surfaces[0].inputMesh,regularBefore.inputMesh)
+        for uv in [Point2(0.2,0.3),Point2(0.7,0.6)] {
+            let expected=try perspective.applying(SurfaceGeometry.outputPoint(local:uv,surface:oldResolved))
+            let actual=try SurfaceGeometry.outputPoint(local:uv,surface:resolved)
+            XCTAssertEqual(actual.x,expected.x,accuracy:1e-9);XCTAssertEqual(actual.y,expected.y,accuracy:1e-9)
+            XCTAssertEqual(try SurfaceGeometry.sourcePoint(local:uv,surface:changed.surfaces[0]),
+                           try SurfaceGeometry.sourcePoint(local:uv,surface:regularBefore))
+        }
+        let sourceShift=Affine2D.translation(x:0.02,y:0.01)
+        let shifted=try SurfaceEditing.editingCage(surfaceID:id,points:regularBefore.input.map {try sourceShift.applying($0)},input:true,in:regular)
+        XCTAssertEqual(shifted.surfaces[0].output,regularBefore.output)
+        for index in regularBefore.inputMesh.indices {
+            let expected=try sourceShift.applying(regularBefore.inputMesh[index])
+            XCTAssertEqual(shifted.surfaces[0].inputMesh[index].x,expected.x,accuracy:1e-10)
+            XCTAssertEqual(shifted.surfaces[0].inputMesh[index].y,expected.y,accuracy:1e-10)
+        }
+        let worldToInput=try Homography.solve(from:oldResolved.output,to:regularBefore.input)
+        let relinked=try SurfaceEditing.settingMeshLink(surfaceID:id,enabled:true,in:regular)
+        let linkedCage=try SurfaceEditing.editingCage(surfaceID:id,points:target,input:false,in:relinked)
+        for index in target.indices {
+            let expected=try worldToInput.applying(target[index])
+            XCTAssertEqual(linkedCage.surfaces[0].input[index].x,expected.x,accuracy:1e-10)
+            XCTAssertEqual(linkedCage.surfaces[0].input[index].y,expected.y,accuracy:1e-10)
+        }
+        XCTAssertThrowsError(try SurfaceEditing.editingCage(surfaceID:id,points:Array(repeating:Point2(0.5,0.5),count:4),input:false,in:regular))
+        XCTAssertEqual(regular.surfaces[0],regularBefore)
+        let rootSurface=Surface(output:Point2.insetQuad)
+        let exactCage=[Point2(0.08,0.095),Point2(0.93,0.11),Point2(0.89,0.91),Point2(0.1,0.87)]
+        let rootEdit=try SurfaceEditing.editingCage(surfaceID:rootSurface.id,points:exactCage,input:false,in:Project(surfaces:[rootSurface]))
+        XCTAssertEqual(rootEdit.surfaces[0].output,exactCage)
     }
 
     func testFreehandFittingToleranceBudgetsAndCreation() throws {

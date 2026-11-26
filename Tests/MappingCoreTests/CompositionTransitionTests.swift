@@ -67,11 +67,31 @@ final class CompositionTransitionTests:XCTestCase {
         let project=Project(surfaces:[original])
         var destination=project;destination.surfaces=[reversed]
         try ProjectStore.validate(destination)
-        XCTAssertThrowsError(try CompositionTransition.validate(cue:cue,in:project))
+        try CompositionTransition.validate(cue:cue,in:project)
+        XCTAssertEqual(CueEngine.interpolate(original,reversed,t:0.5).output,reversed.output)
         var malformed=cue;malformed.surfaces[0].output[0].x = .nan
         XCTAssertThrowsError(try CompositionTransition.validate(cue:malformed,in:project))
         var safe=original;safe.opacity=0.4;safe.brightness=1.3
         try CompositionTransition.validate(cue:Cue(name:"Ordinary fade",surfaces:[safe]),in:project)
         XCTAssertEqual(project.surfaces,[original])
+
+        // This reflection collapses at 1/3, between the fixed preflight phases.
+        // Runtime validation must retain the entire selected geometry endpoint.
+        var a=original
+        a.meshColumns=1;a.meshRows=1
+        a.mesh=try Geometry.regularMesh(quad:a.output,columns:1,rows:1)
+        a.meshWeights=[1,0.8,0.9,0.7]
+        var b=a
+        b.output=[Point2(1.5,0),Point2(-0.5,0),Point2(-0.5,1),Point2(1.5,1)]
+        b.input=b.output;b.mesh=try Geometry.regularMesh(quad:b.output,columns:1,rows:1)
+        b.meshWeights=[0.6,0.7,0.8,1];b.meshLinked=true
+        b.inputMesh=try Geometry.regularMesh(quad:b.input,columns:1,rows:1)
+        let bounded=Project(surfaces:[a])
+        try CompositionTransition.validate(cue:Cue(name:"Non-midpoint collapse",surfaces:[b]),in:bounded)
+        let frame=CueEngine.interpolate(a,b,t:1.0/3)
+        XCTAssertEqual(frame.output,a.output);XCTAssertEqual(frame.input,a.input)
+        XCTAssertEqual(frame.mesh,a.mesh);XCTAssertEqual(frame.meshWeights,a.meshWeights)
+        XCTAssertEqual(frame.inputMesh,a.inputMesh);XCTAssertEqual(frame.meshLinked,a.meshLinked)
+        try ProjectStore.validate(Project(surfaces:[frame]))
     }
 }

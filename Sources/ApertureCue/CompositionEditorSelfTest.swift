@@ -168,6 +168,88 @@ import MappingCore
         e.redoEdit();try expect(e.project==freehand,"Freehand Redo failed")
         passed("production freehand callback creates an ordinary undoable stroke surface")
 
+        fixture(Project(surfaces:[warpSurface]),selected:warpSurface.id)
+        try e.createBezierWarp();e.setWarpEditing(input:true)
+        let initialSource=try SurfaceGeometry.sourcePoint(local:Point2(0.4,0.6),surface:e.project.surfaces[0])
+        let inputControl=try required(e.project.surfaces[0].inputWarp,"Input warp missing").controls[5]
+        let inputPoint=try e.project.surfaces[0].inputWarpTransform.applying(inputControl)
+        e.overlay.onBegin?();e.overlay.onWarpDrag?(warpSurface.id,5,Point2(inputPoint.x+0.1,inputPoint.y),true);e.overlay.onEnd?()
+        let editedSource=try SurfaceGeometry.sourcePoint(local:Point2(0.4,0.6),surface:e.project.surfaces[0])
+        try expect(editedSource != initialSource,"Source control edit was invisible")
+        e.modePicker.selectItem(at:0);e.overlay.warpMode=false;e.updateRender()
+        let cageBefore=e.project
+        let newCage=[Point2(0.12,0.08),Point2(0.92,0.14),Point2(0.85,0.94),Point2(0.1,0.85)]
+        e.overlay.onBegin?();e.overlay.onChange?(warpSurface.id,newCage,false,false);e.overlay.onEnd?()
+        try expect(e.project.surfaces[0].inputWarp==cageBefore.surfaces[0].inputWarp && e.project.surfaces[0].bezierWarp==cageBefore.surfaces[0].bezierWarp,"Cage callback discarded a lattice")
+        try expect(try SurfaceGeometry.sourcePoint(local:Point2(0.4,0.6),surface:e.project.surfaces[0])==editedSource,"Unlinked output cage changed source UV")
+        let resetBefore=e.project;e.resetSelectedGeometry()
+        try expect(e.project.surfaces[0].output==Point2.insetQuad && e.project.surfaces[0].inputWarp==resetBefore.surfaces[0].inputWarp,"Output reset lost independent source mapping")
+        e.undoEdit();try expect(e.project==resetBefore,"Output reset Undo differs")
+        e.redoEdit();e.modePicker.selectItem(at:1);e.resetSelectedGeometry()
+        try expect(e.project.surfaces[0].input==Point2.unitQuad && e.project.surfaces[0].inputWarp==nil,"Input reset retained active source warp")
+        e.modePicker.selectItem(at:0);e.setWarpEditing(input:false);e.refreshInspector()
+        let createMesh=try required(e.inspector.arrangedSubviews.compactMap {$0 as? ActionButton}.first {$0.title=="Create 4 × 4 warp mesh"},"Create regular mesh control missing")
+        try expect(createMesh.isEnabled,"Create regular mesh unexpectedly disabled")
+        if let action=createMesh.action {NSApplication.shared.sendAction(action,to:createMesh.target,from:createMesh)}
+        try expect(e.project.surfaces[0].mesh.count==25 && !e.overlay.warpMode && e.overlay.meshMode,"Regular mesh replacement left Bezier mode without handles")
+        try e.toggleMeshLink();let regularBefore=e.project
+        e.resetSelectedGeometry();try ProjectStore.validate(e.project)
+        try expect(e.project.surfaces[0].inputMesh==regularBefore.surfaces[0].inputMesh && !e.project.surfaces[0].meshLinked,"Regular output reset lost source topology or left implicit link")
+        passed("real cage/reset/regular-mesh controls preserve independent mappings, restore flat output and keep usable handles")
+
+        var exportGroup=SurfaceGroup(name:"Export isolation",opacity:0.5);exportGroup.isolated=true
+        let exportBackground=Surface(output:Point2.unitQuad,color:[0,1,0],generator:"solid")
+        let exportLayer=Surface(output:Point2.unitQuad,color:[1,0,0],generator:"solid",groupID:exportGroup.id)
+        var exportProject=Project(surfaces:[exportBackground,exportLayer],groups:[exportGroup])
+        exportProject.globalMasks=[CompositionMask(points:[Point2(0.1,0.1),Point2(0.7,0.1),Point2(0.7,0.9),Point2(0.1,0.9)])]
+        fixture(exportProject,selected:exportLayer.id)
+        let outputExport=try required(e.compositionExportFrame(width:64,height:64),"Output export missing")
+        e.modePicker.selectItem(at:1);e.updateRender()
+        let previewSurfaces=e.renderer.surfaces
+        let inputExport=try required(e.compositionExportFrame(width:64,height:64),"Input-mode export missing")
+        try expect(near(pixel(outputExport,32,32),[128,128,0,255]) && near(pixel(outputExport,55,32),[0,0,0,255]),"Export oracle lost group opacity/global mask")
+        try expect(pixel(inputExport,32,32)==pixel(outputExport,32,32) && pixel(inputExport,55,32)==pixel(outputExport,55,32),"Input-mode export differs from output composition")
+        try expect(e.renderer.surfaces==previewSurfaces && e.renderer.compositionGroups.isEmpty && e.renderer.globalMasks.isEmpty,"Export changed the input preview configuration")
+        passed("PNG production export keeps group isolation and global masks in Input mode and restores preview")
+
+        let feedbackOutput=OutputConfig(name:"Editor feedback reset",width:32,height:18)
+        var feedbackLayer=Surface(output:Point2.unitQuad,generator:"solid");feedbackLayer.feedbackOutputID=feedbackOutput.id
+        fixture(Project(surfaces:[feedbackLayer],outputs:[feedbackOutput]),selected:feedbackLayer.id)
+        e.advanceFeedback()
+        let feedbackDeadline=CACurrentMediaTime()+10
+        while e.feedback?.pending==true,CACurrentMediaTime()<feedbackDeadline {RunLoop.current.run(until:Date(timeIntervalSinceNow:0.005))}
+        try expect(e.feedback?.frame != nil,"Editor feedback fixture did not publish")
+        e.deleteSurface();e.tick()
+        try expect(e.feedback?.frame==nil && e.renderer.feedbackFrame==nil,"Deleting last feedback layer retained history")
+        e.undoEdit()
+        try expect(e.feedback?.frame==nil,"Undo revived discarded feedback history")
+        passed("deleting the last feedback layer resets hub and renderer leases before Undo")
+
+        e.selectedID=feedbackLayer.id;e.refresh()
+        let feedbackBeforeImport=e.project
+        e.importMediaFiles([URL(fileURLWithPath:asset.path)])
+        try expect(e.project.surfaces[0].mediaID != nil && e.project.surfaces[0].feedbackOutputID==nil,"Ordinary import retained feedback or failed assignment")
+        let ordinaryImport=e.project
+        e.undoEdit();try expect(e.project==feedbackBeforeImport,"Media replacement Undo lost feedback source")
+        e.redoEdit();try expect(e.project==ordinaryImport,"Media replacement Redo differs")
+        passed("ordinary media import replaces feedback atomically and retains source assignment history")
+
+        var modeStroke=Surface(name:"Mode transitions",output:Point2.unitQuad,shape:.bezier)
+        modeStroke.stroke = .bezier
+        fixture(Project(surfaces:[modeStroke]),selected:modeStroke.id)
+        try e.createBezierWarp();let modeWarp=e.project.surfaces[0].bezierWarp
+        e.setShapePointEditing(true)
+        try expect(e.overlay.pathMode && !e.overlay.warpMode && !e.overlay.meshMode && !e.overlay.drawMode,"Path tool retained another tool's handles")
+        e.overlay.updateLayer() // Six path handles must never index a 16-control warp lattice.
+        e.setWarpEditing(input:false);e.editPolygonMask()
+        try expect(e.overlay.maskMode && !e.overlay.warpMode && !e.overlay.pathMode,"Mask tool retained warp gesture routing")
+        var movedMask=e.project.surfaces[0].mask;movedMask[0].x+=0.02
+        e.overlay.onBegin?();e.overlay.onChange?(modeStroke.id,movedMask,true,false);e.overlay.onEnd?()
+        try expect(e.project.surfaces[0].mask==movedMask && e.project.surfaces[0].bezierWarp==modeWarp,"Mask gesture edited warp controls")
+        e.beginFreehand();e.setWarpEditing(input:false)
+        try expect(e.overlay.warpMode && !e.overlay.drawMode && !e.overlay.maskMode,"Warp tool retained armed freehand capture")
+        passed("path, mask, warp, mesh and freehand modes have exclusive handle and gesture ownership")
+
         fixture(wall,selected:wall.surfaces[1].id)
         let persistentGroup=SurfaceGroup(name:"Persistent composite")
         e.mutate("Persistent group fixture") {p in p.groups.append(persistentGroup);for i in 1..<p.surfaces.count {p.surfaces[i].groupID=persistentGroup.id}}
@@ -185,6 +267,7 @@ import MappingCore
         var collected=try ProjectStore.load(from:collectedURL);let copiedPaths=collected.assets.map(\.path);collected.assets=saved.assets
         try expect(collected==saved && copiedPaths.allSatisfy {FileManager.default.fileExists(atPath:$0)},"Composition Collect lost model data or SVG PNG")
         passed("schema composition persistence and portable Collect retain masks/groups/warp/link/wall/SVG resources")
+        checks += try MaterialEditorSelfTest.run(editor:e)
         return checks
     }
     private static func required<T>(_ value:T?,_ message:String) throws ->T {guard let value else {throw Failure(message:message)};return value}

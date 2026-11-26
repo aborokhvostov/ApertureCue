@@ -68,7 +68,7 @@ extension MetalRenderer {
             for i in [0,1,2,0,2,3] { result.append(try vertex(surface.output[i],Point2.unitQuad[i])) }
         }
         guard result.count<=393216 else { throw ProjectError.invalid("surface exceeds the render triangle budget") }
-        geometryCache[surface.id]=GeometryCache(surface:surface,width:width,height:height,sourceWidth:sourceWidth,sourceHeight:sourceHeight,vertices:result)
+        geometryCache.insert(GeometryCache(surface:surface,width:width,height:height,sourceWidth:sourceWidth,sourceHeight:sourceHeight,vertices:result),for:surface.id,bytes:result.count*MemoryLayout<Vertex>.stride+CompositionCPUCachePayload.surface(surface))
         return result
     }
     func preparedInputGrid(_ surface:Surface,width:Int,height:Int,sourceSide:Int) throws -> InputGridCache {
@@ -85,7 +85,7 @@ extension MetalRenderer {
             values.append(SIMD2(Float(v.x-b.x),Float(v.y-b.y)))
         }}
         let result=InputGridCache(surface:surface,width:width,height:height,sourceSide:sourceSide,columns:columns,rows:rows,values:values)
-        inputGridCache[surface.id]=result;return result
+        inputGridCache.insert(result,for:surface.id,bytes:values.count*MemoryLayout<SIMD2<Float>>.stride+CompositionCPUCachePayload.surface(surface));return result
     }
     func bindMasks(_ masks:[CompositionMask],encoder:MTLRenderCommandEncoder,worldInverse:Affine2D) throws {
         var headers:[MaskHeader]=[],points:[SIMD2<Float>]=[]
@@ -115,7 +115,7 @@ extension MetalRenderer {
         if feedbackLease != nil {buffer.addCompletedHandler { _ in withExtendedLifetime(feedbackLease) {} }}
         encodingSize=SIMD2(Float(target.width),Float(target.height))
         let visible=surfaces.filter { $0.enabled && $0.opacity>0 && (outputID==nil || $0.outputID==nil || $0.outputID==outputID) }
-        let ids=Set(visible.map(\.id));geometryCache=geometryCache.filter {ids.contains($0.key)};inputGridCache=inputGridCache.filter {ids.contains($0.key)}
+        let ids=Set(visible.map(\.id));geometryCache.retain(keys:ids);inputGridCache.retain(keys:ids)
         let materialIDs=Set(visible.compactMap(\.materialID))
         materialCache=materialCache.filter { materialDefinitions.contains($0.value.definition) || materialIDs.contains($0.key) }
         let resources=media.frameResources(for:Set(visible.compactMap(\.mediaID)))
@@ -212,6 +212,10 @@ extension MetalRenderer {
         float alpha=1.0;
         for (int k=0;k<count;k++) {
             MaskHeader h=masks[k];float2 p=h.style.z>0.5 ? screen : project(uv,h.mapX,h.mapY,h.mapW);
+            // A valid group's inverse horizon may cross transparent pixels
+            // outside that group. Do not let those unrelated pixels create NaN
+            // coverage through project()/fwidth() and contaminate the backdrop.
+            if(!all(isfinite(p)))return 0.0;
             bool inside=false;float distance=INFINITY;int n=int(h.style.x),offset=int(h.style.y);
             for(int i=0,j=n-1;i<n;j=i++) {
                 float2 a=points[offset+i],b=points[offset+j],d=b-a;
@@ -219,6 +223,7 @@ extension MetalRenderer {
                 distance=min(distance,length(p-a-t*d));
                 if ((a.y>p.y)!=(b.y>p.y) && p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x) inside=!inside;
             }
+            if(!isfinite(distance)) {if(h.flags.x>0.5)continue;return 0.0;}
             if(distance==0.0)inside=true;
             float edge=inside ? distance : -distance;if(h.flags.x>0.5)edge=-edge;
             float coverage=clamp(edge/max(fwidth(edge),1e-7)+0.5,0.0,1.0);
@@ -241,6 +246,7 @@ extension MetalRenderer {
         float gain=1.0;float4 distance=float4(screen.x,1.0-screen.x,screen.y,1.0-screen.y);
         for(int i=0;i<4;i++) if(u.edgeWidths[i]>0.0)gain*=edgeRamp(distance[i]/u.edgeWidths[i],u.edgeStyle.x);
         float3 rgb=u.edgeStyle.z+(1.0-u.edgeStyle.z)*pow(clamp(color.rgb,0.0,1.0),float3(1.0/u.edgeStyle.y))*gain;
+        if(!all(isfinite(rgb)) || !isfinite(alpha))return float4(0.0);
         return float4(rgb*alpha,alpha);
     }
     """

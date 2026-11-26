@@ -49,6 +49,7 @@ enum DemoGenerator {
             }
         }
         try ProjectStore.save(montageProject,to:directory.appendingPathComponent("Montage.aperturecue.json"))
+        try generateComposition(at:directory)
     }
     private static func makeMovie(at url:URL) throws {
         let temporary = url.deletingLastPathComponent().appendingPathComponent(".encoding-\(UUID().uuidString).mov")
