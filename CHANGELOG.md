@@ -4,7 +4,7 @@
 
 - Add numeric mask vertex coordinates, midpoint insertion on every closed edge and removal with a 3…128-point bound. Show polygon handle numbers beyond four vertices.
 - Keep schema 11 and existing mask/cue semantics. Commands preserve input/output/mesh/group/settings, respect geometry locks, reject invalid changes atomically and support Undo/Redo. Modal edits reject changed documents, selection or surface snapshots.
-- Verification and distribution evidence: docs/status.md and docs/verification/distribution.md.
+- Local checks: 100 standalone core methods, 60 editor checks and 51 Metal/media checks from the extracted ZIP; visible numeric editing/insertion/removal/Undo/Redo/minimum-bound workflow passed. Exact-source [CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45833970500) passed 100 XCTest on each macOS/Linux, zero failures, and macOS packaging. [Published archive](docs/verification/distribution.md#alpha-14) has matching verified assets.
 
 ## 0.1.0-alpha.13 — layer polygon mask controls, 2026-11-19
 
