@@ -10,11 +10,11 @@ import MappingCore
 /// Quad projection is evaluated per fragment from a solved homography; it is
 /// independent of the diagonal used to rasterize the quad.
 final class MetalRenderer: NSObject, MTKViewDelegate {
-    private struct Vertex { var position: SIMD2<Float>; var local: SIMD2<Float> }
+    struct Vertex { var position:SIMD2<Float>;var local:SIMD2<Float>;var inputDelta:SIMD2<Float>;var weight:Float }
     private struct StrokeSegment { var endpoints: SIMD4<Float>; var range: SIMD4<Float> }
     private struct StrokeCache { var shape: SurfaceShape; var path: StrokePath; var buffer: MTLBuffer; var count: Int }
     private var strokeCache: [UUID: StrokeCache] = [:]
-    private struct Uniforms {
+    struct Uniforms {
         var sourceX: SIMD4<Float>; var sourceY: SIMD4<Float>; var sourceW: SIMD4<Float>
         var localX: SIMD4<Float>; var localY: SIMD4<Float>; var localW: SIMD4<Float>
         var properties: SIMD4<Float>; var tint: SIMD4<Float>; var misc: SIMD4<Float>
@@ -22,6 +22,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         var maskStyle: SIMD4<Float>
         var mediaX:SIMD4<Float>;var mediaY:SIMD4<Float>
         var triangleA: SIMD4<Float>; var triangleB: SIMD4<Float>; var triangleC: SIMD4<Float>
+        var effectKeyColor:SIMD4<Float>;var effectKeyStyle:SIMD4<Float>;var effectStyle:SIMD4<Float>
+        var frame:SIMD4<Float>;var inputGrid:SIMD4<Float>
     }
 
     let device: MTLDevice
@@ -29,12 +31,13 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     var surfaces: [Surface] = []
     var outputID: UUID?
     var blackout = false
-    private let queue: MTLCommandQueue
-    private var pipelines: [String: MTLRenderPipelineState] = [:]
+    let queue: MTLCommandQueue
+    var pipelines: [String: MTLRenderPipelineState] = [:]
     private let slots = DispatchSemaphore(value: 3)
     private let snapshotQueue = DispatchQueue(label: "org.aperturecue.frame-readback", qos: .userInitiated)
     private var asyncSnapshotPending = false
-    private let fallback: MTLTexture
+    let fallback: MTLTexture
+    let blackFallback:MTLTexture
     private var sampleStart = CACurrentMediaTime()
     private var sampleFrames = 0
     private(set) var frameCount: UInt64 = 0
@@ -46,7 +49,24 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     private(set) var totalGPUMilliseconds: Double = 0
     private(set) var totalCPUMilliseconds: Double = 0
     private(set) var maxGPUMilliseconds: Double = 0
-    private(set) var errorDescription = ""
+    var errorDescription = ""
+    var compositionGroups:[SurfaceGroup] = []
+    var globalMasks:[CompositionMask] = []
+    var materialDefinitions:[MaterialDefinition] = []
+    var materialTime:Double? = nil
+    var edgeBlend:EdgeBlendSettings = .init()
+    var feedbackTextures:[UUID:MTLTexture] = [:]
+    var feedbackFrame:FeedbackFrame? = nil
+    var encodingLeases:CompositionGPULeases? = nil
+    var encodingVertexCount=0
+    var encodingSize=SIMD2<Float>(1280,720)
+    struct MaterialCache { var definition:MaterialDefinition;var program:MaterialProgram;var pipelines:[String:MTLRenderPipelineState] }
+    var materialCache:[UUID:MaterialCache] = [:]
+    struct GeometryCache { var surface:Surface;var width:Int;var height:Int;var sourceWidth:Int;var sourceHeight:Int;var vertices:[Vertex] }
+    var geometryCache:[UUID:GeometryCache] = [:]
+    struct InputGridCache {var surface:Surface;var width:Int;var height:Int;var sourceSide:Int;var columns:Int;var rows:Int;var values:[SIMD2<Float>]}
+    var inputGridCache:[UUID:InputGridCache]=[:]
+    var postPipelineCache:[String:MTLRenderPipelineState]? = nil
     static var lastInitializationError = ""
     var statistics: String {
         String(format: "%.1f FPS · CPU %.2f ms · GPU %.2f ms · %llu skipped", fps, cpuMilliseconds, gpuMilliseconds, droppedFrames)
@@ -69,6 +89,10 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         var white: UInt32 = 0xffffffff
         texture.replace(region: MTLRegionMake2D(0, 0, 1, 1), mipmapLevel: 0, withBytes: &white, bytesPerRow: 4)
         fallback = texture
+        guard let black=device.makeTexture(descriptor:descriptor) else { return nil }
+        var blackPixel:UInt32=0xff000000
+        black.replace(region:MTLRegionMake2D(0,0,1,1),mipmapLevel:0,withBytes:&blackPixel,bytesPerRow:4)
+        blackFallback=black
         super.init()
         view.device = device
         view.colorPixelFormat = .bgra8Unorm
@@ -223,55 +247,26 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         buffer.commit()
     }
 
-    private func encode(descriptor: MTLRenderPassDescriptor, buffer: MTLCommandBuffer) -> MediaFrameResources {
-        guard let encoder = buffer.makeRenderCommandEncoder(descriptor: descriptor) else { return .empty }
-        defer { encoder.endEncoding() }
-        guard !blackout else { return .empty }
-        let visible = surfaces.filter { surface in
-            surface.enabled && surface.opacity > 0 && (outputID == nil || surface.outputID == nil || outputID == surface.outputID)
-        }
-        let visibleIDs = Set(visible.filter { $0.shape.isStroke }.map(\.id))
-        strokeCache = strokeCache.filter { visibleIDs.contains($0.key) }
-        let resources = media.frameResources(for: Set(visible.compactMap(\.mediaID)))
-        for surface in visible {
-            do { try draw(surface: surface, encoder: encoder, textures: resources.textures,mediaUV:resources.uv) }
-            catch { errorDescription = "\(surface.name): \(error.localizedDescription)" }
-        }
-        return resources
+    func encode(descriptor:MTLRenderPassDescriptor,buffer:MTLCommandBuffer) -> MediaFrameResources {
+        encodeComposition(descriptor:descriptor,buffer:buffer)
     }
 
-    private func draw(surface: Surface, encoder: MTLRenderCommandEncoder, textures: [UUID: MTLTexture],mediaUV:[UUID:MediaUVTransform]) throws {
+    func draw(surface: Surface, encoder: MTLRenderCommandEncoder, textures: [UUID: MTLTexture],mediaUV:[UUID:MediaUVTransform]) throws {
         guard surface.input.count == 4, surface.output.count == 4 else { return }
         let unit = [Point2(0, 0), Point2(1, 0), Point2(1, 1), Point2(0, 1)]
         let columns = surface.meshColumns
         let rows = surface.meshRows
-        let hasMesh = columns > 0 && rows > 0 && columns <= 64 && rows <= 64 && surface.mesh.count == (columns + 1) * (rows + 1)
+        let hasMesh = surface.bezierWarp != nil || (columns > 0 && rows > 0 && columns <= 64 && rows <= 64 && surface.mesh.count == (columns + 1) * (rows + 1))
         let source = try Homography.solve(from: hasMesh || surface.shape.isStroke ? unit : surface.output, to: surface.input).values
         let local = try Homography.solve(from: surface.output, to: unit).values
         func row(_ values: [Double], _ offset: Int) -> SIMD4<Float> {
             SIMD4(Float(values[offset]), Float(values[offset + 1]), Float(values[offset + 2]), 0)
         }
-        var vertices: [Vertex] = []
-        func vertex(_ point: Point2, _ u: Double, _ v: Double) -> Vertex {
-            Vertex(position: SIMD2(Float(point.x), Float(point.y)), local: SIMD2(Float(u), Float(v)))
-        }
-        if hasMesh {
-            for y in 0..<rows {
-                for x in 0..<columns {
-                    let a = y * (columns + 1) + x
-                    let b = a + 1; let d = a + columns + 1; let c = d + 1
-                    let u = Double(x) / Double(columns), v = Double(y) / Double(rows)
-                    let u1 = Double(x + 1) / Double(columns), v1 = Double(y + 1) / Double(rows)
-                    vertices += [vertex(surface.mesh[a], u, v), vertex(surface.mesh[b], u1, v), vertex(surface.mesh[c], u1, v1),
-                                 vertex(surface.mesh[a], u, v), vertex(surface.mesh[c], u1, v1), vertex(surface.mesh[d], u, v1)]
-                }
-            }
-        } else {
-            let points = surface.output
-            vertices = [vertex(points[0], 0, 0), vertex(points[1], 1, 0), vertex(points[2], 1, 1),
-                        vertex(points[0], 0, 0), vertex(points[2], 1, 1), vertex(points[3], 0, 1)]
-        }
-        let texture = surface.mediaID.flatMap { textures[$0] }
+        let texture=surface.feedbackOutputID.map { feedbackTextures[$0] ?? blackFallback } ?? surface.mediaID.flatMap { textures[$0] }
+        let vertices=try preparedVertices(surface,width:Int(encodingSize.x),height:Int(encodingSize.y),sourceWidth:texture.map {max($0.width,$0.height)} ?? Int(max(encodingSize.x,encodingSize.y)),sourceHeight:texture.map {max($0.width,$0.height)} ?? Int(max(encodingSize.x,encodingSize.y)))
+        encodingVertexCount+=vertices.count
+        guard encodingVertexCount<=3145728 else {throw ProjectError.invalid("composition exceeds one million triangles")}
+        try encodingLeases?.reserve(vertices.count*MemoryLayout<Vertex>.stride)
         let mediaTransform=surface.mediaID.flatMap {mediaUV[$0]} ?? .identity
         let generators = ["checker": Float(1), "gradient": Float(2), "solid": Float(3), "grid": Float(4)]
         let generator = texture != nil ? Float(0) : (generators[surface.generator] ?? 1)
@@ -284,18 +279,33 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             let p = planes[index]
             return SIMD4(Float(p.x),Float(p.y),Float(p.z),0)
         }
+        let inputGrid=try preparedInputGrid(surface,width:Int(encodingSize.x),height:Int(encodingSize.y),sourceSide:texture.map {max($0.width,$0.height)} ?? Int(max(encodingSize.x,encodingSize.y)))
         var uniforms = Uniforms(
             sourceX: row(source, 0), sourceY: row(source, 3), sourceW: row(source, 6),
             localX: row(local, 0), localY: row(local, 3), localW: row(local, 6),
             properties: SIMD4(Float(max(0, min(1, surface.opacity))), Float(max(0, surface.brightness)),
                               Float(max(0.01, surface.gamma)), Float(max(0, min(0.5, surface.feather)))),
             tint: SIMD4(Float(tint[0]), Float(tint[1]), Float(tint[2]), 1),
-            misc: SIMD4(generator, Float(polygon.count), hasMesh ? 1 : 0, Float(media.currentTime)),
+            misc: SIMD4(generator, Float(polygon.count), hasMesh ? 1 : 0, Float(materialTime ?? media.currentTime)),
             shape: SIMD4(surface.shape.isStroke ? 3 : (surface.shape == .triangle ? 1 : (surface.shape == .ellipse ? 2 : 0)), Float(surface.stroke.width), Float(stroke?.count ?? 0), 0),
             maskStyle:SIMD4(surface.maskSettings.space == .outputCanvas ? 1 : 0, surface.maskSettings.inverted ? 1 : 0, Float(surface.maskSettings.feather), 0),
             mediaX:mediaTransform.x,mediaY:mediaTransform.y,
-            triangleA:plane(0),triangleB:plane(1),triangleC:plane(2))
-        guard let pipeline = pipelines[surface.blendMode] ?? pipelines["normal"] else { return }
+            triangleA:plane(0),triangleB:plane(1),triangleC:plane(2),
+            effectKeyColor:SIMD4(Float(surface.effects.keyColor[0]),Float(surface.effects.keyColor[1]),Float(surface.effects.keyColor[2]),0),
+            effectKeyStyle:SIMD4(surface.effects.keyMode == .none ? 0 : (surface.effects.keyMode == .chroma ? 1 : 2),Float(surface.effects.threshold),Float(surface.effects.softness),Float(surface.effects.spill)),
+            effectStyle:SIMD4(Float(surface.effects.saturation),surface.effects.inverted ? 1 : 0,Float(surface.effects.posterizeLevels),0),
+            frame:SIMD4(encodingSize.x,encodingSize.y,Float(surface.masks.filter(\.enabled).count),0),inputGrid:SIMD4(Float(inputGrid.columns),Float(inputGrid.rows),inputGrid.columns>0 ? 1 : 0,0))
+        var selectedPipelines=pipelines
+        var parameters=Array(repeating:SIMD4<Float>.zero,count:16)
+        if let id=surface.materialID {
+            if let definition=materialDefinitions.first(where:{$0.id==id}) {
+                do { try validateMaterial(definition) } catch { errorDescription=error.localizedDescription }
+            }
+            guard let cache=materialCache[id] else { throw ProjectError.invalid("material is not compiled") }
+            selectedPipelines=cache.pipelines
+            parameters=try cache.program.parameterVectors(values:surface.materialValues).map { SIMD4(Float($0[0]),Float($0[1]),Float($0[2]),Float($0[3])) }
+        }
+        guard let pipeline=selectedPipelines[surface.blendMode] ?? selectedPipelines["normal"] else { return }
         encoder.setRenderPipelineState(pipeline)
         // set*Bytes is limited to 4 KiB; a dense mesh gets an ordinary buffer.
         let bytes = vertices.count * MemoryLayout<Vertex>.stride
@@ -314,6 +324,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         }
         if let stroke { encoder.setFragmentBuffer(stroke.buffer, offset:0, index:2) }
         else { var zero = StrokeSegment(endpoints:.zero,range:.zero); encoder.setFragmentBytes(&zero,length:MemoryLayout<StrokeSegment>.stride,index:2) }
+        try encodingLeases?.reserve(inputGrid.values.count*MemoryLayout<SIMD2<Float>>.stride)
+        guard let gridBuffer=device.makeBuffer(bytes:inputGrid.values,length:inputGrid.values.count*MemoryLayout<SIMD2<Float>>.stride,options:.storageModeShared) else {throw ProjectError.invalid("source grid GPU allocation failed")}
+        encoder.setFragmentBuffer(gridBuffer,offset:0,index:6)
+        encoder.setFragmentBytes(parameters,length:parameters.count*MemoryLayout<SIMD4<Float>>.stride,index:5)
+        try bindMasks(surface.masks,encoder:encoder,worldInverse:.identity)
         encoder.setFragmentTexture(texture ?? fallback, index: 0)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertices.count)
     }
@@ -340,11 +355,11 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         strokeCache[surface.id] = cached; return cached
     }
 
-    private static let shaderSource = """
+    static let shaderSource = """
     #include <metal_stdlib>
     using namespace metal;
-    struct Vertex { float2 position; float2 local; };
-    struct Raster { float4 position [[position]]; float2 screen; float2 local; };
+    struct Vertex { float2 position; float2 local; float2 inputDelta; float weight; };
+    struct Raster { float4 position [[position]]; float2 screen; float2 local; float2 inputDelta; };
     struct StrokeSegment { float4 endpoints; float4 range; };
     struct Uniforms {
         float4 sourceX; float4 sourceY; float4 sourceW;
@@ -354,21 +369,51 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         float4 maskStyle;
         float4 mediaX;float4 mediaY;
         float4 triangleA; float4 triangleB; float4 triangleC;
+        float4 effectKeyColor;float4 effectKeyStyle;float4 effectStyle;float4 frame;float4 inputGrid;
     };
     vertex Raster mappingVertex(const device Vertex* vertices [[buffer(0)]], uint id [[vertex_id]]) {
         Raster out;
         out.screen = vertices[id].position;
-        out.local = vertices[id].local;
-        out.position = float4(out.screen.x * 2.0 - 1.0, 1.0 - out.screen.y * 2.0, 0.0, 1.0);
+        out.local = vertices[id].local;out.inputDelta=vertices[id].inputDelta;
+        out.position = float4((out.screen.x * 2.0 - 1.0)*vertices[id].weight, (1.0 - out.screen.y * 2.0)*vertices[id].weight, 0.0, vertices[id].weight);
         return out;
     }
     float2 project(float2 p, float4 a, float4 b, float4 c) {
         float3 q = float3(p, 1.0);
         return float2(dot(a.xyz, q), dot(b.xyz, q)) / dot(c.xyz, q);
     }
+    \(Effects.metalFunction)
+    \(MaterialProgram.metalFunctions)
+    \(maskShaderFunctions)
+    float4 sampleMaterial(texture2d<float> image,float4 mx,float4 my,float kind,float2 uv) {
+        constexpr sampler s(coord::normalized,address::clamp_to_edge,filter::linear);
+        if (kind < 0.5) {float3 p=float3(uv,1.0);return image.sample(s,float2(dot(mx.xyz,p),dot(my.xyz,p)));}
+        if (kind < 2.5 && kind > 1.5) return float4(uv.x,uv.y,1.0-uv.x,1.0);
+        if (kind > 2.5 && kind < 3.5) return float4(1.0);
+        float2 cell=floor(uv*float2(12.0,8.0));float check=fmod(cell.x+cell.y,2.0);
+        float3 rgb=mix(float3(0.035,0.045,0.065),float3(0.82,0.9,0.97),check);
+        float2 grid=fract(uv*float2(12.0,8.0));
+        if (kind>3.5) rgb=(grid.x<0.025 || grid.y<0.025) ? float3(0.1,0.85,0.75) : float3(0.015);
+        if (uv.x<0.055 && uv.y<0.055) rgb=float3(1,0.05,0.03);
+        if (uv.x>0.945 && uv.y<0.055) rgb=float3(0.05,1,0.03);
+        if (uv.x>0.945 && uv.y>0.945) rgb=float3(0.03,0.15,1);
+        if (uv.x<0.055 && uv.y>0.945) rgb=float3(1,1,0.03);
+        return float4(rgb,1.0);
+    }
+    float4 sampleMaterialISF(texture2d<float> image,float4 mx,float4 my,float kind,float2 uv) {return sampleMaterial(image,mx,my,kind,float2(uv.x,1.0-uv.y));}
+    float2 sourceGridDelta(float2 uv,float4 grid,const device float2* points) {
+        if(grid.z<0.5)return float2(0.0);
+        int columns=int(grid.x),rows=int(grid.y);float2 scaled=clamp(uv,0.0,1.0)*float2(columns,rows);
+        int x=min(columns-1,int(scaled.x)),y=min(rows-1,int(scaled.y));float u=scaled.x-x,v=scaled.y-y;
+        int a=y*(columns+1)+x,b=a+1,d=a+columns+1,c=d+1;
+        return v<=u ? points[a]*(1.0-u)+points[b]*(u-v)+points[c]*v : points[a]*(1.0-v)+points[c]*u+points[d]*(v-u);
+    }
     fragment float4 mappingFragment(Raster in [[stage_in]], constant Uniforms& u [[buffer(0)]],
-                                    constant float2* mask [[buffer(1)]], const device StrokeSegment* segments [[buffer(2)]], texture2d<float> image [[texture(0)]]) {
-        float2 local = u.misc.z > 0.5 ? in.local : project(in.screen, u.localX, u.localY, u.localW);
+                                    constant float2* mask [[buffer(1)]], const device StrokeSegment* segments [[buffer(2)]],
+                                    const device MaskHeader* masks [[buffer(3)]],const device float2* maskPoints [[buffer(4)]],
+                                    constant float4* materialParams [[buffer(5)]],const device float2* inputGrid [[buffer(6)]],texture2d<float> image [[texture(0)]]) {
+        float2 screen=in.position.xy/u.frame.xy;
+        float2 local = u.misc.z > 0.5 ? in.local : project(screen, u.localX, u.localY, u.localW);
         // Shape is defined in local surface space, independent of source UV crop.
         float edge = min(min(local.x, 1.0 - local.x), min(local.y, 1.0 - local.y));
         float coverage = 1.0;
@@ -404,12 +449,12 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             coverage = clamp(edge / max(fwidth(edge), 1e-7) + 0.5, 0.0, 1.0);
         }
         if (coverage <= 0.0) discard_fragment();
-        float2 uv = project(u.shape.x > 2.5 ? strokeUV : (u.misc.z > 0.5 ? local : in.screen), u.sourceX, u.sourceY, u.sourceW);
+        float2 uv = project(u.shape.x > 2.5 ? strokeUV : (u.misc.z > 0.5 ? local : screen), u.sourceX, u.sourceY, u.sourceW)+(u.shape.x>2.5 ? sourceGridDelta(strokeUV,u.inputGrid,inputGrid) : in.inputDelta);
         if (!all(isfinite(uv)) || any(uv < float2(0.0)) || any(uv > float2(1.0))) discard_fragment();
         int count = int(u.misc.y);
         float maskAlpha = 1.0;
         if (count >= 3) {
-            float2 p = u.maskStyle.x > 0.5 ? in.screen : uv;
+            float2 p = u.maskStyle.x > 0.5 ? screen : uv;
             bool inside = false;
             float distance = INFINITY;
             for (int i = 0, j = count - 1; i < count; j = i++) {
@@ -427,6 +472,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             maskAlpha = kept ? (u.maskStyle.z > 0.0 ? smoothstep(0.0,u.maskStyle.z,distance) : 1.0) : 0.0;
             if (maskAlpha <= 0.0) discard_fragment();
         }
+        maskAlpha *= scopeMaskAlpha(uv,screen,masks,maskPoints,int(u.frame.z));
         constexpr sampler sampleFilter(coord::normalized, address::clamp_to_edge, filter::linear);
         float4 color;
         int kind = int(u.misc.x);
@@ -445,6 +491,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             if (uv.x < 0.055 && uv.y > 0.945) rgb = float3(1, 1, 0.03);
             color = float4(rgb, 1.0);
         }
+        /*MATERIAL_EVALUATION*/
+        if (!all(isfinite(color))) color=float4(0.0);
+        color=apertureEffects(clamp(color,0.0,1.0),u.effectKeyColor,u.effectKeyStyle,u.effectStyle);
         float feather = u.properties.w > 0.0 ? smoothstep(0.0, u.properties.w, edge) : 1.0;
         float alpha = clamp(color.a * u.properties.x * feather * coverage * maskAlpha, 0.0, 1.0);
         float3 rgb = pow(max(color.rgb * u.tint.rgb * u.properties.y, float3(0.0)), float3(1.0 / u.properties.z));

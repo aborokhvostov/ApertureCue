@@ -147,6 +147,7 @@ extension EditorController {
         outputRenderer.outputID=config.id
         outputRenderer.surfaces=effectiveSurfaces
         outputRenderer.blackout=blackout
+        configureCompositionRenderer(outputRenderer)
         fill(view,in:content)
         if fullscreen {
             projection.setFrame(screen.frame,display:true)

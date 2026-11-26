@@ -15,6 +15,18 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
     public var color: [Double]
     public var mask: [Point2]
     public var maskSettings: PolygonMaskSettings
+    public var masks:[CompositionMask] = []
+    public var effects:EffectsSettings = .init()
+    public var materialID:UUID? = nil
+    public var materialValues:[String:[Double]] = [:]
+    public var feedbackOutputID:UUID? = nil
+    public var inputMesh:[Point2] = []
+    public var meshWeights:[Double] = []
+    public var meshLinked:Bool = false
+    public var bezierWarp:BezierWarp? = nil
+    public var warpTransform:Affine2D = .identity
+    public var inputWarp:BezierWarp? = nil
+    public var inputWarpTransform:Affine2D = .identity
     public var meshColumns: Int
     public var meshRows: Int
     public var mesh: [Point2]
@@ -47,11 +59,11 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
     }
     private enum CodingKeys: String, CodingKey {
         case id,name,mediaID,input,output,opacity,brightness,enabled,blendMode,feather,gamma,color,mask,meshColumns,meshRows,mesh,group,outputID,generator,shape,groupID,stroke
-        case maskSettings
+        case maskSettings,masks,effects,materialID,materialValues,feedbackOutputID,inputMesh,meshWeights,meshLinked,bezierWarp,warpTransform,inputWarp,inputWarpTransform
         case customTriangleVertices = "triangleVertices"
     }
-    public init(from decoder: Decoder) throws { try self.init(from:decoder,legacyTriangle:false,legacyMask:false) }
-    init(from decoder: Decoder, legacyTriangle: Bool, legacyMask: Bool) throws {
+    public init(from decoder: Decoder) throws { try self.init(from:decoder,legacyTriangle:false,legacyMask:false,legacyComposition:false) }
+    init(from decoder: Decoder, legacyTriangle: Bool, legacyMask: Bool, legacyComposition:Bool) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.init(id: try c.decodeIfPresent(UUID.self, forKey:.id) ?? UUID(),
                   name: try c.decodeIfPresent(String.self, forKey:.name) ?? "Surface",
@@ -78,12 +90,26 @@ public struct Surface: Codable, Equatable, Identifiable, Sendable {
                   triangleVertices: legacyTriangle ? TriangleGeometry.canonical :
                       try c.decodeIfPresent([Point2].self, forKey:.customTriangleVertices) ?? TriangleGeometry.canonical,
                   maskSettings: legacyMask ? .init() : try c.decodeIfPresent(PolygonMaskSettings.self,forKey:.maskSettings) ?? .init())
+        if !legacyComposition {
+            masks=try c.decodeIfPresent([CompositionMask].self,forKey:.masks) ?? []
+            effects=try c.decodeIfPresent(EffectsSettings.self,forKey:.effects) ?? .init()
+            materialID=try c.decodeIfPresent(UUID.self,forKey:.materialID)
+            materialValues=try c.decodeIfPresent([String:[Double]].self,forKey:.materialValues) ?? [:]
+            feedbackOutputID=try c.decodeIfPresent(UUID.self,forKey:.feedbackOutputID)
+            inputMesh=try c.decodeIfPresent([Point2].self,forKey:.inputMesh) ?? []
+            meshWeights=try c.decodeIfPresent([Double].self,forKey:.meshWeights) ?? []
+            meshLinked=try c.decodeIfPresent(Bool.self,forKey:.meshLinked) ?? false
+            bezierWarp=try c.decodeIfPresent(BezierWarp.self,forKey:.bezierWarp)
+            warpTransform=try c.decodeIfPresent(Affine2D.self,forKey:.warpTransform) ?? .identity
+            inputWarp=try c.decodeIfPresent(BezierWarp.self,forKey:.inputWarp)
+            inputWarpTransform=try c.decodeIfPresent(Affine2D.self,forKey:.inputWarpTransform) ?? .identity
+        }
     }
 
     static func decodeSurfaces(from entries: inout UnkeyedDecodingContainer, version: Int) throws -> [Surface] {
         var surfaces: [Surface] = []
         while !entries.isAtEnd {
-            surfaces.append(try Surface(from:entries.superDecoder(),legacyTriangle:version < 9,legacyMask:version < 11))
+            surfaces.append(try Surface(from:entries.superDecoder(),legacyTriangle:version < 9,legacyMask:version < 11,legacyComposition:version < 12))
         }
         return surfaces
     }
@@ -118,15 +144,16 @@ public struct OutputConfig: Codable, Equatable, Identifiable, Sendable {
     public var displayUUID: UUID?
     public var width: Int
     public var height: Int
+    public var edgeBlend:EdgeBlendSettings = .init()
     public init(id: UUID = UUID(), name: String = "Output", screenIndex: Int = 0, width: Int = 1920, height: Int = 1080,
                 displayUUID: UUID? = nil) {
         self.id=id; self.name=name; self.screenIndex=screenIndex; self.width=width; self.height=height
         self.displayUUID=displayUUID
     }
 
-    private enum CodingKeys: String, CodingKey { case id,name,screenIndex,width,height,displayUUID }
-    public init(from decoder: Decoder) throws { try self.init(from:decoder,legacyDisplay:false) }
-    init(from decoder: Decoder, legacyDisplay: Bool) throws {
+    private enum CodingKeys: String, CodingKey { case id,name,screenIndex,width,height,displayUUID,edgeBlend }
+    public init(from decoder: Decoder) throws { try self.init(from:decoder,legacyDisplay:false,legacyComposition:false) }
+    init(from decoder: Decoder, legacyDisplay: Bool,legacyComposition:Bool = true) throws {
         let fields = try decoder.container(keyedBy:CodingKeys.self)
         self.init(id:try fields.decode(UUID.self,forKey:.id),
                   name:try fields.decode(String.self,forKey:.name),
@@ -134,6 +161,7 @@ public struct OutputConfig: Codable, Equatable, Identifiable, Sendable {
                   width:try fields.decode(Int.self,forKey:.width),
                   height:try fields.decode(Int.self,forKey:.height),
                   displayUUID:legacyDisplay ? nil : try fields.decodeIfPresent(UUID.self,forKey:.displayUUID))
+        if !legacyComposition { edgeBlend=try fields.decodeIfPresent(EdgeBlendSettings.self,forKey:.edgeBlend) ?? .init() }
     }
 }
 
@@ -159,7 +187,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
     init(from decoder:Decoder,legacy:Bool,version:Int) throws {
         let c=try decoder.container(keyedBy:CodingKeys.self)
         let surfaces: [Surface]
-        if version < 11 {
+        if version < 12 {
             var entries = try c.nestedUnkeyedContainer(forKey:.surfaces)
             surfaces = try Surface.decodeSurfaces(from:&entries,version:version)
         } else { surfaces = try c.decode([Surface].self,forKey:.surfaces) }
@@ -169,11 +197,14 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
                   followAfter:try c.decodeIfPresent(Double.self,forKey:.followAfter),
                   scope:legacy ? .full : try c.decode(CueScope.self,forKey:.scope),
                   bindings:legacy ? [] : try c.decode([CueBinding].self,forKey:.bindings))
+        if version<12,bindings.contains(where:{$0.parameters.contains(.effects) || $0.parameters.contains(.material)}) {
+            throw ProjectError.invalid("material/FX cue fields require schema 12")
+        }
     }
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 11
+    public static let currentVersion = 12
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]
@@ -185,6 +216,8 @@ public struct Project: Codable, Equatable, Sendable {
     public var timeline: [AutomationTrack]
     public var timelineSettings:TimelineSettings
     public var groups: [SurfaceGroup]
+    public var materials:[MaterialDefinition] = []
+    public var globalMasks:[CompositionMask] = []
     public var montages:[MediaMontage]
     /// Editor state for current layers, independent of scene snapshots.
     public var geometryLockedSurfaceIDs: Set<UUID>
@@ -211,7 +244,7 @@ public struct Project: Codable, Equatable, Sendable {
             Cue(name:"Aligned", surfaces:cueSurfaces, duration:2)
         ])
     }
-    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups,timelineSettings,montages,geometryLockedSurfaceIDs }
+    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups,timelineSettings,montages,geometryLockedSurfaceIDs,materials,globalMasks }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy:CodingKeys.self)
         let version=try c.decodeIfPresent(Int.self,forKey:.version) ?? 0
@@ -225,15 +258,20 @@ public struct Project: Codable, Equatable, Sendable {
             while !entries.isAtEnd { cues.append(try Cue(from:entries.superDecoder(),legacy:version < 6,version:version)) }
         }
         let surfaces: [Surface]
-        if version < 11, c.contains(.surfaces), try !c.decodeNil(forKey:.surfaces) {
+        if version < 12, c.contains(.surfaces), try !c.decodeNil(forKey:.surfaces) {
             var entries = try c.nestedUnkeyedContainer(forKey:.surfaces)
             surfaces = try Surface.decodeSurfaces(from:&entries,version:version)
         } else { surfaces = try c.decodeIfPresent([Surface].self,forKey:.surfaces) ?? [] }
         var outputs: [OutputConfig] = []
-        if version < 10, c.contains(.outputs), try !c.decodeNil(forKey:.outputs) {
+        if version < 12, c.contains(.outputs), try !c.decodeNil(forKey:.outputs) {
             var entries = try c.nestedUnkeyedContainer(forKey:.outputs)
-            while !entries.isAtEnd { outputs.append(try OutputConfig(from:entries.superDecoder(),legacyDisplay:true)) }
+            while !entries.isAtEnd { outputs.append(try OutputConfig(from:entries.superDecoder(),legacyDisplay:version < 10,legacyComposition:true)) }
         } else { outputs = try c.decodeIfPresent([OutputConfig].self,forKey:.outputs) ?? [] }
+        var groups:[SurfaceGroup]=[]
+        if c.contains(.groups),try !c.decodeNil(forKey:.groups) {
+            var entries=try c.nestedUnkeyedContainer(forKey:.groups)
+            while !entries.isAtEnd { groups.append(try SurfaceGroup(from:entries.superDecoder(),legacy:version < 12)) }
+        }
         self.init(version: version,
                   name: try c.decodeIfPresent(String.self, forKey:.name) ?? "Untitled",
                   assets: try c.decodeIfPresent([MediaAsset].self, forKey:.assets) ?? [],
@@ -242,10 +280,14 @@ public struct Project: Codable, Equatable, Sendable {
                   cues: cues,
                   fixtures: try c.decodeIfPresent([Fixture].self, forKey:.fixtures) ?? [],
                   timeline: try c.decodeIfPresent([AutomationTrack].self, forKey:.timeline) ?? [],
-                  groups: try c.decodeIfPresent([SurfaceGroup].self, forKey:.groups) ?? [],
+                  groups: groups,
                   timelineSettings:try c.decodeIfPresent(TimelineSettings.self,forKey:.timelineSettings),
                   montages:version<7 ? [] : try c.decode([MediaMontage].self,forKey:.montages),
                   geometryLockedSurfaceIDs: locks)
+        if version >= 12 {
+            materials=try c.decodeIfPresent([MaterialDefinition].self,forKey:.materials) ?? []
+            globalMasks=try c.decodeIfPresent([CompositionMask].self,forKey:.globalMasks) ?? []
+        }
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -259,6 +301,7 @@ public struct Project: Codable, Equatable, Sendable {
         try c.encode(fixtures, forKey: .fixtures)
         try c.encode(timeline, forKey: .timeline)
         try c.encode(groups, forKey: .groups)
+        try c.encode(materials,forKey:.materials);try c.encode(globalMasks,forKey:.globalMasks)
         try c.encode(timelineSettings, forKey: .timelineSettings)
         try c.encode(montages, forKey: .montages)
         if version >= 8 {

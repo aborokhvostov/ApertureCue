@@ -316,8 +316,10 @@ import MappingCore
         case .input: return "Input UV"
         case .outputGeometry: return "Output / mesh / parent"
         case .shape: return "Shape / vertices / stroke"
-        case .mask: return "Source UV mask"
+        case .mask: return "Layer masks"
         case .routing: return "Output routing"
+        case .effects:return "Key / FX"
+        case .material:return "Material / parameters"
         }
     }
     private func value(_ parameter: CueParameter, on surface: Surface) -> String {
@@ -332,6 +334,7 @@ import MappingCore
         case .blendMode: return surface.blendMode
         case .visibility: return surface.enabled ? "Visible" : "Hidden"
         case .source:
+            if let id=surface.feedbackOutputID {return "Previous output: \(id.uuidString.prefix(8))"}
             if let id = surface.mediaID { return editor?.sourceName(for:id) ?? "Media \(id.uuidString.prefix(8))" }
             return "Generator: \(surface.generator)"
         case .input: return points(surface.input)
@@ -344,6 +347,8 @@ import MappingCore
             let nodes = surface.stroke.nodes.map { "a:\(points([$0.anchor])) in:\(points([$0.incoming])) out:\(points([$0.outgoing]))" }.joined(separator: "; ")
             return "\(surface.shape.rawValue) · width \(n(surface.stroke.width)) · \(surface.stroke.closed ? "closed" : "open"); \(nodes)"
         case .mask: return surface.mask.isEmpty ? "No mask" : points(surface.mask)
+        case .effects:return surface.effects.keyMode.rawValue + " · saturation " + n(surface.effects.saturation)
+        case .material:return surface.materialID.map {id in editor?.project.materials.first(where:{$0.id==id})?.name ?? "Missing material"} ?? "Source only"
         case .routing:
             guard let id = surface.outputID else { return "All outputs" }
             return editor?.project.outputs.first(where: { $0.id == id })?.name ?? "Output \(id.uuidString.prefix(8))"

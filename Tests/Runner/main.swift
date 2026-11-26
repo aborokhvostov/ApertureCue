@@ -101,4 +101,37 @@ runCase("PolygonMask.atomic cues coordinate frames", PolygonMaskTests.self) { tr
 runCase("PolygonMask.schema eleven persistence", PolygonMaskTests.self) { try $0.testSchemaElevenMigrationStrictnessSaveCollectAndHistory() }
 runCase("PolygonMask.closed edge split coverage", PolygonMaskTests.self) { try $0.testEdgeInsertionPreservesConcaveCoverageAndFeather() }
 runCase("PolygonMask.vertex budgets topology", PolygonMaskTests.self) { try $0.testVertexBudgetsInvalidCoordinatesAndSceneTopology() }
+runCase("BezierWarpTests.testFlatPatchRationalCageAndDenseCurvedPixelBound", BezierWarpTests.self) { try $0.testFlatPatchRationalCageAndDenseCurvedPixelBound() }
+runCase("BezierWarpTests.testSharedPatchEdgesIndependentTangentsAndStableInverse", BezierWarpTests.self) { try $0.testSharedPatchEdgesIndependentTangentsAndStableInverse() }
+runCase("BezierWarpTests.testPrecisionBudgetsMalformedDataAndRoundTrip", BezierWarpTests.self) { try $0.testPrecisionBudgetsMalformedDataAndRoundTrip() }
+runCase("BezierWarpTests.testExplicitMeshLinkPreservesSourceUntilEnabled", BezierWarpTests.self) { try $0.testExplicitMeshLinkPreservesSourceUntilEnabled() }
+runCase("BezierMaskTests.testClosedCurveDenseOracleWindingAndPixelMetric", BezierMaskTests.self) { try $0.testClosedCurveDenseOracleWindingAndPixelMetric() }
+runCase("BezierMaskTests.testCubicSplitClosingEdgeHandlesAndNumericAnchor", BezierMaskTests.self) { try $0.testCubicSplitClosingEdgeHandlesAndNumericAnchor() }
+runCase("BezierMaskTests.testLoopsCollinearReversalAndPrecisionBudgetsRejectExplicitly", BezierMaskTests.self) { try $0.testLoopsCollinearReversalAndPrecisionBudgetsRejectExplicitly() }
+runCase("SurfaceWarpGeometryTests.testPerspectiveWeightedRegularMeshPreservesLocalAndSource", SurfaceWarpGeometryTests.self) { try $0.testPerspectiveWeightedRegularMeshPreservesLocalAndSource() }
+runCase("SurfaceWarpGeometryTests.testInputMeshDeltasKeepExactCropAndOnlySelectedSourceChanges", SurfaceWarpGeometryTests.self) { try $0.testInputMeshDeltasKeepExactCropAndOnlySelectedSourceChanges() }
+runCase("SurfaceWarpGeometryTests.testBezierPreparedGridPickingContourAndIndependentInputWarp", SurfaceWarpGeometryTests.self) { try $0.testBezierPreparedGridPickingContourAndIndependentInputWarp() }
+runCase("SurfaceWarpGeometryTests.testFoldedBezierChecksEveryPreimageAndLegacyBoundaryRemainsStrict", SurfaceWarpGeometryTests.self) { try $0.testFoldedBezierChecksEveryPreimageAndLegacyBoundaryRemainsStrict() }
+runCase("SurfaceEditingTests.testWarpCreationNumericActiveControlLinkAndReset", SurfaceEditingTests.self) { try $0.testWarpCreationNumericActiveControlLinkAndReset() }
+runCase("SurfaceEditingTests.testWorldTransformPreservesSourceAndLockedCommandsAreAtomic", SurfaceEditingTests.self) { try $0.testWorldTransformPreservesSourceAndLockedCommandsAreAtomic() }
+runCase("SurfaceEditingTests.testFreehandFittingToleranceBudgetsAndCreation", SurfaceEditingTests.self) { try $0.testFreehandFittingToleranceBudgetsAndCreation() }
+runCase("MaterialTests.testMaterialArithmeticVectorParametersAndUniformPacking", MaterialTests.self) { try $0.testMaterialArithmeticVectorParametersAndUniformPacking() }
+runCase("MaterialTests.testMaterialSwizzlesFunctionsBoundsAndMalformedSyntax", MaterialTests.self) { try $0.testMaterialSwizzlesFunctionsBoundsAndMalformedSyntax() }
+runCase("MaterialTests.testMaterialInputValidationAndCodableRoundTrip", MaterialTests.self) { try $0.testMaterialInputValidationAndCodableRoundTrip() }
+runCase("MaterialTests.testISFTypedInputsOrientationNormalizedSamplingAndPersistence", MaterialTests.self) { try $0.testISFTypedInputsOrientationNormalizedSamplingAndPersistence() }
+runCase("MaterialTests.testISFRejectsUnsafeAndUnsupportedFeaturesAtomically", MaterialTests.self) { try $0.testISFRejectsUnsafeAndUnsupportedFeaturesAtomically() }
+runCase("MaterialTests.testChromaLumaSpillAndColorEffectsNumericalOracle", MaterialTests.self) { try $0.testChromaLumaSpillAndColorEffectsNumericalOracle() }
+runCase("CompositionUtilityTests.testComplementaryEdgeBlendPowerRampsAndColorCalibration", CompositionUtilityTests.self) { try $0.testComplementaryEdgeBlendPowerRampsAndColorCalibration() }
+runCase("CompositionUtilityTests.testVideoWallUniqueTilesCoverageBezelsOverlapAndBounds", CompositionUtilityTests.self) { try $0.testVideoWallUniqueTilesCoverageBezelsOverlapAndBounds() }
+runCase("CompositionUtilityTests.testSVGPathCommandsQuadraticConversionTransformsAndCompoundFill", CompositionUtilityTests.self) { try $0.testSVGPathCommandsQuadraticConversionTransformsAndCompoundFill() }
+runCase("CompositionUtilityTests.testSVGBasicShapesCircleControlPointsAndViewport", CompositionUtilityTests.self) { try $0.testSVGBasicShapesCircleControlPointsAndViewport() }
+runCase("CompositionUtilityTests.testSVGMalformedUnsafeUnsupportedAndBudgetsRejectAtomically", CompositionUtilityTests.self) { try $0.testSVGMalformedUnsafeUnsupportedAndBudgetsRejectAtomically() }
+runCase("Composition.testSchemaTwelveRoundTripCollectRecoveryAndLegacyExtensions", CompositionTests.self) { try $0.testSchemaTwelveRoundTripCollectRecoveryAndLegacyExtensions() }
+runCase("Composition.testProjectiveHierarchyAndIsolatedOpacityStackPolicy", CompositionTests.self) { try $0.testProjectiveHierarchyAndIsolatedOpacityStackPolicy() }
+runCase("Composition.testNewSelectiveFieldsAndCurveGeometryRemainAtomic", CompositionTests.self) { try $0.testNewSelectiveFieldsAndCurveGeometryRemainAtomic() }
+runCase("Composition.testCompositionBudgetsReferencesAndInvalidTransforms", CompositionTests.self) { try $0.testCompositionBudgetsReferencesAndInvalidTransforms() }
+runCase("CompositionTransition.testFullFadeRejectsTransientIsolationOrderButInstantCutPasses", CompositionTransitionTests.self) { try $0.testFullFadeRejectsTransientIsolationOrderButInstantCutPasses() }
+runCase("CompositionTransition.testSelectiveVisibilityUsesActualEngineSemanticsAndCurrentScene", CompositionTransitionTests.self) { try $0.testSelectiveVisibilityUsesActualEngineSemanticsAndCurrentScene() }
+runCase("CompositionTransition.testRetainsOutgoingLayersAndDoesNotChangeRunningEngineOrProject", CompositionTransitionTests.self) { try $0.testRetainsOutgoingLayersAndDoesNotChangeRunningEngineOrProject() }
+runCase("CompositionTransition.testRepresentativeGeometryAndMalformedSnapshotRejectAtomically", CompositionTransitionTests.self) { try $0.testRepresentativeGeometryAndMalformedSnapshotRejectAtomically() }
 exit(finishTests())

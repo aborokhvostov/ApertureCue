@@ -3,6 +3,7 @@ import Foundation
 import AppKit
 
 MainActor.assumeIsolated {
+if CommandLine.arguments.contains("--composition-test") {exit(CompositionSelfTest.run())}
 if CommandLine.arguments.contains("--self-test") {
     exit(SelfTest.run())
 }

@@ -781,6 +781,7 @@ enum EditorSelfTest {
             try expect(e.project==verticesSaved,"Edited polygon topology did not survive save/reopen")
             passed("source/output polygon vertex commands respect geometry locks and save/reopen")
 
+            for check in try CompositionEditorSelfTest.run(editor:e,directory:directory.appendingPathComponent("composition",isDirectory:true)) {passed(check)}
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count
             try writeReport()

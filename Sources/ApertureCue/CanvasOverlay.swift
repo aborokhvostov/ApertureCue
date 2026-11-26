@@ -13,12 +13,27 @@ final class CanvasOverlay: NSView {
     var pathMode = false { didSet { needsDisplay = true } }
     var meshMode = false
     var maskMode = false
+    var warpMode=false
+    var drawMode=false {didSet {if !drawMode {freehand=[]};needsDisplay=true}}
+    var onWarpDrag:((UUID,Int,Point2,Bool)->Void)?
+    var onFreehand:(([Point2])->Void)?
+    var onNudge:((Double,Double)->Void)?
+    private var freehand:[Point2]=[]
+    private var warpCache:[UUID:(Surface,Int,Int,WarpTessellation)]=[:]
+    private func tessellation(_ s:Surface) -> WarpTessellation? {
+        guard s.bezierWarp != nil else {return nil}
+        let scale=window?.backingScaleFactor ?? 2
+        let w=max(1,min(16384,Int(bounds.width*scale))),h=max(1,min(16384,Int(bounds.height*scale)))
+        if let (old,cw,ch,t)=warpCache[s.id],cw==w,ch==h,old.bezierWarp==s.bezierWarp,old.warpTransform==s.warpTransform,old.inputWarp==s.inputWarp,old.inputWarpTransform==s.inputWarpTransform,old.input==s.input {return t}
+        guard let t=try? SurfaceWarpGeometry.tessellation(surface:s,width:w,height:h) else {return nil}
+        warpCache[s.id]=(s,w,h,t);return t
+    }
     var onSelect: ((UUID) -> Void)?
     var onBegin: (() -> Void)?
     var onChange: ((UUID, [Point2], Bool, Bool) -> Void)?
     var onTriangleDrag: ((UUID, Int, Point2) -> Void)?
     var onEnd: (() -> Void)?
-    private var drag: (id: UUID, index: Int, points: [Point2], triangle: Bool)?
+    private var drag: (id: UUID, index: Int, points: [Point2], triangle: Bool,warp:Bool)?
     override var isOpaque: Bool { false }
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
@@ -32,9 +47,14 @@ final class CanvasOverlay: NSView {
     }
     private func vertices(_ s: Surface) -> [Point2] {
         if maskMode { return s.mask }
-        if inputMode { return s.input }
+        if warpMode {
+            let warp=inputMode ? s.inputWarp : s.bezierWarp
+            let transform=inputMode ? s.inputWarpTransform : s.warpTransform
+            return (try? warp?.controls.map {try transform.applying($0)}) ?? []
+        }
+        if inputMode { return meshMode && !s.inputMesh.isEmpty ? s.inputMesh : s.input }
         if pathMode && s.shape == .triangle {
-            return (try? s.triangleVertices.map { try SurfaceGeometry.outputPoint(local:$0,surface:s) }) ?? []
+            return (try? SurfaceGeometry.outputPoints(local:s.triangleVertices,surface:s,tessellation:tessellation(s))) ?? []
         }
         if pathMode && s.shape.isStroke { return pathControlPoints(s) }
         if meshMode && !s.mesh.isEmpty { return s.mesh }
@@ -42,7 +62,7 @@ final class CanvasOverlay: NSView {
     }
     func pathControlPoints(_ surface:Surface) -> [Point2] {
         let points=surface.stroke.nodes.flatMap { node in surface.shape == .bezier ? [node.anchor,node.incoming,node.outgoing] : [node.anchor] }
-        return (try? points.map { try SurfaceGeometry.outputPoint(local:$0,surface:surface) }) ?? []
+        return (try? SurfaceGeometry.outputPoints(local:points,surface:surface,tessellation:tessellation(surface))) ?? []
     }
     override var wantsUpdateLayer: Bool { true }
     override func setFrameSize(_ newSize:NSSize) { super.setFrameSize(newSize); needsDisplay = true }
@@ -82,10 +102,10 @@ final class CanvasOverlay: NSView {
             guard points.count == 4 else { continue }
             let shaped = !inputMode && surface.shape != .quad
             polygon(points,into:selected && !shaped ? selectedPath : muted)
-            if !inputMode && (shaped || !surface.mesh.isEmpty),let outline = try? SurfaceGeometry.outputOutline(surface:surface) {
+            if !inputMode && (shaped || !surface.mesh.isEmpty || surface.bezierWarp != nil),let outline = try? SurfaceGeometry.outputOutline(surface:surface,tessellation:tessellation(surface)) {
                 polygon(outline,into:selected ? selectedPath : contours)
             }
-            if !inputMode && surface.shape.isStroke, let projected=try? SurfaceGeometry.outputCenterline(surface:surface),let first=projected.first {
+            if !inputMode && surface.shape.isStroke, let projected=try? SurfaceGeometry.outputCenterline(surface:surface,tessellation:tessellation(surface)),let first=projected.first {
                 centerlines.move(to:cg(first)); projected.dropFirst().forEach {centerlines.addLine(to:cg($0))}
             }
             if selected {
@@ -111,6 +131,7 @@ final class CanvasOverlay: NSView {
                 }
             }
         }
+        if let first=freehand.first {guides.move(to:cg(first));freehand.dropFirst().forEach {guides.addLine(to:cg($0))}}
         stroke(muted,color:NSColor.white.withAlphaComponent(0.35),width:1)
         stroke(contours,color:NSColor.white.withAlphaComponent(0.6),width:1)
         stroke(selectedPath,color:.systemCyan,width:2)
@@ -124,11 +145,12 @@ final class CanvasOverlay: NSView {
     override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
         let p = convert(event.locationInWindow, from: nil)
+        if drawMode {freehand=[normalized(event)];needsDisplay=true;return}
         if let surface = surfaces.first(where: { $0.id == selectedID }), !geometryLockedSurfaceIDs.contains(surface.id) {
             let handles = vertices(surface)
             if let index = handles.indices.min(by: { hypot(point(handles[$0]).x-p.x, point(handles[$0]).y-p.y) < hypot(point(handles[$1]).x-p.x, point(handles[$1]).y-p.y) }), hypot(point(handles[index]).x-p.x, point(handles[index]).y-p.y) < 18 {
                 let triangle = pathMode && !inputMode && !maskMode && surface.shape == .triangle
-                drag = (surface.id, index, handles, triangle); onBegin?(); return
+                drag = (surface.id, index, handles, triangle,warpMode); onBegin?(); return
             }
         }
         if !inputMode {
@@ -139,10 +161,16 @@ final class CanvasOverlay: NSView {
     /// Geometry picking uses the same local shape/mesh as the compositor.
     /// Source masks are edited independently and do not change selection bounds.
     func hitSurface(at output:Point2) -> UUID? {
-        surfaces.reversed().first { $0.enabled && $0.opacity > 0 && SurfaceGeometry.contains(output:output,surface:$0) }?.id
+        surfaces.reversed().first { $0.enabled && $0.opacity > 0 && SurfaceGeometry.contains(output:output,surface:$0,tessellation:tessellation($0)) }?.id
     }
     override func mouseDragged(with event: NSEvent) {
-        guard let (id, i, original, triangle) = drag, id == selectedID, !geometryLockedSurfaceIDs.contains(id) else { return }
+        if drawMode {
+            let p=normalized(event)
+            if freehand.count<513,freehand.last != p {freehand.append(p)}
+            needsDisplay=true;return
+        }
+        guard let (id, i, original, triangle,warp) = drag, id == selectedID, !geometryLockedSurfaceIDs.contains(id) else { return }
+        if warp {onWarpDrag?(id,i,normalized(event),inputMode);return}
         if triangle { onTriangleDrag?(id,i,normalized(event)); return }
         var pts = original; pts[i] = normalized(event)
         if pathMode,let surface=surfaces.first(where:{$0.id == id}),surface.shape == .bezier,i%3 == 0 {
@@ -153,7 +181,23 @@ final class CanvasOverlay: NSView {
         onChange?(id, pts, inputMode, meshMode)
     }
     override func mouseUp(with event: NSEvent) {
+        if drawMode {
+            let points=freehand;drawMode=false
+            if points.count>=2 {onFreehand?(points)}
+            return
+        }
         finishDrag()
+    }
+    override func keyDown(with event:NSEvent) {
+        if event.keyCode==53 {drawMode=false;finishDrag();return}
+        let amount=event.modifierFlags.contains(.shift) ? 0.01 : 0.001
+        switch event.keyCode {
+        case 123:onNudge?(-amount,0)
+        case 124:onNudge?(amount,0)
+        case 125:onNudge?(0,amount)
+        case 126:onNudge?(0,-amount)
+        default:super.keyDown(with:event)
+        }
     }
     func finishDrag() {
         guard drag != nil else { return }

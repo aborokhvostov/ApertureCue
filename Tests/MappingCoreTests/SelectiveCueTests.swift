@@ -31,8 +31,8 @@ final class SelectiveCueTests:XCTestCase {
         snapshot.group="Dormant label"; snapshot.maskSettings=PolygonMaskSettings(space:.outputCanvas,inverted:true,feather:0.1)
         let keys:[CueParameter:Set<String>]=[
             .opacity:["opacity"],.brightness:["brightness"],.gamma:["gamma"],.color:["color"],.feather:["feather"],
-            .blendMode:["blendMode"],.visibility:["enabled"],.source:["mediaID","generator"],.input:["input"],
-            .outputGeometry:["output","mesh","meshRows","meshColumns","groupID"],.shape:["shape","stroke"],.mask:["mask","maskSettings"],.routing:["outputID"]]
+            .blendMode:["blendMode"],.visibility:["enabled"],.source:["mediaID","generator","feedbackOutputID"],.input:["input","inputMesh","inputWarp","inputWarpTransform"],
+            .outputGeometry:["output","mesh","meshRows","meshColumns","groupID","bezierWarp","warpTransform","meshWeights","meshLinked"],.shape:["shape","stroke"],.mask:["mask","maskSettings","masks"],.routing:["outputID"],.effects:["effects"],.material:["materialID","materialValues"]]
         let before=try object(original),saved=try object(snapshot)
         let unrelated=Surface(name:"New layer"),first=Surface(name:"First")
         for parameter in CueParameter.allCases {

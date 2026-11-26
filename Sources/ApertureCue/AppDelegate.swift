@@ -108,12 +108,13 @@ import MappingCore
     var midi: MIDIController?
     var lighting: LightingController!
     var lightingView: MTKView!
+    var feedback:FeedbackComposition?
     var lastLighting: Double = 0
     var effectiveSurfaces: [Surface] {
         do {
             guard showConfigurationError.isEmpty else { throw ProjectError.invalid(showConfigurationError) }
             let timed = applyRecordingOverride(to:try showRuntime.apply(surfaces:project.surfaces))
-            let resolved = try GroupEngine.resolve(surfaces:montagePool.apply(to:timed),groups:project.groups)
+            let resolved = try GroupEngine.resolveForComposition(surfaces:montagePool.apply(to:timed),groups:project.groups)
             renderError = ""; return resolved
         } catch {
             renderError = "Group/automation: \(error.localizedDescription)"
@@ -137,11 +138,14 @@ import MappingCore
         metalView.device = device; media = MediaPool(device: device)
         montagePool = MontagePool(device:device,media:media); media.virtualSources = montagePool
         renderer = MetalRenderer(view: metalView, media: media)
+        feedback=FeedbackComposition(media:media)
+        feedback?.onUpdate = { [weak self] in self?.updateFeedbackTextures() }
         makeUI(); bindOverlay(); reconcile(); refresh(); startTick()
         network = NetworkController { [weak self] command in self?.remote(command) }
         midi = MIDIController { [weak self] command in self?.remote(command) }
         lighting = LightingController(); lightingView = MTKView(frame:.zero,device:device)
         lighting.renderer = MetalRenderer(view:lightingView,media:media); lightingView.isPaused = true
+        updateCompositionConfiguration()
     }
     required init?(coder: NSCoder) { fatalError() }
     private func makeUI() {
@@ -169,7 +173,7 @@ import MappingCore
         // A shared implicit backing can leave black holes after a modal closes.
         overlay.wantsLayer = true; overlay.layer?.backgroundColor = NSColor.clear.cgColor; overlay.layer?.isOpaque = false
         fill(metalView, in: canvas); fill(overlay, in: canvas)
-        modePicker = ActionPopUp(items:["Output geometry", "Input region"], action: { [weak self] _ in self?.overlay.maskMode = false; self?.overlay.meshMode = false; self?.overlay.pathMode = false; self?.updateRender(); self?.refreshInspector() })
+        modePicker = ActionPopUp(items:["Output geometry", "Input region"], action: { [weak self] _ in self?.overlay.maskMode = false; self?.overlay.meshMode = false; self?.overlay.pathMode = false; self?.overlay.warpMode=false;self?.overlay.drawMode=false; self?.updateRender(); self?.refreshInspector() })
         let help = label("Drag corners · Shift: snap 5% · Layer order: back → front", size: 11)
         let canvasContainer = NSView(); canvasContainer.translatesAutoresizingMaskIntoConstraints = false
         canvas.translatesAutoresizingMaskIntoConstraints = false; canvasContainer.addSubview(canvas)
@@ -199,10 +203,21 @@ import MappingCore
         cueRow.addArrangedSubview(ActionButton("Delete") { [weak self] in self?.deleteCue() })
         cueRow.addArrangedSubview(ActionButton("Scenes…") { [weak self] in self?.showCueWindow() })
         cueRow.addArrangedSubview(ActionButton("Control…") { [weak self] in self?.configureControl() })
-        let root = stack([top,work,transport,cueRow,status],spacing:12)
+        let compositionTools=stack([
+            ActionButton("Materials…") {[weak self] in self?.configureMaterial()},
+            ActionButton("Key / FX…") {[weak self] in self?.configureEffects()},
+            ActionButton("Scoped masks…") {[weak self] in self?.configureScopedMasks()},
+            ActionButton("Group composition…") {[weak self] in self?.configureGroupComposition()},
+            ActionButton("Group perspective…") {[weak self] in self?.configureGroupPerspective()},
+            ActionButton("SVG…") {[weak self] in self?.importSVG()},
+            ActionButton("Video wall…") {[weak self] in self?.configureVideoWall()},
+            ActionButton("Edge blend…") {[weak self] in self?.configureEdgeBlend()},
+            ActionButton("Feedback…") {[weak self] in self?.configureFeedback()}],vertical:false,spacing:6)
+        let root = stack([top,compositionTools,work,transport,cueRow,status],spacing:10)
         root.edgeInsets = NSEdgeInsets(top:12,left:14,bottom:12,right:14); fill(root,in:content)
-        for v in [top,work,transport,cueRow,status] { v.widthAnchor.constraint(equalTo:root.widthAnchor,constant:-28).isActive = true }
+        for v in [top,compositionTools,work,transport,cueRow,status] { v.widthAnchor.constraint(equalTo:root.widthAnchor,constant:-28).isActive = true }
         top.heightAnchor.constraint(equalToConstant:32).isActive = true
+        compositionTools.heightAnchor.constraint(equalToConstant:28).isActive=true
         transport.heightAnchor.constraint(equalToConstant:28).isActive = true
         cueRow.heightAnchor.constraint(equalToConstant:28).isActive = true
         work.setContentHuggingPriority(.defaultLow,for:.vertical)
@@ -253,6 +268,15 @@ import MappingCore
         }
     }
     private func bindOverlay() {
+        overlay.onNudge = { [weak self] x,y in guard let self else {return};if self.inputMode {self.nudgeInput(dx:x,dy:y)} else {self.nudgeSurface(dx:x,dy:y)} }
+        overlay.onFreehand = { [weak self] points in
+            guard let self else {return}
+            do {try self.createFreehandSurface(points:points)} catch {self.showError(error)}
+        }
+        overlay.onWarpDrag = { [weak self] id,index,point,input in
+            guard let self else {return}
+            do {try self.editWarpHandle(surfaceID:id,index:index,world:point,input:input)} catch {self.editError=error.localizedDescription}
+        }
         overlay.onSelect = { [weak self] id in self?.selectedID = id; self?.refresh() }
         overlay.onBegin = { [weak self] in
             guard let self, self.editableGeometryIndex != nil else { return }
@@ -264,16 +288,48 @@ import MappingCore
                 var edited = self.project.surfaces[i]
                 if self.overlay.pathMode && !input && edited.shape.isStroke { try self.editStrokeHandles(surfaceID:id,world:points); return }
                 if self.overlay.maskMode { edited.mask = points }
-                else if input { try Geometry.validateQuad(points); edited.input = points }
+                else if input {
+                    if mesh {
+                        guard points.count==edited.mesh.count else {throw ProjectError.invalid("input mesh topology changed")}
+                        if edited.meshLinked {
+                            var output=edited.mesh
+                            let previous=edited.inputMesh.isEmpty ? try Geometry.regularMesh(quad:edited.input,columns:edited.meshColumns,rows:edited.meshRows) : edited.inputMesh
+                            for vertex in points.indices where points[vertex] != previous[vertex] {
+                                output=try MeshLinkGeometry.movingOutputVertex(output:previous,input:output,index:vertex,to:points[vertex],outputQuad:edited.input,inputQuad:edited.output,linked:true).input
+                            }
+                            edited.mesh=output
+                        }
+                        edited.inputMesh=points
+                    } else {
+                        try Geometry.validateQuad(points)
+                        if edited.meshLinked {
+                            let map=try Homography.solve(from:edited.input,to:edited.output)
+                            edited.output=try points.map {try map.applying($0)}
+                        }
+                        edited.input=points
+                    }
+                }
                 else {
                     let inverse = try GroupEngine.worldTransform(for:edited.groupID,groups:self.project.groups).inverse()
                     let local = try points.map { try inverse.applying($0) }
                     guard local.allSatisfy({ abs($0.x) <= 10000 && abs($0.y) <= 10000 }) else { throw ProjectError.invalid("grouped edit exceeds the finite local working range") }
                     if mesh {
                         guard local.count == edited.mesh.count else { throw ProjectError.invalid("mesh edit has a different vertex count") }
+                        if edited.meshLinked {
+                            var input=edited.inputMesh.isEmpty ? try Geometry.regularMesh(quad:edited.input,columns:edited.meshColumns,rows:edited.meshRows) : edited.inputMesh
+                            for vertex in local.indices where local[vertex] != edited.mesh[vertex] {
+                                input=try MeshLinkGeometry.movingOutputVertex(output:edited.mesh,input:input,index:vertex,to:local[vertex],outputQuad:edited.output,inputQuad:edited.input,linked:true).input
+                            }
+                            edited.inputMesh=input
+                        }
                         edited.mesh = local
                     } else {
-                        try Geometry.validateQuad(local); edited.output = local
+                        try Geometry.validateQuad(local)
+                        if edited.meshLinked {
+                            let map=try Homography.solve(from:edited.output,to:edited.input)
+                            edited.input=try local.map {try map.applying($0)}
+                        }
+                        edited.output = local;edited.bezierWarp=nil;edited.inputWarp=nil;edited.warpTransform = .identity;edited.inputWarpTransform = .identity;edited.inputMesh=[];edited.meshWeights=[]
                         edited.mesh = []; edited.meshRows = 0; edited.meshColumns = 0
                     }
                 }
@@ -313,9 +369,16 @@ import MappingCore
         cueTarget = nil; cueBefore = nil; cueEngine.cancel()
     }
     func mutate(_ name:String,_ body:(inout Project)->Void) {
-        stopAutomationRecording(reason:"Document edit: "+name); commitInterruptedCue(); let before = project; body(&project)
-        guard before != project else { return }
-        history.commit(before:before,after:project,label:name); dirty = true; reconcile(); refresh()
+        let before=project,selection=(selectedID,selectedGroupID,selectedMediaID)
+        body(&project);let candidate=project;project=before
+        do {try ProjectStore.validate(candidate)} catch {
+            selectedID=selection.0;selectedGroupID=selection.1;selectedMediaID=selection.2
+            editError=error.localizedDescription;refresh();return
+        }
+        stopAutomationRecording(reason:"Document edit: "+name);commitInterruptedCue()
+        guard before != candidate else {return}
+        project=candidate;history.commit(before:before,after:candidate,label:name);dirty=true
+        reconcile();refresh()
     }
     func editSurface(_ name:String,_ body:(inout Surface)->Void) {
         guard let i = selectedIndex else { return }; mutate(name) { body(&$0.surfaces[i]) }
@@ -325,7 +388,7 @@ import MappingCore
         overlay.finishDrag()
         let locked = project.geometryLockedSurfaceIDs.contains(id)
         if !locked && selectedID == id {
-            overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false
+            overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false
         }
         mutate(locked ? "Unlock geometry" : "Lock geometry") { project in
             if locked { project.geometryLockedSurfaceIDs.remove(id) }
@@ -360,6 +423,8 @@ import MappingCore
         }
         if inputMode, let i = selectedIndex {
             var s = project.surfaces[i]; s.input = Point2.unitQuad; s.output = Point2.unitQuad
+            s.masks=[];s.effects = .init();s.materialID=nil;s.materialValues=[:];s.groupID=nil
+            s.bezierWarp=nil;s.inputWarp=nil;s.inputMesh=[];s.meshWeights=[];s.warpTransform = .identity;s.inputWarpTransform = .identity
             s.shape = .quad; s.mesh = []; s.meshColumns = 0; s.meshRows = 0; s.mask = []; s.feather = 0; s.opacity = 1; s.brightness = 1; s.gamma = 1; s.color = [1,1,1]; s.enabled = true
             renderer.surfaces = [s]
         } else { renderer.surfaces = effective }
@@ -369,6 +434,7 @@ import MappingCore
         } else { overlay.pathMode=false }
         overlay.geometryLockedSurfaceIDs = project.geometryLockedSurfaceIDs
         overlay.inputMode = inputMode; overlay.selectedID = selectedID; overlay.surfaces = resolvedBaseSurfaces
+        updateCompositionConfiguration()
         renderer.blackout = false
         for (_, value) in outputWindows { value.1.surfaces = effective; value.1.blackout = blackout }
     }
@@ -417,7 +483,7 @@ import MappingCore
         }
         add(label("Generator / fallback",size:11))
         let generators = ["checker","gradient","solid","grid"]
-        add(ActionPopUp(items:generators,selected:generators.firstIndex(of:surface.generator) ?? 0) { [weak self] v in self?.editSurface("Generator") { $0.generator = generators[v]; $0.mediaID = nil } })
+        add(ActionPopUp(items:generators,selected:generators.firstIndex(of:surface.generator) ?? 0) { [weak self] v in self?.editSurface("Generator") { $0.generator = generators[v]; $0.mediaID = nil;$0.feedbackOutputID=nil } })
         let modes = ["normal","add","multiply","screen"]
         add(ActionPopUp(items:modes,selected:modes.firstIndex(of:surface.blendMode) ?? 0) { [weak self] v in self?.editSurface("Blend mode") { $0.blendMode = modes[v] } })
         property("Opacity",surface.opacity,0,1) { $0.opacity = $1 }
@@ -445,6 +511,14 @@ import MappingCore
             self.editSurface("Route output") { $0.outputID = id }
         })
         add(label("Geometry",bold:true))
+        geometryControl(ActionButton("Transform surface…") {[weak self] in self?.configureSurfaceTransform()})
+        geometryControl(ActionButton("Bezier warp…") {[weak self] in self?.configureWarp()})
+        geometryControl(ActionButton("Edit output Bezier controls") {[weak self] in self?.setWarpEditing(input:false)})
+        geometryControl(ActionButton("Edit input Bezier controls") {[weak self] in self?.setWarpEditing(input:true)})
+        geometryControl(ActionButton(surface.meshLinked ? "Mesh link: ON" : "Mesh link: OFF") {[weak self] in
+            guard let self else {return};do {try self.toggleMeshLink()} catch {self.showError(error)}
+        })
+        add(ActionButton("Draw freehand line") {[weak self] in self?.beginFreehand()})
         geometryControl(ActionButton("Reset quad / input") { [weak self] in
             guard let self, self.editableGeometryIndex != nil else { return }; self.editSurface("Reset geometry") { s in
                 if self.inputMode { s.input = Point2.unitQuad } else { s.output = Point2.insetQuad; s.mesh = []; s.meshColumns = 0; s.meshRows = 0 }
@@ -452,13 +526,19 @@ import MappingCore
         })
         geometryControl(ActionButton("Create 4 × 4 warp mesh") { [weak self] in
             guard let self, self.editableGeometryIndex != nil else { return }
-            self.editSurface("Create mesh") { s in s.meshColumns = 4; s.meshRows = 4; s.mesh = (try? Geometry.regularMesh(quad:s.output,columns:4,rows:4)) ?? [] }
+            self.editSurface("Create mesh") { s in s.meshColumns = 4; s.meshRows = 4; s.mesh = (try? Geometry.regularMesh(quad:s.output,columns:4,rows:4)) ?? [];s.bezierWarp=nil;s.inputWarp=nil;s.inputMesh=[];s.meshWeights=[] }
             self.modePicker.selectItem(at:0); self.overlay.meshMode = true; self.overlay.maskMode = false; self.overlay.pathMode = false; self.updateRender()
         })
         geometryControl(ActionButton(overlay.meshMode ? "Edit quad corners" : "Edit mesh points") { [weak self] in
             guard let self, self.editableGeometryIndex != nil else { return }
+            if self.inputMode,self.project.surfaces[self.editableGeometryIndex!].inputMesh.isEmpty {
+                self.editSurface("Prepare input mesh") {s in
+                    if !s.mesh.isEmpty {s.inputMesh=(try? Geometry.regularMesh(quad:s.input,columns:s.meshColumns,rows:s.meshRows)) ?? []}
+                }
+            }
+            self.overlay.warpMode=false
             self.overlay.meshMode.toggle()
-            if self.overlay.meshMode { self.modePicker.selectItem(at:0) }
+
             self.overlay.maskMode = false; self.overlay.pathMode = false; self.updateRender(); self.refreshInspector()
         })
         add(label("Polygon mask · this layer",bold:true))
@@ -499,7 +579,7 @@ import MappingCore
     @objc func newProject() {
         stopAutomationRecording(reason:"New project")
         guard confirmDiscard() else { return }; resetAutomationRecording(); closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil
-        history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false; documentGeneration = UUID()
+        history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false; documentGeneration = UUID();feedback?.reset()
         lighting?.stop(); selectedID = project.surfaces.first?.id; dirty = false; showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; reconcile(); refresh()
     }
     @objc func openDialog() {
@@ -512,7 +592,7 @@ import MappingCore
         do {
             let loaded = try ProjectStore.load(from:url)
             resetAutomationRecording()
-            closeOutputs(); lighting?.stop(); showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false; documentGeneration = UUID(); project = loaded; projectURL = url; dirty = false; selectedID = loaded.surfaces.first?.id
+            closeOutputs(); lighting?.stop(); showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false; documentGeneration = UUID();feedback?.reset(); project = loaded; projectURL = url; dirty = false; selectedID = loaded.surfaces.first?.id
             if FileManager.default.fileExists(atPath:ProjectStore.recoveryURL(for:url).path) {
                 let alert = NSAlert(); alert.messageText = "Recovery snapshot found"; alert.informativeText = "Restore the autosaved state for this project?"; alert.addButton(withTitle:"Restore"); alert.addButton(withTitle:"Use saved project")
                 if alert.runModal() == .alertFirstButtonReturn, let recovered = try? ProjectStore.loadRecovery(for:url) { project = recovered; dirty = true }
@@ -557,7 +637,7 @@ import MappingCore
         mutate("Relink media") { state in if let i = state.assets.firstIndex(where:{$0.id == id}) { state.assets[i].path = url.path; state.assets[i].name = url.lastPathComponent } }
         if previousPath == url.path { montagePool.invalidateAsset(id); media.reloadAsset(id:id,assets:project.assets,baseURL:baseURL); refresh() }
     }
-    func assignMedia() { guard let id = selectedMediaID else { return }; editSurface("Assign media") { $0.mediaID = id } }
+    func assignMedia() { guard let id = selectedMediaID else { return }; editSurface("Assign media") { $0.mediaID = id;$0.feedbackOutputID=nil } }
     func addSurface(shape:SurfaceShape = .quad) {
         mutate("Add surface") { p in
             var s = Surface(name:"\(shape == .quad ? "Surface" : shape.rawValue.capitalized) \(p.surfaces.count+1)")
@@ -577,7 +657,7 @@ import MappingCore
     func setSurfaceShape(_ shape:SurfaceShape) {
         do { try changeSurfaceShape(shape) } catch { showError(error) }
     }
-    func duplicateSurface() { guard let i = selectedIndex else { return }; mutate("Duplicate surface") { p in var s = p.surfaces[i]; s.id = UUID(); s.name += " copy"; p.surfaces.append(s); selectedID = s.id } }
+    func duplicateSurface() { guard let i = selectedIndex else { return }; mutate("Duplicate surface") { p in var s = p.surfaces[i]; s.id = UUID(); s.name += " copy"; p.surfaces.insert(s,at:i+1); selectedID = s.id } }
     func deleteSurface() {
         guard let i = selectedIndex else { return }
         mutate("Delete surface") { p in
@@ -596,7 +676,6 @@ import MappingCore
     func captureCue() { mutate("Capture scene") { $0.cues.append(Cue(name:"Scene \($0.cues.count+1)",surfaces:$0.surfaces,duration:1)) } }
     func deleteCue() { let i=cuePicker.indexOfSelectedItem;guard project.cues.indices.contains(i) else {return};do {try cueDelete(id:project.cues[i].id)} catch {showError(error)} }
     func goCue(index:Int? = nil) {
-        stopAutomationRecording(reason:"Scene GO")
         let i = index ?? cuePicker.indexOfSelectedItem; guard project.cues.indices.contains(i) else { return }
         var target = project.cues[i]
         if target.scope == .full {
@@ -607,10 +686,12 @@ import MappingCore
             }
         }
         do {
+            try CompositionTransition.validate(cue:target,in:project)
             var destination=project
             destination.surfaces=try CueSelection.destination(from:project.surfaces,cue:target)
             try ProjectStore.validate(destination)
         } catch {showError(error);return}
+        stopAutomationRecording(reason:"Scene GO")
         let missing=CueSelection.missingTargets(from:project.surfaces,cue:target)
         cueMessage=missing.isEmpty ? "" : "Cue skipped \(missing.count) missing surface target(s)"
         commitInterruptedCue()
@@ -638,7 +719,9 @@ import MappingCore
             }
             updateRender()
         }
-        if !project.timeline.isEmpty || !project.montages.isEmpty { updateRender() }; montageWindow?.updatePlayhead()
+        for target in allCompositionRenderers {target.materialTime=showRuntime.time}
+        if project.surfaces.contains(where:{$0.feedbackOutputID != nil}) {advanceFeedback();updateFeedbackTextures()}
+        if !project.timeline.isEmpty || !project.montages.isEmpty || !project.materials.isEmpty { updateRender() }; montageWindow?.updatePlayhead()
         if lighting?.isSampling == true, now-lastLighting >= 1.0/30 {
             lighting?.fixtures = project.fixtures
             lighting?.renderer.blackout = blackout
@@ -649,7 +732,7 @@ import MappingCore
         func time(_ n:Double)->String { String(format:"%02d:%02d",Int(max(0,n))/60,Int(max(0,n))%60) }
         timeLabel.stringValue = "\(time(playhead)) / \(time(project.timelineSettings.duration))\(playhead>project.timelineSettings.duration ? " +" : "")"
         playButton.title = showRuntime.isPlaying ? "Ⅱ Pause" : "▶ Play"
-        let error = (montagePool.diagnostics.values.first ?? media.errorMessages.values.first).map { " · \($0)" } ?? ""
+        let error = (montagePool.diagnostics.values.first ?? media.errorMessages.values.first ?? (feedback?.errorDescription.isEmpty == false ? feedback?.errorDescription : nil)).map { " · \($0)" } ?? ""
         status.stringValue = "\(renderer.statistics) · \(project.surfaces.count) surfaces · \(outputWindows.count) output windows\(blackout ? " · BLACKOUT" : "")\(error)\(renderer.errorDescription.isEmpty ? "" : " · Last render error: " + renderer.errorDescription)\(renderError.isEmpty ? "" : " · " + renderError)\(editError.isEmpty ? "" : " · " + editError)\(workMessage.isEmpty ? "" : " · " + workMessage)\(outputMessage.isEmpty ? "" : " · " + outputMessage)\(timelineEventWarning.isEmpty ? "" : " · " + timelineEventWarning)\(cueMessage.isEmpty ? "" : " · " + cueMessage)\(isRecordingAutomation ? " · REC INPUT" : "")"
         if dirty, now-lastRecovery > 10, let url = projectURL { try? ProjectStore.saveRecovery(project,for:url); lastRecovery = now }
     }

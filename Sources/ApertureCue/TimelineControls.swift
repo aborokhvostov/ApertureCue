@@ -34,12 +34,14 @@ extension EditorController {
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func stopShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
+        feedback?.reset()
         stopAutomationRecording(reason:"Stopped",at:hostTime)
         timelineEventWarning=""
         commitInterruptedCue(); showRuntime.stop(at:hostTime); montageSerial &+= 1; media.pause(); media.seek(to:0)
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func seekShow(to seconds:Double,at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
+        feedback?.reset()
         guard seconds.isFinite else { return }
         stopAutomationRecording(reason:"Seek",at:hostTime)
         timelineEventWarning=""
@@ -52,6 +54,7 @@ extension EditorController {
             stopAutomationRecording(reason:!result.isPlaying ? "Playback paused or ended" : result.discontinuity ? "Playback discontinuity / loop wrap" : "Recording reached graph end",at:hostTime)
         }
         if result.discontinuity {
+            feedback?.reset()
             montageSerial &+= 1
             if !result.isPlaying { media.pause() }
             media.seek(to:result.time)

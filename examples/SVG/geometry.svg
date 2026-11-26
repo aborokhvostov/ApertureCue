@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <title>ApertureCue original SVG calibration geometry</title>
+  <rect x="0" y="0" width="640" height="360" fill="#101522"/>
+  <g transform="translate(40,40)">
+    <path id="window" fill="#28c8d8" fill-rule="evenodd" d="M0 0H220V280H0Z M40 40V240H180V40Z"/>
+    <path id="wave" fill="none" stroke="#ffc43d" stroke-width="10" stroke-linecap="round" d="M280 200 C300 0 440 0 500 200"/>
+    <circle cx="390" cy="230" r="35" fill="#f86a79"/>
+  </g>
+</svg>

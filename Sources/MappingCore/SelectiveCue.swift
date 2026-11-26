@@ -5,7 +5,7 @@ public enum CueScope:String,Codable,CaseIterable,Sendable { case full,selective 
 /// Each case is an atomic recall unit. Geometry includes its coordinate frame;
 /// source and shape include the payloads needed to interpret their selectors.
 public enum CueParameter:String,Codable,CaseIterable,Sendable {
-    case opacity,brightness,gamma,color,feather,blendMode,visibility,source,input,outputGeometry,shape,mask,routing
+    case opacity,brightness,gamma,color,feather,blendMode,visibility,source,input,outputGeometry,shape,mask,routing,effects,material
 }
 
 public struct CueBinding:Codable,Equatable,Sendable {
@@ -68,7 +68,8 @@ public enum CueSelection {
         return cue.surfaces.map { surface in
             var copy=surface
             let parameters=bindings[surface.id] ?? []
-            if !parameters.contains(.source) { copy.mediaID=nil }
+            if !parameters.contains(.source) { copy.mediaID=nil;copy.feedbackOutputID=nil }
+            if !parameters.contains(.material) { copy.materialID=nil;copy.materialValues=[:] }
             if !parameters.contains(.routing) { copy.outputID=nil }
             if !parameters.contains(.outputGeometry) { copy.groupID=nil }
             return copy
@@ -99,12 +100,14 @@ public enum CueSelection {
         case .feather:s.feather=b.feather
         case .blendMode:s.blendMode=b.blendMode
         case .visibility:s.enabled=b.enabled
-        case .source:s.mediaID=b.mediaID;s.generator=b.generator
-        case .input:s.input=b.input
-        case .outputGeometry:s.output=b.output;s.mesh=b.mesh;s.meshColumns=b.meshColumns;s.meshRows=b.meshRows;s.groupID=b.groupID
+        case .source:s.mediaID=b.mediaID;s.generator=b.generator;s.feedbackOutputID=b.feedbackOutputID
+        case .input:s.input=b.input;s.inputMesh=b.inputMesh;s.inputWarp=b.inputWarp;s.inputWarpTransform=b.inputWarpTransform
+        case .outputGeometry:s.output=b.output;s.mesh=b.mesh;s.meshColumns=b.meshColumns;s.meshRows=b.meshRows;s.groupID=b.groupID;s.bezierWarp=b.bezierWarp;s.warpTransform=b.warpTransform;s.meshWeights=b.meshWeights;s.meshLinked=b.meshLinked
         case .shape:s.shape=b.shape;s.stroke=b.stroke;s.triangleVertices=b.triangleVertices
-        case .mask:s.mask=b.mask;s.maskSettings=b.maskSettings
+        case .mask:s.mask=b.mask;s.maskSettings=b.maskSettings;s.masks=b.masks
         case .routing:s.outputID=b.outputID
+        case .effects:s.effects=b.effects
+        case .material:s.materialID=b.materialID;s.materialValues=b.materialValues
         }
     }
 
@@ -125,9 +128,11 @@ public enum CueSelection {
             case .color:if a.color.count == b.color.count { s.color=zip(a.color,b.color).map(mix) }
             case .feather:s.feather=mix(a.feather,b.feather)
             case .input:
+                if a.inputWarp != nil || b.inputWarp != nil {break}
                 let candidate=points(a.input,b.input)
                 if (try? Geometry.validateQuad(candidate)) != nil { s.input=candidate }
             case .outputGeometry:
+                if a.bezierWarp != nil || b.bezierWarp != nil {break}
                 if a.groupID == b.groupID,a.meshColumns == b.meshColumns,a.meshRows == b.meshRows,a.mesh.count == b.mesh.count {
                     let quad=points(a.output,b.output)
                     if (try? Geometry.validateQuad(quad)) != nil { s.output=quad;s.mesh=points(a.mesh,b.mesh) }
@@ -142,7 +147,7 @@ public enum CueSelection {
                     s.stroke=StrokePath(nodes:nodes,width:mix(a.stroke.width,b.stroke.width),closed:a.stroke.closed)
                 }
             case .mask:PolygonMaskGeometry.interpolate(a,b,t:u,into:&s)
-            case .visibility,.source,.blendMode,.routing:break
+            case .visibility,.source,.blendMode,.routing,.effects,.material:break
             }
         }
         if s.shape.isStroke,(try? StrokeGeometry.samples(surface:s)) == nil {

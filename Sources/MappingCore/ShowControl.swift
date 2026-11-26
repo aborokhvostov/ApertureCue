@@ -93,11 +93,11 @@ public final class CueEngine {
         if u >= 1 { return b }; if u <= 0 { return a }
         var s = u < 0.5 ? a : b
         func mix(_ x: Double, _ y: Double) -> Double { x+(y-x)*u }
-        if a.input.count == b.input.count { s.input=zip(a.input,b.input).map { Point2.interpolate($0,$1,t:u) } }
+        if a.inputWarp == nil,b.inputWarp == nil,a.input.count == b.input.count { s.input=zip(a.input,b.input).map { Point2.interpolate($0,$1,t:u) } }
         // Different parents define different local coordinate frames. Switch the
         // parent and its geometry together rather than interpolating unlike units.
-        if a.groupID == b.groupID, a.output.count == b.output.count { s.output=zip(a.output,b.output).map { Point2.interpolate($0,$1,t:u) } }
-        if a.groupID == b.groupID, a.meshColumns == b.meshColumns, a.meshRows == b.meshRows, a.mesh.count == b.mesh.count {
+        if a.bezierWarp == nil,b.bezierWarp == nil,a.groupID == b.groupID, a.output.count == b.output.count { s.output=zip(a.output,b.output).map { Point2.interpolate($0,$1,t:u) } }
+        if a.bezierWarp == nil,b.bezierWarp == nil,a.groupID == b.groupID, a.meshColumns == b.meshColumns, a.meshRows == b.meshRows, a.mesh.count == b.mesh.count {
             s.mesh=zip(a.mesh,b.mesh).map { Point2.interpolate($0,$1,t:u) }
         }
         if a.groupID == b.groupID,a.shape == b.shape,a.shape.isStroke,

@@ -4,42 +4,75 @@ import Foundation
 /// Coefficients retain shear introduced by nested rotation/non-uniform scale.
 public struct Affine2D: Codable, Equatable, Sendable {
     public var a:Double, b:Double, c:Double, d:Double, tx:Double, ty:Double
-    public init(a:Double=1,b:Double=0,c:Double=0,d:Double=1,tx:Double=0,ty:Double=0) {
+    /// Projective extension of the historical affine API. The default last row
+    /// preserves all pre-schema12 transforms exactly.
+    public var px:Double, py:Double, pw:Double
+    public init(a:Double=1,b:Double=0,c:Double=0,d:Double=1,tx:Double=0,ty:Double=0,
+                px:Double=0,py:Double=0,pw:Double=1) {
         self.a=a; self.b=b; self.c=c; self.d=d; self.tx=tx; self.ty=ty
+        self.px=px; self.py=py; self.pw=pw
     }
+    public init(values:[Double]) throws {
+        guard values.count == 9 else { throw GeometryError.invalidPointCount }
+        self.init(a:values[0],b:values[3],c:values[1],d:values[4],tx:values[2],ty:values[5],px:values[6],py:values[7],pw:values[8])
+        try validate()
+    }
+    public var values:[Double] { [a,c,tx,b,d,ty,px,py,pw] }
     public static let identity=Affine2D()
+    public static func perspective(from:[Point2]=Point2.unitQuad,to:[Point2]) throws -> Affine2D {
+        try Affine2D(values:Homography.solve(from:from,to:to).values)
+    }
     public func applying(_ p:Point2) throws -> Point2 {
-        let q=Point2(a*p.x+c*p.y+tx,b*p.x+d*p.y+ty)
-        guard p.x.isFinite,p.y.isFinite,q.x.isFinite,q.y.isFinite else { throw GeometryError.nonFinite }
-        return q
+        try Homography(values:values).applying(p)
     }
     /// self * other: the other transform acts first.
     public func concatenating(_ other:Affine2D) -> Affine2D {
-        Affine2D(a:a*other.a+c*other.b,b:b*other.a+d*other.b,
-                 c:a*other.c+c*other.d,d:b*other.c+d*other.d,
-                 tx:a*other.tx+c*other.ty+tx,ty:b*other.tx+d*other.ty+ty)
+        let m=values,n=other.values
+        var out=Array(repeating:0.0,count:9)
+        for row in 0..<3 { for column in 0..<3 {
+            out[row*3+column]=(0..<3).reduce(0) { $0+m[row*3+$1]*n[$1*3+column] }
+        } }
+        return Affine2D(a:out[0],b:out[3],c:out[1],d:out[4],tx:out[2],ty:out[5],px:out[6],py:out[7],pw:out[8])
     }
     public func inverse() throws -> Affine2D {
         try validate()
-        let determinant=a*d-b*c
-        return Affine2D(a:d/determinant,b:-b/determinant,c:-c/determinant,d:a/determinant,
-                        tx:(c*ty-d*tx)/determinant,ty:(b*tx-a*ty)/determinant)
+        let m=values
+        let c=[m[4]*m[8]-m[5]*m[7],m[2]*m[7]-m[1]*m[8],m[1]*m[5]-m[2]*m[4],
+               m[5]*m[6]-m[3]*m[8],m[0]*m[8]-m[2]*m[6],m[2]*m[3]-m[0]*m[5],
+               m[3]*m[7]-m[4]*m[6],m[1]*m[6]-m[0]*m[7],m[0]*m[4]-m[1]*m[3]]
+        let determinant=m[0]*c[0]+m[1]*c[3]+m[2]*c[6]
+        let v=c.map { $0/determinant }
+        return Affine2D(a:v[0],b:v[3],c:v[1],d:v[4],tx:v[2],ty:v[5],px:v[6],py:v[7],pw:v[8])
     }
     public static func translation(x:Double,y:Double) -> Affine2D { Affine2D(tx:x,ty:y) }
     public static func scale(x:Double,y:Double,around pivot:Point2=Point2(0.5,0.5)) -> Affine2D {
         translation(x:pivot.x,y:pivot.y).concatenating(Affine2D(a:x,d:y)).concatenating(translation(x:-pivot.x,y:-pivot.y))
     }
-    /// Positive angles turn clockwise in y-down coordinates. aspectRatio is the
-    /// canvas width/height; 1 means the normalized unit plane.
     public static func rotation(degrees:Double,around pivot:Point2=Point2(0.5,0.5),aspectRatio:Double=1) -> Affine2D {
         let radians=degrees*Double.pi/180, cosine=cos(radians), sine=sin(radians)
-        let rotation=Affine2D(a:cosine,b:sine*aspectRatio,c:-sine/aspectRatio,d:cosine)
-        return translation(x:pivot.x,y:pivot.y).concatenating(rotation).concatenating(translation(x:-pivot.x,y:-pivot.y))
+        return translation(x:pivot.x,y:pivot.y).concatenating(Affine2D(a:cosine,b:sine*aspectRatio,c:-sine/aspectRatio,d:cosine)).concatenating(translation(x:-pivot.x,y:-pivot.y))
     }
-    fileprivate func validate() throws {
-        guard [a,b,c,d,tx,ty].allSatisfy({$0.isFinite && abs($0)<=10000}) else { throw ProjectError.invalid("group transform exceeds finite working range") }
-        let norm=max(abs(a),abs(b),abs(c),abs(d)), determinant=a*d-b*c
-        guard norm>1e-12, abs(determinant)>max(1e-24,norm*norm*1e-12) else { throw ProjectError.invalid("group transform is singular or ill-conditioned") }
+    func validate() throws {
+        guard values.allSatisfy({$0.isFinite && abs($0)<=10000}) else { throw ProjectError.invalid("group transform exceeds finite working range") }
+        let m=values
+        let terms=[m[0]*(m[4]*m[8]-m[5]*m[7]),m[1]*(m[5]*m[6]-m[3]*m[8]),m[2]*(m[3]*m[7]-m[4]*m[6])]
+        let determinant=terms.reduce(0,+), scale=terms.map(abs).reduce(0,+)
+        guard abs(determinant)>max(1e-30,scale*1e-12) else { throw ProjectError.invalid("group transform is singular or ill-conditioned") }
+        if px == 0 && py == 0 {
+            let norm=max(abs(a),abs(b),abs(c),abs(d)), det=a*d-b*c
+            guard norm>1e-12,abs(pw)>1e-12,abs(det)>max(1e-24,norm*norm*1e-12) else { throw ProjectError.invalid("group transform is singular or ill-conditioned") }
+        }
+    }
+    private enum CodingKeys:String,CodingKey { case a,b,c,d,tx,ty,px,py,pw }
+    public init(from decoder:Decoder) throws { try self.init(from:decoder,legacy:false) }
+    init(from decoder:Decoder,legacy:Bool) throws {
+        let c=try decoder.container(keyedBy:CodingKeys.self)
+        self.init(a:try c.decode(Double.self,forKey:.a),b:try c.decode(Double.self,forKey:.b),
+                  c:try c.decode(Double.self,forKey:.c),d:try c.decode(Double.self,forKey:.d),
+                  tx:try c.decode(Double.self,forKey:.tx),ty:try c.decode(Double.self,forKey:.ty),
+                  px:legacy ? 0 : try c.decodeIfPresent(Double.self,forKey:.px) ?? 0,
+                  py:legacy ? 0 : try c.decodeIfPresent(Double.self,forKey:.py) ?? 0,
+                  pw:legacy ? 1 : try c.decodeIfPresent(Double.self,forKey:.pw) ?? 1)
     }
 }
 
@@ -50,8 +83,28 @@ public struct SurfaceGroup: Codable, Equatable, Identifiable, Sendable {
     public var transform:Affine2D
     public var opacity:Double
     public var enabled:Bool
+    public var isolated:Bool = false
+    public var blendMode:String = "normal"
+    public var masks:[CompositionMask] = []
+    public var effects:EffectsSettings = .init()
+    public var composites:Bool { isolated || blendMode != "normal" || !masks.isEmpty || effects != .init() }
     public init(id:UUID=UUID(),name:String="Group",parentID:UUID?=nil,transform:Affine2D = .identity,opacity:Double=1,enabled:Bool=true) {
         self.id=id; self.name=name; self.parentID=parentID; self.transform=transform; self.opacity=opacity; self.enabled=enabled
+    }
+    private enum CodingKeys:String,CodingKey { case id,name,parentID,transform,opacity,enabled,isolated,blendMode,masks,effects }
+    public init(from decoder:Decoder) throws { try self.init(from:decoder,legacy:false) }
+    init(from decoder:Decoder,legacy:Bool) throws {
+        let c=try decoder.container(keyedBy:CodingKeys.self)
+        self.init(id:try c.decode(UUID.self,forKey:.id),name:try c.decode(String.self,forKey:.name),
+                  parentID:try c.decodeIfPresent(UUID.self,forKey:.parentID),
+                  transform:try Affine2D(from:c.superDecoder(forKey:.transform),legacy:legacy),
+                  opacity:try c.decode(Double.self,forKey:.opacity),enabled:try c.decode(Bool.self,forKey:.enabled))
+        if !legacy {
+            isolated=try c.decodeIfPresent(Bool.self,forKey:.isolated) ?? false
+            blendMode=try c.decodeIfPresent(String.self,forKey:.blendMode) ?? "normal"
+            masks=try c.decodeIfPresent([CompositionMask].self,forKey:.masks) ?? []
+            effects=try c.decodeIfPresent(EffectsSettings.self,forKey:.effects) ?? .init()
+        }
     }
 }
 
@@ -63,8 +116,8 @@ public struct GroupBounds: Equatable, Sendable {
 /// Non-isolated grouping: geometry and per-surface opacity/visibility inherit
 /// through the hierarchy; back-to-front layer order and source UV are unchanged.
 public enum GroupEngine {
-    private struct State { var transform:Affine2D; var opacity:Double; var enabled:Bool }
-    private static let root=State(transform:.identity,opacity:1,enabled:true)
+    private struct State { var transform:Affine2D; var opacity:Double; var enabled:Bool; var layerOpacity:Double }
+    private static let root=State(transform:.identity,opacity:1,enabled:true,layerOpacity:1)
 
     private static func context(_ groups:[SurfaceGroup]) throws -> [UUID:State] {
         guard groups.count<=4096 else { throw ProjectError.invalid("too many groups") }
@@ -74,6 +127,8 @@ public enum GroupEngine {
             guard group.name.utf8.count<=4096 else { throw ProjectError.invalid("group name is too long") }
             guard group.opacity.isFinite,(0...1).contains(group.opacity) else { throw ProjectError.invalid("group opacity is outside 0...1") }
             try group.transform.validate()
+            try Effects.validate(group.effects);try CompositionPlan.validateMasks(group.masks)
+            guard ["normal","add","multiply","screen"].contains(group.blendMode) else { throw ProjectError.invalid("unsupported group blend mode") }
         }
         var result:[UUID:State]=[:]
         for group in groups where result[group.id]==nil {
@@ -94,7 +149,7 @@ public enum GroupEngine {
                 ancestor=definitions[id]?.parentID
             }
             for item in chain.reversed() {
-                inherited=State(transform:inherited.transform.concatenating(item.transform),opacity:inherited.opacity*item.opacity,enabled:inherited.enabled && item.enabled)
+                inherited=State(transform:inherited.transform.concatenating(item.transform),opacity:inherited.opacity*item.opacity,enabled:inherited.enabled && item.enabled,layerOpacity:inherited.layerOpacity*(item.composites ? 1 : item.opacity))
                 try inherited.transform.validate()
                 result[item.id]=inherited
             }
@@ -110,20 +165,37 @@ public enum GroupEngine {
         var result=surface
         result.output=try surface.output.map { try transform.applying($0) }
         result.mesh=try surface.mesh.map { try transform.applying($0) }
+        if !surface.mesh.isEmpty {
+            let w=surface.mesh.enumerated().map { index,p in
+                (surface.meshWeights.isEmpty ? 1 : surface.meshWeights[index])*(transform.px*p.x+transform.py*p.y+transform.pw)
+            }
+            guard w.allSatisfy({$0>1e-12}) || w.allSatisfy({$0 < -1e-12}),let scale=w.map(abs).max(),scale>1e-12 else { throw ProjectError.invalid("group perspective crosses the mesh horizon") }
+            let normalized=w.map { abs($0)/scale }
+            result.meshWeights=normalized.allSatisfy({abs($0-1)<1e-14}) ? [] : normalized
+        }
+        if let warp=surface.bezierWarp {
+            result.warpTransform=transform.concatenating(surface.warpTransform)
+            try warp.validate(projection:Homography(values:result.warpTransform.values))
+        }
+        let weights=surface.output.map { transform.px*$0.x+transform.py*$0.y+transform.pw }
+        guard weights.allSatisfy({$0>1e-12}) || weights.allSatisfy({$0 < -1e-12}) else { throw ProjectError.invalid("group perspective crosses its surface horizon") }
         try Geometry.validateQuad(result.output)
         guard (result.output+result.mesh).allSatisfy({$0.x.isFinite && $0.y.isFinite && abs($0.x)<=10000 && abs($0.y)<=10000}) else { throw ProjectError.invalid("resolved group geometry exceeds finite working range") }
         return result
     }
-    private static func resolve(_ surfaces:[Surface],context:[UUID:State]) throws -> [Surface] {
+    private static func resolve(_ surfaces:[Surface],context:[UUID:State],composition:Bool=false) throws -> [Surface] {
         try surfaces.map { surface in
             let inherited=try state(for:surface.groupID,context:context)
             var result=try geometry(surface,by:inherited.transform)
-            result.opacity *= inherited.opacity; result.enabled = result.enabled && inherited.enabled
+            result.opacity *= composition ? inherited.layerOpacity : inherited.opacity; result.enabled = result.enabled && inherited.enabled
             return result
         }
     }
     public static func resolve(surfaces:[Surface],groups:[SurfaceGroup]) throws -> [Surface] {
         try resolve(surfaces,context:context(groups))
+    }
+    public static func resolveForComposition(surfaces:[Surface],groups:[SurfaceGroup]) throws -> [Surface] {
+        try resolve(surfaces,context:context(groups),composition:true)
     }
     public static func worldTransform(for groupID:UUID?,groups:[SurfaceGroup]) throws -> Affine2D {
         try state(for:groupID,context:context(groups)).transform
@@ -131,9 +203,12 @@ public enum GroupEngine {
     /// Validation shares one hierarchy resolution across all saved snapshots.
     public static func validate(_ project:Project) throws {
         let inherited=try context(project.groups)
+        guard project.groups.filter(\.composites).count<=16 else {throw ProjectError.invalid("a composition supports at most sixteen isolated groups")}
+        try CompositionPlan.validateStack(surfaces:project.surfaces,groups:project.groups)
         _=try resolve(project.surfaces,context:inherited)
         for cue in project.cues {
             try CueSelection.validate(cue)
+            if cue.scope == .full {try CompositionPlan.validateStack(surfaces:cue.surfaces,groups:project.groups)}
             _=try resolve(CueSelection.validationSurfaces(cue),context:inherited)
         }
     }
@@ -178,6 +253,7 @@ public enum GroupEngine {
     public static func dissolve(groupID:UUID,in project:Project) throws -> Project {
         try ProjectStore.validate(project)
         guard let group=project.groups.first(where:{$0.id==groupID}) else { throw ProjectError.invalid("group to dissolve does not exist") }
+        guard !group.composites else { throw ProjectError.invalid("disable isolated composition/masks/FX before dissolving a group") }
         // A partial appearance recall uses whichever frame is current at GO.
         // Include every stored frame that another cue can select; dormant
         // unselected snapshot parents never describe a possible frame.

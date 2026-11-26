@@ -3,7 +3,7 @@ set -eu
 cd "$(dirname "$0")/.."
 task_build="$PWD/.build/core-checks"
 mkdir -p "$task_build/sources" "$task_build/cache"
-swiftc -swift-version 5 -parse-as-library -enable-testing -emit-library -emit-module \
+swiftc -swift-version 5 -whole-module-optimization -parse-as-library -enable-testing -emit-library -emit-module \
   -module-name MappingCore Sources/MappingCore/*.swift \
   -module-cache-path "$task_build/cache" -o "$task_build/libMappingCore.dylib" \
   -emit-module-path "$task_build/MappingCore.swiftmodule"

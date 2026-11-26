@@ -93,6 +93,10 @@ public enum ProjectStore {
                 for j in portable.cues[i].surfaces.indices { portable.cues[i].surfaces[j].maskSettings = .init() }
             }
         }
+        if portable.version < 12 {
+            guard !portable.cues.contains(where:{$0.bindings.contains(where:{$0.parameters.contains(.effects) || $0.parameters.contains(.material)})}) else {throw ProjectError.invalid("material/FX cue fields require schema 12")}
+            clearLegacyComposition(&portable)
+        }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
@@ -109,6 +113,24 @@ public enum ProjectStore {
         let data = try encoder.encode(portable)
         guard data.count <= maximumFileSize else { throw ProjectError.tooLarge }
         try data.write(to:url, options:.atomic)
+    }
+
+    private static func clearLegacyComposition(_ project:inout Project) {
+        func legacy(_ surface:Surface) -> Surface {
+            var s=surface
+            s.inputMesh=[];s.meshWeights=[];s.meshLinked=false;s.bezierWarp=nil;s.inputWarp=nil
+            s.warpTransform = .identity;s.inputWarpTransform = .identity
+            s.masks=[];s.effects = .init();s.materialID=nil;s.materialValues=[:];s.feedbackOutputID=nil
+            return s
+        }
+        project.surfaces=project.surfaces.map(legacy)
+        for i in project.cues.indices { project.cues[i].surfaces=project.cues[i].surfaces.map(legacy) }
+        for i in project.outputs.indices { project.outputs[i].edgeBlend = .init() }
+        for i in project.groups.indices {
+            var g=project.groups[i];g.isolated=false;g.masks=[];g.effects = .init();g.blendMode="normal"
+            g.transform.px=0;g.transform.py=0;g.transform.pw=1;project.groups[i]=g
+        }
+        project.materials=[];project.globalMasks=[]
     }
 
     public static func load(from url: URL) throws -> Project {
@@ -185,6 +207,10 @@ public enum ProjectStore {
         try unique(project.outputs.map(\.id), "output IDs")
         try unique(project.cues.map(\.id), "cue IDs")
         let mediaIDs = project.sourceMediaIDs, outputIDs = Set(project.outputs.map(\.id))
+        guard project.materials.count<=256,Set(project.materials.map(\.id)).count==project.materials.count else { throw ProjectError.invalid("material count or duplicate IDs") }
+        var materialPrograms:[UUID:MaterialProgram]=[:]
+        for definition in project.materials { materialPrograms[definition.id]=try MaterialProgram(definition:definition) }
+        try CompositionPlan.validateMasks(project.globalMasks,global:true)
         for asset in project.assets {
             guard ["image","video","camera"].contains(asset.kind) else { throw ProjectError.invalid("unknown media kind \(asset.kind)") }
             guard asset.path.utf8.count <= 32768, !asset.path.contains("\0"), asset.name.utf8.count <= 4096 else { throw ProjectError.invalid("invalid media path or name") }
@@ -192,6 +218,7 @@ public enum ProjectStore {
             if asset.kind != "camera", asset.path.isEmpty { throw ProjectError.invalid("empty media path") }
         }
         for output in project.outputs {
+            try EdgeBlend.validate(output.edgeBlend)
             guard output.screenIndex >= 0, output.screenIndex < 64, (1...16384).contains(output.width), (1...16384).contains(output.height) else { throw ProjectError.invalid("invalid output size or screen index") }
         }
         try MontageProgram.validate(montages:project.version>=7 ? project.montages : [],assets:project.assets)
@@ -200,10 +227,11 @@ public enum ProjectStore {
         }
         for cue in project.cues { try CueSelection.validate(cue) }
         try GroupEngine.validate(project)
-        try validateSurfaces(project.surfaces, mediaIDs:mediaIDs, outputIDs:outputIDs)
+        try validateSurfaces(project.surfaces, mediaIDs:mediaIDs, outputIDs:outputIDs,materials:materialPrograms)
         if project.version >= 8, !project.geometryLockedSurfaceIDs.isSubset(of: Set(project.surfaces.map(\.id))) {
             throw ProjectError.invalid("geometry lock refers to a missing current surface")
         }
+        try validateFeedback(project.surfaces,outputs:project.outputs)
         try FixtureSampler.validate(fixtures:project.fixtures)
         var totalCueSurfaces = 0
         for cue in project.cues {
@@ -211,7 +239,8 @@ public enum ProjectStore {
             guard totalCueSurfaces <= 65536 else { throw ProjectError.invalid("too many cue surface snapshots") }
             guard cue.duration.isFinite, (0...86400).contains(cue.duration) else { throw ProjectError.invalid("invalid cue duration") }
             if let follow = cue.followAfter { guard follow.isFinite, (0...86400).contains(follow) else { throw ProjectError.invalid("invalid cue follow time") } }
-            try validateSurfaces(CueSelection.validationSurfaces(cue), mediaIDs:mediaIDs, outputIDs:outputIDs)
+            try validateFeedback(CueSelection.validationSurfaces(cue),outputs:project.outputs)
+            try validateSurfaces(CueSelection.validationSurfaces(cue), mediaIDs:mediaIDs, outputIDs:outputIDs,materials:materialPrograms)
         }
         // Only a full cue can restore an absent layer. A partial cue skips missing
         // targets, so its dormant snapshot cannot keep an orphan track alive.
@@ -219,7 +248,7 @@ public enum ProjectStore {
         try TimelineSettings.validate(project.timelineSettings,tracks:project.timeline,cueIDs:Set(project.cues.map(\.id)))
     }
 
-    private static func validateSurfaces(_ surfaces: [Surface], mediaIDs: Set<UUID>, outputIDs: Set<UUID>) throws {
+    private static func validateSurfaces(_ surfaces: [Surface], mediaIDs: Set<UUID>, outputIDs: Set<UUID>,materials:[UUID:MaterialProgram]) throws {
         guard surfaces.count <= 4096 else { throw ProjectError.invalid("too many surfaces") }
         try unique(surfaces.map(\.id), "surface IDs")
         for s in surfaces {
@@ -230,7 +259,28 @@ public enum ProjectStore {
                 _ = try TriangleGeometry(vertices:s.triangleVertices)
             }
             try PolygonMaskGeometry.validate(s.maskSettings)
-            let allPoints = s.input + s.output + s.mesh + s.mask
+            try CompositionPlan.validateMasks(s.masks);try Effects.validate(s.effects)
+            if let id=s.materialID {
+                guard let program=materials[id] else { throw ProjectError.invalid("surface references nonexistent material") }
+                _ = try program.parameterVectors(values:s.materialValues)
+            } else if !s.materialValues.isEmpty { throw ProjectError.invalid("material values need a material assignment") }
+            if let id=s.feedbackOutputID,!outputIDs.contains(id) { throw ProjectError.invalid("loopback references nonexistent output") }
+            if let warp=s.bezierWarp {
+                guard s.mesh.isEmpty else { throw ProjectError.invalid("choose regular or Bezier output mesh") }
+                try warp.validate();try s.warpTransform.validate()
+                _ = try warp.tessellated(width:1280,height:720,projection:Homography(values:s.warpTransform.values),maximumTriangles:65536)
+            }
+            if let input=s.inputWarp {
+                guard let output=s.bezierWarp,input.columns==output.columns,input.rows==output.rows else { throw ProjectError.invalid("source Bezier lattice requires matching output topology") }
+                try input.validate(projection:Homography(values:s.inputWarpTransform.values));try s.inputWarpTransform.validate()
+            }
+            if !s.inputMesh.isEmpty {
+                guard !s.mesh.isEmpty,s.inputMesh.count==s.mesh.count else { throw ProjectError.invalid("input/output regular meshes require matching topology") }
+            }
+            if !s.meshWeights.isEmpty {
+                guard s.meshWeights.count==s.mesh.count,s.meshWeights.allSatisfy({$0.isFinite && $0>1e-12 && $0<=10000}) else { throw ProjectError.invalid("invalid projective mesh weights") }
+            }
+            let allPoints = s.input + s.output + s.mesh + s.inputMesh + s.mask
             guard allPoints.allSatisfy({ $0.x.isFinite && $0.y.isFinite && abs($0.x) <= 10000 && abs($0.y) <= 10000 }) else { throw ProjectError.invalid("coordinate outside finite working range") }
             guard s.name.utf8.count <= 4096, s.group.utf8.count <= 4096 else { throw ProjectError.invalid("surface label is too long") }
             guard s.opacity.isFinite, (0...1).contains(s.opacity), s.brightness.isFinite, (0...16).contains(s.brightness), s.feather.isFinite, (0...0.5).contains(s.feather), s.gamma.isFinite, (0.01...10).contains(s.gamma) else { throw ProjectError.invalid("invalid surface color or opacity parameters") }
@@ -246,6 +296,13 @@ public enum ProjectStore {
             }
             if let id = s.mediaID, !mediaIDs.contains(id) { throw ProjectError.invalid("surface references nonexistent media") }
             if let id = s.outputID, !outputIDs.contains(id) { throw ProjectError.invalid("surface references nonexistent output") }
+        }
+    }
+    private static func validateFeedback(_ surfaces:[Surface],outputs:[OutputConfig]) throws {
+        let ids=Set(surfaces.filter(\.enabled).compactMap(\.feedbackOutputID))
+        let referenced=outputs.filter {ids.contains($0.id)}
+        guard ids.count<=8,referenced.allSatisfy({$0.width<=4096 && $0.height<=4096}),referenced.reduce(0,{$0+$1.width*$1.height})<=16777216 else {
+            throw ProjectError.invalid("feedback supports eight routes, 4096 per axis and 16M total pixels")
         }
     }
     private static func unique(_ ids: [UUID], _ name: String) throws {
