@@ -1,0 +1,67 @@
+[
+  {
+    "mode": "source-editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 4.722
+  },
+  {
+    "mode": "media-playback-test",
+    "exitCode": 0,
+    "elapsedSeconds": 2.361
+  },
+  {
+    "mode": "audio-test",
+    "exitCode": 0,
+    "elapsedSeconds": 2.018
+  },
+  {
+    "mode": "durability-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.208
+  },
+  {
+    "mode": "self-test",
+    "exitCode": 0,
+    "elapsedSeconds": 2.945
+  },
+  {
+    "mode": "montage-test",
+    "exitCode": 0,
+    "elapsedSeconds": 3.472
+  },
+  {
+    "mode": "editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 185.213
+  },
+  {
+    "mode": "composition-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.234
+  },
+  {
+    "mode": "live-editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 9.928
+  },
+  {
+    "mode": "live-composition-test",
+    "exitCode": 0,
+    "elapsedSeconds": 7.661
+  },
+  {
+    "mode": "protocol-loopback",
+    "exitCode": 0,
+    "elapsedSeconds": 0.047
+  },
+  {
+    "mode": "lighting-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.809
+  },
+  {
+    "mode": "media-soak-test",
+    "exitCode": 0,
+    "elapsedSeconds": 123.562
+  }
+]

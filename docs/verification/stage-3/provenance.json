@@ -1,0 +1,42 @@
+{
+  "scope": "Tracked and candidate source, documentation, original examples and sanitized evidence",
+  "sensitivePatternScanPassed": true,
+  "buildOutputsExcluded": true,
+  "recoverySidecarsExcluded": true,
+  "binaryAssets": [
+    {
+      "path": "examples/Demo/calibration.png",
+      "bytes": 19502
+    },
+    {
+      "path": "examples/Demo/motion.mov",
+      "bytes": 222861
+    },
+    {
+      "path": "examples/Media/Frames/frame1.png",
+      "bytes": 741
+    },
+    {
+      "path": "examples/Media/Frames/frame10.png",
+      "bytes": 741
+    },
+    {
+      "path": "examples/Media/Frames/frame11.png",
+      "bytes": 741
+    },
+    {
+      "path": "examples/Media/Frames/frame2.png",
+      "bytes": 741
+    },
+    {
+      "path": "examples/Media/original-stereo-tones.wav",
+      "bytes": 768044
+    },
+    {
+      "path": "examples/Media/original-time-colors.mov",
+      "bytes": 4481
+    }
+  ],
+  "assetProvenance": "Original generated demo media only; four new PNGs, H.264 MOV and stereo WAV are produced by MediaDemo. Existing Demo media retained. No MadMapper assets or optional proprietary SDKs.",
+  "manualObservation": "Only app controls and original fixtures are documented; unrelated system file-panel content is excluded."
+}

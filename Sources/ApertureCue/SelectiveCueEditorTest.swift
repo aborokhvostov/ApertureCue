@@ -155,7 +155,7 @@ import MappingCore
             } while ProcessInfo.processInfo.systemUptime < deadline
             return condition()
         }
-        try expect(pump(12) {e.media.duration(for:movie.id)>2.9},"Selective movie decoder did not become ready")
+        try expect(pump(12) {e.media.duration(for:movie.id)>2.9},"Selective movie decoder did not become ready: "+e.media.diagnosticState(for:movie.id))
         e.mutate("Change live movie opacity") {$0.surfaces[0].opacity=0.9}
         e.seekShow(to:0.5);e.playShow()
         try expect(pump(8) {e.media.texture(for:movie.id) != nil && e.media.playbackTime(for:movie.id)>0.65},"Selective movie did not decode while playing")

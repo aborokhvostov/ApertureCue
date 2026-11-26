@@ -15,6 +15,7 @@ enum EditorSelfTest {
     }
 
     static func run() -> Int32 {
+        setbuf(stdout,nil)
         let base=URL(fileURLWithPath:FileManager.default.currentDirectoryPath,isDirectory:true)
             .appendingPathComponent("artifacts/local/editor-test",isDirectory:true)
         let directory=base.appendingPathComponent(UUID().uuidString,isDirectory:true)
@@ -782,6 +783,7 @@ enum EditorSelfTest {
             passed("source/output polygon vertex commands respect geometry locks and save/reopen")
 
             for check in try CompositionEditorSelfTest.run(editor:e,directory:directory.appendingPathComponent("composition",isDirectory:true)) {passed(check)}
+            for check in try MediaSourceEditorSelfTest.run(editor:e,directory:directory.appendingPathComponent("media",isDirectory:true)) {passed(check)}
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count
             try writeReport()

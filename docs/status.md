@@ -13,11 +13,21 @@
 
 ## Реализованный работающий subset
 
-AppKit editor и Metal compositor: PNG/AVFoundation video, quad/triangle/ellipse, textured line/cubic paths и freehand, независимые input/output regular и Bézier warps, явный mesh link, projective группы с isolation/opacity/blend/FX, polygon/cubic masks слоя/группы/global, numeric transforms/nudge, chroma/luma key и color FX, expression materials и объявленный ISF subset, SVG→PNG import, video-wall tiles, edge ramps и previous-generation output feedback. Undo/Redo, schema 12 JSON, legacy migration, relative media paths, atomic save, recovery и Collect сохраняются. Это работающие собственные форматы и явно ограниченные подмножества, а не полное равенство референсу.
+AppKit editor и Metal compositor: PNG/AVFoundation video, quad/triangle/ellipse, textured line/cubic paths и freehand, независимые input/output regular и Bézier warps, явный mesh link, projective группы с isolation/opacity/blend/FX, polygon/cubic masks слоя/группы/global, numeric transforms/nudge, chroma/luma key и color FX, expression materials и объявленный ISF subset, SVG→PNG import, video-wall tiles, edge ramps и previous-generation output feedback. Undo/Redo, schema 13 JSON, legacy migration, relative media paths, atomic save, recovery и Collect сохраняются. Это работающие собственные форматы и явно ограниченные подмножества, а не полное равенство референсу.
 
 Отдельные output windows с display selection/routing/blackout; full/selective surface snapshots with 15 atomic field masks and a native Scenes editor; графический parameter timeline с Hold/Linear/Bezier, independent show clock, loop/continuation и Pause/Scene markers; latest-frame AVCapture adapter; fixed MIDI input profile, OSC localhost control с bounded main-thread mailbox; basic RGB/GRB/RGBW strips, asynchronous composition sampling, simulator и opt-in IPv4 ArtDmx/sACN. OBJ импортируется как статическая pinhole-проекция в editable quad patches, без depth buffer и сохранения исходной 3D-сцены. PNG still export.
 
 ## Текущий этап
+
+**Этап 3 · Media playback and durability — production-кандидат schema 13.**
+Реализованы независимые source clocks/modes, frozen image sequences, PCM routing
+и exact-revision recovery. Прошли 154 standalone core метода (не XCTest),
+90 production editor, 13 media, 15 offline audio, 5 durability, прежние GPU/live/
+montage/composition/protocol/light проверки и 120-секундный четырёхисточниковый
+soak. Распакованный app, видимый workflow и exact-source CI проверяются отдельно
+до публикации. [Ledger и отчёты](stage-3-completion.md),
+[media specification](media-playback-spec.md). Аппаратные камера/аудиоканалы
+и длинные шоу остаются отдельными gates.
 
 **Этап 2 · Geometry and composition — программные критерии объявленного subset завершены, alpha 15 опубликована.** Реализация, локальные frame/editor проверки, ручной workflow, архив и exact-source CI подтверждены. Аппаратные H gates остаются открытыми. [Полный отчёт](verification/composition-workflow.md), [спецификации и acceptance ledger](stage-2-completion.md).
 

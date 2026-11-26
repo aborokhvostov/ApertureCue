@@ -1,0 +1,7 @@
+{
+  "testMethods": 154,
+  "failedAssertions": 0,
+  "runner": "Standalone assertion harness using shared XCTest bodies; not XCTest execution",
+  "scope": "Foundation-only MappingCore",
+  "platform": "macOS arm64"
+}

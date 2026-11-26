@@ -125,12 +125,12 @@ import MappingCore
         let selectiveID=try e.cueCreate(name:"Original material + FX selective",scope:.selective,bindings:bindings,duration:0,followAfter:nil)
         let persisted=try JSONDecoder().decode(Project.self,from:JSONEncoder().encode(e.project))
         try ProjectStore.validate(persisted)
-        try expect(persisted==e.project && persisted.version==12,"Material/FX project round trip differs")
+        try expect(persisted==e.project && persisted.version==Project.currentVersion,"Material/FX project round trip differs")
         let selective=try required(persisted.cues.first(where:{$0.id==selectiveID}),"Selective material cue missing")
         try expect(selective.bindings==bindings && selective.surfaces[0].materialID==definition.id &&
                    selective.surfaces[0].materialValues==["amount":[0.3]] && selective.surfaces[0].effects==lockedFX,
                    "Selective material/FX field masks or captured payloads lost in persistence")
-        passed("shared current/full/selective material and FX assignments retain atomic masks in schema-12 persistence")
+        passed("shared current/full/selective material and FX assignments retain atomic masks in current-schema persistence")
 
         e.selectedID=a.id;try e.assignMaterial(nil)
         e.selectedID=b.id;try e.assignMaterial(nil)

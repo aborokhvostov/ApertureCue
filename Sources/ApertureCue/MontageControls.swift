@@ -9,6 +9,10 @@ extension EditorController {
     func updateActiveMedia() {
         let ordinary=Set(project.assets.map(\.id))
         media.setActiveAssetIDs(Set(project.surfaces.compactMap(\.mediaID)).intersection(ordinary))
+        let resolved=effectiveSurfaces
+        var visible=Set(resolved.filter {$0.enabled && $0.opacity>0}.compactMap(\.mediaID))
+        if inputMode,let id=selectedIndex.flatMap({project.surfaces[$0].mediaID}) {visible.insert(id)}
+        media.setVideoDemandIDs(visible.intersection(ordinary))
     }
     func showMontageWindow() {
         if montageWindow == nil {montageWindow=MontageWindowController(editor:self)}

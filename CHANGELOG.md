@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-alpha.16 — media playback and durability, 2026-11-26
+
+- Add independent per-source transport and saved trim/signed speed/Once/Loop/Hold/PingPong/seeded Random modes. Preserve adjacent source clocks, generation-tag frame publication and source state through relink/refresh; keep ordinary montage/rotation behavior.
+- Add naturally sorted frozen image-sequence folders, explicit FPS/Refresh, bounded image payload leases, coalesced loads, permanent corrupt-frame diagnostics and transient admission retry. Include an original media/sequence/stereo-tone demo.
+- Add source audio files and bounded PCM routing to an explicit device UID: channel matrix, clipping/master gain, mute, positive speed/trim, exact EOF and paused clock. Reverse/random/hold audio is explicitly silent. Keep decoder cancellation serialized with reads; preserve silence on unavailable devices and allow explicit same-route retry.
+- Bind recovery to exact saved bytes/path/mtime, preserve stale/corrupt/legacy sidecars, validate Restore before installing a document, and clear only owned checkpoints on Save/Discard. Extend atomic portable collection to frozen frames/audio and bounded stable file reads.
+- Schema 13 migrates earlier projects without activating undefined source extensions. New CLI modes cover source controls/PTS/cache/camera simulation, silent offline audio, guarded forced-process termination and a bounded four-source soak. Software/manual/archive/CI evidence and physical limits are tracked in [stage 3](docs/stage-3-completion.md).
+
 ## 0.1.0-alpha.15 — geometry and composition, 2026-11-26
 
 - Add independent regular/Bézier source and output lattices, explicit mesh linking, lattice-preserving cage edits, numeric surface transforms, keyboard nudges and bounded freehand capture. Reject exhausted precision budgets rather than emit a coarse warp.

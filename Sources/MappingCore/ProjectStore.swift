@@ -15,6 +15,8 @@ public enum ProjectError: Error, LocalizedError, Equatable {
 
 public enum ProjectStore {
     public static let maximumFileSize = 16 * 1024 * 1024
+    public static let maximumCollectedBytes:Int64=64*1024*1024*1024
+    public static let maximumSequenceFrameBytes:Int64=256*1024*1024
 
     /// Collect a self-contained copy in a new directory. The in-memory project's media paths
     /// must already be absolute (as returned by load). Camera identifiers remain live identities.
@@ -37,27 +39,48 @@ public enum ProjectStore {
             let mediaDirectory=staging.appendingPathComponent("media",isDirectory:true)
             try fm.createDirectory(at:mediaDirectory,withIntermediateDirectories:false)
             var collected=project
+            var copiedBytes:Int64=0
             for i in collected.assets.indices where collected.assets[i].kind != "camera" {
                 let asset=collected.assets[i]
                 guard NSString(string:asset.path).isAbsolutePath else { throw ProjectError.invalid("collect requires resolved absolute media paths; load or relink \(asset.name) first") }
                 let source=URL(fileURLWithPath:asset.path).resolvingSymlinksInPath().standardizedFileURL
-                let attributes: [FileAttributeKey:Any]
-                do { attributes=try fm.attributesOfItem(atPath:source.path) }
-                catch { throw ProjectError.invalid("missing media for collection: \(asset.name) (\(asset.path))") }
-                guard attributes[.type] as? FileAttributeType == .typeRegular else { throw ProjectError.invalid("collection media is not a regular file: \(asset.name)") }
-                let originalExtension=URL(fileURLWithPath:asset.path).pathExtension
-                guard originalExtension.utf8.count <= 255 else { throw ProjectError.invalid("media filename extension is too long") }
-                let filename=asset.id.uuidString+(originalExtension.isEmpty ? "" : "."+originalExtension)
-                let target=mediaDirectory.appendingPathComponent(filename)
-                try fm.copyItem(at:source,to:target)
-                collected.assets[i].path=target.path
+                if asset.kind == "sequence" {
+                    guard let sequence=asset.sequence else {throw ProjectError.invalid("sequence has no frozen frame manifest")}
+                    try sequence.validate()
+                    let folderBefore=try fm.attributesOfItem(atPath:source.path)
+                    guard folderBefore[.type] as? FileAttributeType == .typeDirectory else {throw ProjectError.invalid("sequence source is not a directory: \(asset.name)")}
+                    let target=mediaDirectory.appendingPathComponent(asset.id.uuidString,isDirectory:true)
+                    try fm.createDirectory(at:target,withIntermediateDirectories:false)
+                    for name in sequence.frames {
+                        let input=source.appendingPathComponent(name)
+                        // A selected folder may itself be an alias, but a frame
+                        // cannot silently escape it via a symbolic link.
+                        let attributes=try fm.attributesOfItem(atPath:input.path)
+                        guard attributes[.type] as? FileAttributeType == .typeRegular else {throw ProjectError.invalid("sequence frame is missing or is not a regular file: \(name)")}
+                        try copyStableFile(input,to:target.appendingPathComponent(name),maximumBytes:maximumSequenceFrameBytes,total:&copiedBytes)
+                    }
+                    let folderAfter=try fm.attributesOfItem(atPath:source.path)
+                    guard folderBefore[.systemFileNumber] as? NSNumber == folderAfter[.systemFileNumber] as? NSNumber else {throw ProjectError.invalid("sequence folder changed during collection")}
+                    collected.assets[i].path=target.path
+                } else {
+                    let originalExtension=URL(fileURLWithPath:asset.path).pathExtension
+                    guard originalExtension.utf8.count <= 255 else { throw ProjectError.invalid("media filename extension is too long") }
+                    let filename=asset.id.uuidString+(originalExtension.isEmpty ? "" : "."+originalExtension)
+                    let target=mediaDirectory.appendingPathComponent(filename)
+                    try copyStableFile(source,to:target,maximumBytes:maximumCollectedBytes,total:&copiedBytes)
+                    collected.assets[i].path=target.path
+                }
             }
             let stagedProject=staging.appendingPathComponent("project.aperturecue.json")
             try save(collected,to:stagedProject)
             // Verify serialization and all local references before publishing the directory.
             let verified=try load(from:stagedProject)
             let prefix=mediaDirectory.path+"/"
-            guard verified.assets.allSatisfy({ $0.kind == "camera" || ($0.path.hasPrefix(prefix) && fm.fileExists(atPath:$0.path)) }) else { throw ProjectError.invalid("collected project contains unresolved media") }
+            guard verified.assets.allSatisfy({ asset in
+                if asset.kind == "camera" {return true}
+                guard asset.path.hasPrefix(prefix),fm.fileExists(atPath:asset.path) else {return false}
+                return asset.sequence?.frames.allSatisfy {fm.fileExists(atPath:URL(fileURLWithPath:asset.path).appendingPathComponent($0).path)} ?? true
+            }) else { throw ProjectError.invalid("collected project contains unresolved media") }
             // Staging and destination are siblings, so this is a same-filesystem rename.
             // moveItem rejects an existing destination if another process creates it meanwhile.
             try fm.moveItem(at:staging,to:destination)
@@ -70,7 +93,48 @@ public enum ProjectStore {
         }
     }
 
+    /// Copy a bounded regular file and reject ordinary concurrent mutation.
+    /// This is metadata stability verification, not a filesystem snapshot/lock.
+    private static func copyStableFile(_ source:URL,to destination:URL,maximumBytes:Int64,total:inout Int64) throws {
+        let fm=FileManager.default
+        let before=try fm.attributesOfItem(atPath:source.path)
+        guard before[.type] as? FileAttributeType == .typeRegular,
+              let size=(before[.size] as? NSNumber)?.int64Value,size>=0,
+              size<=maximumBytes,size<=maximumCollectedBytes-total else {
+            throw ProjectError.invalid("collection media is not a regular file or exceeds its byte budget")
+        }
+        try fm.copyItem(at:source,to:destination)
+        let after=try fm.attributesOfItem(atPath:source.path)
+        let copied=try fm.attributesOfItem(atPath:destination.path)
+        guard after[.type] as? FileAttributeType == .typeRegular,
+              copied[.type] as? FileAttributeType == .typeRegular,
+              before[.size] as? NSNumber == after[.size] as? NSNumber,
+              before[.size] as? NSNumber == copied[.size] as? NSNumber,
+              before[.modificationDate] as? Date == after[.modificationDate] as? Date,
+              before[.systemFileNumber] as? NSNumber == after[.systemFileNumber] as? NSNumber else {
+            throw ProjectError.invalid("source media changed during collection")
+        }
+        total+=size
+    }
+
     public static func save(_ project: Project, to url: URL) throws {
+        try encodedProject(project,relativeTo:url).write(to:url,options:.atomic)
+    }
+
+    /// Manual Save variant for editors that retain a revision-bound autosave
+    /// token. If another writer wins immediately after our atomic write, report
+    /// the conflict instead of binding our in-memory project to its new bytes.
+    @discardableResult public static func saveWithRecoveryBaseline(_ project:Project,to url:URL) throws -> RecoveryBaseline {
+        let data=try encodedProject(project,relativeTo:url)
+        try data.write(to:url,options:.atomic)
+        let baseline=try captureRecoveryBaseline(for:url)
+        guard baseline.sourceByteCount==data.count,baseline.sourceSHA256==ProjectContentDigest.sha256(data) else {
+            throw ProjectError.invalid("saved document changed before its recovery baseline could be captured")
+        }
+        return baseline
+    }
+
+    private static func encodedProject(_ project:Project,relativeTo url:URL) throws -> Data {
         guard project.version >= 0,project.version <= Project.currentVersion else { throw ProjectError.unsupportedVersion(project.version) }
         var portable = project.version < 3 ? GroupEngine.migrateLegacyLabels(project) : project
         if portable.version < 4 { clearLegacyStrokeExtensions(&portable) }
@@ -97,6 +161,10 @@ public enum ProjectStore {
             guard !portable.cues.contains(where:{$0.bindings.contains(where:{$0.parameters.contains(.effects) || $0.parameters.contains(.material)})}) else {throw ProjectError.invalid("material/FX cue fields require schema 12")}
             clearLegacyComposition(&portable)
         }
+        if portable.version < 13 {
+            guard portable.assets.allSatisfy({["image","video","camera"].contains($0.kind)}) else {throw ProjectError.invalid("media kind requires schema 13")}
+            for i in portable.assets.indices {portable.assets[i].playback=nil;portable.assets[i].sequence=nil;portable.assets[i].audioRouting=nil}
+        }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
@@ -112,7 +180,7 @@ public enum ProjectStore {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         let data = try encoder.encode(portable)
         guard data.count <= maximumFileSize else { throw ProjectError.tooLarge }
-        try data.write(to:url, options:.atomic)
+        return data
     }
 
     private static func clearLegacyComposition(_ project:inout Project) {
@@ -134,10 +202,30 @@ public enum ProjectStore {
     }
 
     public static func load(from url: URL) throws -> Project {
-        let attributes = try FileManager.default.attributesOfItem(atPath:url.path)
-        if let size = attributes[.size] as? NSNumber, size.intValue > maximumFileSize { throw ProjectError.tooLarge }
-        let data = try Data(contentsOf:url)
-        guard data.count <= maximumFileSize else { throw ProjectError.tooLarge }
+        try decodedProject(readBoundedFile(url.resolvingSymlinksInPath(),limit:maximumFileSize),at:url)
+    }
+
+    private static func readBoundedFile(_ url:URL,limit:Int) throws -> Data {
+        let attributes=try FileManager.default.attributesOfItem(atPath:url.path)
+        guard attributes[.type] as? FileAttributeType == .typeRegular else {
+            throw ProjectError.invalid("expected a regular document file")
+        }
+        if let size=attributes[.size] as? NSNumber,size.intValue>limit {throw ProjectError.tooLarge}
+        let handle=try FileHandle(forReadingFrom:url)
+        defer {try? handle.close()}
+        var data=Data()
+        // A writer can grow the file after the metadata check. Read at most
+        // limit+1 bytes rather than allocate its now-unbounded whole contents.
+        while data.count<=limit {
+            let count=min(65536,limit+1-data.count)
+            let chunk=try handle.read(upToCount:count) ?? Data()
+            if chunk.isEmpty {return data}
+            data.append(chunk)
+        }
+        throw ProjectError.tooLarge
+    }
+
+    private static func decodedProject(_ data:Data,at url:URL) throws -> Project {
         var p = try JSONDecoder().decode(Project.self, from:data)
         guard p.version >= 0, p.version <= Project.currentVersion else { throw ProjectError.unsupportedVersion(p.version) }
         // Legacy projects always described quad cages. Do not reinterpret an unknown
@@ -192,11 +280,119 @@ public enum ProjectStore {
     public static func recoveryURL(for projectURL: URL) -> URL {
         projectURL.deletingLastPathComponent().appendingPathComponent("." + projectURL.lastPathComponent + ".recovery")
     }
-    public static func saveRecovery(_ project: Project, for projectURL: URL) throws {
-        try save(project, to:recoveryURL(for:projectURL))
+    /// Capture when the saved document is opened or manually saved. Passing this
+    /// immutable token to autosave prevents a later external save being mistaken
+    /// for the revision from which the editor's unsaved changes were derived.
+    public static func captureRecoveryBaseline(for projectURL:URL) throws -> RecoveryBaseline {
+        try readSavedRevision(for:projectURL).baseline
     }
-    public static func loadRecovery(for projectURL: URL) throws -> Project {
-        try load(from:recoveryURL(for:projectURL))
+
+    /// Decode exactly the same bytes that establish the saved-revision token.
+    /// This closes the Open-then-recapture window between two independent reads.
+    public static func loadWithRecoveryBaseline(from projectURL:URL) throws -> (project:Project,baseline:RecoveryBaseline) {
+        let revision=try readSavedRevision(for:projectURL)
+        return (try decodedProject(revision.data,at:projectURL),revision.baseline)
+    }
+
+    private static func readSavedRevision(for projectURL:URL) throws -> (data:Data,baseline:RecoveryBaseline) {
+        let source=projectURL.resolvingSymlinksInPath().standardizedFileURL
+        let before=try FileManager.default.attributesOfItem(atPath:source.path)
+        let data=try readBoundedFile(source,limit:maximumFileSize)
+        let after=try FileManager.default.attributesOfItem(atPath:source.path)
+        let firstTime=(before[.modificationDate] as? Date)?.timeIntervalSince1970
+        let lastTime=(after[.modificationDate] as? Date)?.timeIntervalSince1970
+        guard let firstTime,let lastTime,firstTime==lastTime,
+              (before[.size] as? NSNumber)?.intValue==data.count,
+              (before[.size] as? NSNumber)==(after[.size] as? NSNumber),
+              (before[.systemFileNumber] as? NSNumber)==(after[.systemFileNumber] as? NSNumber) else {
+            throw ProjectError.invalid("saved document changed while capturing recovery baseline")
+        }
+        let baseline=RecoveryBaseline(sourcePath:source.path,sourceSHA256:ProjectContentDigest.sha256(data),
+                                      sourceByteCount:data.count,sourceModificationTime:lastTime)
+        return (data,baseline)
+    }
+
+    public static func recoveryStatus(for projectURL:URL) -> RecoveryStatus {
+        let url=recoveryURL(for:projectURL)
+        guard (try? FileManager.default.attributesOfItem(atPath:url.path)) != nil else {
+            return RecoveryStatus(state:.missing,diagnostic:"")
+        }
+        do {
+            let data=try readBoundedFile(url,limit:maximumRecoveryFileSize)
+            guard let object=try JSONSerialization.jsonObject(with:data) as? [String:Any] else {
+                return RecoveryStatus(state:.invalid,diagnostic:"Recovery is not a valid object; the file was preserved")
+            }
+            guard object["format"] != nil else {
+                return RecoveryStatus(state:.legacy,diagnostic:"Legacy recovery has no saved-revision binding; the file was preserved")
+            }
+            let envelope=try JSONDecoder().decode(RecoveryEnvelope.self,from:data)
+            guard envelope.format==RecoveryEnvelope.marker,envelope.version==1,
+                  envelope.createdAt.isFinite,envelope.payload.count<=maximumFileSize,
+                  envelope.payloadSHA256==ProjectContentDigest.sha256(envelope.payload) else {
+                return RecoveryStatus(state:.invalid,diagnostic:"Recovery envelope or payload checksum is invalid; the file was preserved")
+            }
+            let current=try captureRecoveryBaseline(for:projectURL)
+            guard envelope.baseline==current else {
+                return RecoveryStatus(state:.stale,diagnostic:"Recovery belongs to a different saved revision or document path; the file was preserved")
+            }
+            _=try decodedProject(envelope.payload,at:projectURL)
+            return RecoveryStatus(state:.available,diagnostic:"A recovery snapshot matches this saved document revision")
+        } catch {
+            return RecoveryStatus(state:.invalid,diagnostic:"Recovery is unavailable: \(error.localizedDescription). The file was preserved")
+        }
+    }
+
+    public static let maximumRecoveryFileSize=24*1024*1024
+    public static func saveRecovery(_ project:Project,for projectURL:URL,baseline:RecoveryBaseline?=nil) throws {
+        let baseline=try baseline ?? captureRecoveryBaseline(for:projectURL)
+        guard baseline.sourcePath==projectURL.resolvingSymlinksInPath().standardizedFileURL.path else {
+            throw ProjectError.invalid("recovery baseline belongs to another document path")
+        }
+        let status=recoveryStatus(for:projectURL)
+        guard status.state == .missing || status.state == .available else {
+            throw ProjectError.invalid("existing recovery was preserved: "+status.diagnostic)
+        }
+        if status.state == .available {
+            let existing=try JSONDecoder().decode(RecoveryEnvelope.self,from:readBoundedFile(recoveryURL(for:projectURL),limit:maximumRecoveryFileSize))
+            guard existing.baseline==baseline else {throw ProjectError.invalid("existing recovery belongs to another editor revision and was preserved")}
+        }
+        let payload=try encodedProject(project,relativeTo:projectURL)
+        let envelope=RecoveryEnvelope(format:RecoveryEnvelope.marker,version:1,baseline:baseline,
+                                      createdAt:Date().timeIntervalSince1970,payloadSHA256:ProjectContentDigest.sha256(payload),payload:payload)
+        let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys,.withoutEscapingSlashes]
+        let data=try encoder.encode(envelope)
+        guard data.count<=maximumRecoveryFileSize else {throw ProjectError.tooLarge}
+        try data.write(to:recoveryURL(for:projectURL),options:.atomic)
+    }
+    public static func loadRecovery(for projectURL:URL) throws -> Project {
+        let status=recoveryStatus(for:projectURL)
+        guard status.state == .available else {throw ProjectError.invalid(status.diagnostic.isEmpty ? "no recovery snapshot" : status.diagnostic)}
+        let data=try readBoundedFile(recoveryURL(for:projectURL),limit:maximumRecoveryFileSize)
+        let envelope=try JSONDecoder().decode(RecoveryEnvelope.self,from:data)
+        // Recheck identity after the status read; a concurrently replaced sidecar
+        // must not bypass the source or payload checks used to offer recovery.
+        guard envelope.format==RecoveryEnvelope.marker,envelope.version==1,
+              envelope.baseline == (try captureRecoveryBaseline(for:projectURL)),
+              envelope.payload.count<=maximumFileSize,
+              envelope.payloadSHA256==ProjectContentDigest.sha256(envelope.payload) else {
+            throw ProjectError.invalid("recovery changed while loading; the file was preserved")
+        }
+        return try decodedProject(envelope.payload,at:projectURL)
+    }
+
+    /// Remove only a sidecar owned by the revision held by this editor. Call
+    /// after a successful manual Save, passing the token captured before Save.
+    /// Stale/legacy/corrupt files and other revisions are left in place.
+    @discardableResult public static func removeRecovery(for projectURL:URL,baseline:RecoveryBaseline?) throws -> Bool {
+        guard let baseline,baseline.sourcePath==projectURL.resolvingSymlinksInPath().standardizedFileURL.path else {return false}
+        let url=recoveryURL(for:projectURL)
+        guard (try? FileManager.default.attributesOfItem(atPath:url.path)) != nil else {return false}
+        guard let data=try? readBoundedFile(url,limit:maximumRecoveryFileSize),
+              let envelope=try? JSONDecoder().decode(RecoveryEnvelope.self,from:data),
+              envelope.format==RecoveryEnvelope.marker,envelope.version==1,envelope.baseline==baseline,
+              envelope.payloadSHA256==ProjectContentDigest.sha256(envelope.payload) else {return false}
+        try FileManager.default.removeItem(at:url)
+        return true
     }
 
     public static func validate(_ project: Project) throws {
@@ -212,7 +408,17 @@ public enum ProjectStore {
         for definition in project.materials { materialPrograms[definition.id]=try MaterialProgram(definition:definition) }
         try CompositionPlan.validateMasks(project.globalMasks,global:true)
         for asset in project.assets {
-            guard ["image","video","camera"].contains(asset.kind) else { throw ProjectError.invalid("unknown media kind \(asset.kind)") }
+            let kinds=project.version>=13 ? ["image","video","audio","camera","sequence"] : ["image","video","camera"]
+            guard kinds.contains(asset.kind) else { throw ProjectError.invalid("unknown media kind \(asset.kind)") }
+            if project.version>=13 {
+                try asset.playback?.validate();try asset.audioRouting?.validate()
+                if asset.kind == "sequence" {
+                    guard let sequence=asset.sequence else {throw ProjectError.invalid("sequence source requires a frozen frame manifest")}
+                    try sequence.validate()
+                } else if asset.sequence != nil {throw ProjectError.invalid("only sequence sources can contain frame manifests")}
+                if asset.playback != nil,!(["video","audio","sequence"].contains(asset.kind)) {throw ProjectError.invalid("source kind does not support playback settings")}
+                if asset.audioRouting != nil,!(["video","audio"].contains(asset.kind)) {throw ProjectError.invalid("source kind does not support audio routing")}
+            }
             guard asset.path.utf8.count <= 32768, !asset.path.contains("\0"), asset.name.utf8.count <= 4096 else { throw ProjectError.invalid("invalid media path or name") }
             guard asset.volume.isFinite, (0...1).contains(asset.volume) else { throw ProjectError.invalid("volume is outside 0...1") }
             if asset.kind != "camera", asset.path.isEmpty { throw ProjectError.invalid("empty media path") }
@@ -317,5 +523,78 @@ public enum ProjectStore {
         var common = 0
         while common < min(a.count,b.count), a[common] == b[common] { common += 1 }
         return (Array(repeating:"..", count:a.count-common) + b.dropFirst(common)).joined(separator:"/")
+    }
+}
+
+public struct RecoveryBaseline:Codable,Equatable,Sendable {
+    public let sourcePath:String
+    public let sourceSHA256:String
+    public let sourceByteCount:Int
+    public let sourceModificationTime:Double
+}
+
+public enum RecoveryState:String,Codable,Sendable {case missing,available,stale,invalid,legacy}
+public struct RecoveryStatus:Equatable,Sendable {
+    public let state:RecoveryState
+    public let diagnostic:String
+}
+
+private struct RecoveryEnvelope:Codable {
+    static let marker="ApertureCue recovery"
+    var format:String
+    var version:Int
+    var baseline:RecoveryBaseline
+    var createdAt:Double
+    var payloadSHA256:String
+    var payload:Data
+}
+
+/// Original portable SHA-256 implementation for bounded document fingerprints.
+/// MappingCore remains Foundation-only on macOS and Linux. This digest binds
+/// recovery to bytes; it is not an authentication or hostile-file trust boundary.
+enum ProjectContentDigest {
+    static func sha256(_ data:Data) -> String {
+        let constants:[UInt32]=[
+            0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+            0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+            0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+            0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+            0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+            0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+            0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+            0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]
+        func rotate(_ x:UInt32,_ n:UInt32) -> UInt32 {(x>>n)|(x<<(32-n))}
+        var bytes=Array(data)
+        let bitCount=UInt64(bytes.count)*8
+        bytes.append(0x80)
+        while bytes.count%64 != 56 {bytes.append(0)}
+        for shift in stride(from:56,through:0,by:-8) {bytes.append(UInt8(truncatingIfNeeded:bitCount>>UInt64(shift)))}
+        var state:[UInt32]=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]
+        var words=Array(repeating:UInt32(0),count:64)
+        for offset in stride(from:0,to:bytes.count,by:64) {
+            for i in 0..<16 {
+                let j=offset+i*4
+                words[i]=(UInt32(bytes[j])<<24)|(UInt32(bytes[j+1])<<16)|(UInt32(bytes[j+2])<<8)|UInt32(bytes[j+3])
+            }
+            for i in 16..<64 {
+                let x=words[i-15],y=words[i-2]
+                let s0=rotate(x,7)^rotate(x,18)^(x>>3)
+                let s1=rotate(y,17)^rotate(y,19)^(y>>10)
+                words[i]=words[i-16]&+s0&+words[i-7]&+s1
+            }
+            var a=state[0],b=state[1],c=state[2],d=state[3],e=state[4],f=state[5],g=state[6],h=state[7]
+            for i in 0..<64 {
+                let s1=rotate(e,6)^rotate(e,11)^rotate(e,25)
+                let choice=(e&f)^((~e)&g)
+                let first=h&+s1&+choice&+constants[i]&+words[i]
+                let s0=rotate(a,2)^rotate(a,13)^rotate(a,22)
+                let majority=(a&b)^(a&c)^(b&c)
+                let second=s0&+majority
+                h=g;g=f;f=e;e=d&+first;d=c;c=b;b=a;a=first&+second
+            }
+            let additions=[a,b,c,d,e,f,g,h]
+            for i in 0..<8 {state[i]=state[i]&+additions[i]}
+        }
+        return state.map {String(format:"%08x",$0)}.joined()
     }
 }

@@ -123,16 +123,29 @@ public struct MediaAsset: Codable, Equatable, Identifiable, Sendable {
     public var kind: String
     public var loop: Bool
     public var volume: Double
-    public init(id: UUID = UUID(), name: String, path: String, kind: String, loop: Bool = true, volume: Double = 1) {
+    /// Nil retains the pre-schema13 loop flag's exact playback meaning.
+    public var playback:MediaPlaybackSettings?
+    public var sequence:MediaSequenceSettings?
+    /// Nil leaves ordinary AVPlayer system audio active; explicit settings select routed PCM.
+    public var audioRouting:AudioRoutingSettings?
+    public init(id: UUID = UUID(), name: String, path: String, kind: String, loop: Bool = true, volume: Double = 1,
+                playback:MediaPlaybackSettings?=nil,sequence:MediaSequenceSettings?=nil,audioRouting:AudioRoutingSettings?=nil) {
         self.id=id; self.name=name; self.path=path; self.kind=kind; self.loop=loop; self.volume=volume
+        self.playback=playback;self.sequence=sequence;self.audioRouting=audioRouting
     }
-    private enum CodingKeys: String, CodingKey { case id,name,path,kind,loop,volume }
-    public init(from decoder: Decoder) throws {
+    private enum CodingKeys: String, CodingKey { case id,name,path,kind,loop,volume,playback,sequence,audioRouting }
+    public init(from decoder: Decoder) throws {try self.init(from:decoder,legacy:false)}
+    init(from decoder:Decoder,legacy:Bool) throws {
         let c = try decoder.container(keyedBy:CodingKeys.self)
+        let kind=try c.decode(String.self,forKey:.kind)
+        if legacy && !["image","video","camera"].contains(kind) {throw ProjectError.invalid("media kind requires schema 13")}
         self.init(id: try c.decodeIfPresent(UUID.self, forKey:.id) ?? UUID(),
                   name: try c.decode(String.self, forKey:.name), path: try c.decode(String.self, forKey:.path),
-                  kind: try c.decode(String.self, forKey:.kind), loop: try c.decodeIfPresent(Bool.self, forKey:.loop) ?? true,
-                  volume: try c.decodeIfPresent(Double.self, forKey:.volume) ?? 1)
+                  kind:kind, loop: try c.decodeIfPresent(Bool.self, forKey:.loop) ?? true,
+                  volume: try c.decodeIfPresent(Double.self, forKey:.volume) ?? 1,
+                  playback:legacy ? nil : try c.decodeIfPresent(MediaPlaybackSettings.self,forKey:.playback),
+                  sequence:legacy ? nil : try c.decodeIfPresent(MediaSequenceSettings.self,forKey:.sequence),
+                  audioRouting:legacy ? nil : try c.decodeIfPresent(AudioRoutingSettings.self,forKey:.audioRouting))
     }
 }
 
@@ -204,7 +217,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 12
+    public static let currentVersion = 13
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]
@@ -272,9 +285,14 @@ public struct Project: Codable, Equatable, Sendable {
             var entries=try c.nestedUnkeyedContainer(forKey:.groups)
             while !entries.isAtEnd { groups.append(try SurfaceGroup(from:entries.superDecoder(),legacy:version < 12)) }
         }
+        var assets:[MediaAsset]=[]
+        if c.contains(.assets),try !c.decodeNil(forKey:.assets) {
+            var entries=try c.nestedUnkeyedContainer(forKey:.assets)
+            while !entries.isAtEnd {assets.append(try MediaAsset(from:entries.superDecoder(),legacy:version<13))}
+        }
         self.init(version: version,
                   name: try c.decodeIfPresent(String.self, forKey:.name) ?? "Untitled",
-                  assets: try c.decodeIfPresent([MediaAsset].self, forKey:.assets) ?? [],
+                  assets:assets,
                   surfaces: surfaces,
                   outputs: outputs,
                   cues: cues,

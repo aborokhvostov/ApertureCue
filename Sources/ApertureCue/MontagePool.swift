@@ -6,7 +6,7 @@ import MappingCore
 
 /// A fixed decoder slot coalesces requests. Leases invalidate old async work;
 /// readers are never cancelled concurrently from the presentation thread.
-private final class MontageVideoSlot {
+final class MontageVideoSlot {
     let decoder=MontageVideoDecoder(),lease=MontageDecodeLease()
     private(set) var owner:UUID?
     private(set) var generation:UInt64=0
@@ -15,7 +15,7 @@ private final class MontageVideoSlot {
     private(set) var videoEnd=0.0
     private var epoch:MontageVideoEpoch?
     private var serial:UInt64=0
-    private var requestedTime=0.0,playing=false
+    private var requestedTime=0.0,playing=false,backward=false
     private var pending:MontageDecodeRequest?
     private var working=false,wantsClear=false,failed=false
     private var resource:MediaFrameResource?
@@ -25,10 +25,10 @@ private final class MontageVideoSlot {
         generation=lease.advance();owner=nil;epoch=nil;pending=nil;frame=nil;resource=nil;resourceFrame=nil;message="";videoEnd=0;failed=false;wantsClear=true
         drain()
     }
-    func request(owner id:UUID,epoch next:MontageVideoEpoch,time:Double,playing:Bool,serial:UInt64) {
-        let changed=owner != id || epoch != next || self.serial != serial || (!playing && abs(time-requestedTime)>1e-9) || time<requestedTime-1e-8
+    func request(owner id:UUID,epoch next:MontageVideoEpoch,time:Double,playing:Bool,serial:UInt64,backward:Bool=false) {
+        let changed=owner != id || epoch != next || self.serial != serial || (!playing && abs(time-requestedTime)>1e-9) || self.backward != backward || (!backward && time<requestedTime-1e-8)
         if changed {generation=lease.advance();frame=nil;resource=nil;resourceFrame=nil;failed=false;message="Loading video clip"}
-        owner=id;epoch=next;self.serial=serial;self.playing=playing;requestedTime=time;wantsClear=false
+        owner=id;epoch=next;self.serial=serial;self.playing=playing;self.backward=backward;requestedTime=time;wantsClear=false
         if let frame,time>=frame.pts-1e-9,time<frame.end {return}
         if failed && !changed {return}
         pending=MontageDecodeRequest(epoch:next,time:time,generation:generation,lease:lease);drain()
@@ -56,13 +56,17 @@ private final class MontageVideoSlot {
             }
         }
     }
+    /// A late reverse sample may only extend into its known contiguous PTS run.
+    /// It cannot bridge a leading/internal gap, and paused seeks remain exact.
+    static func permitsFrame(_ frame:MontageDecodedFrame,time:Double,playing:Bool,backward:Bool,rate:Double)->Bool {
+        let exact=time>=frame.pts-1e-9 && time<frame.end
+        let forwardLag=playing && !backward && frame.allowLag && time>=frame.pts && time-frame.end<=0.12*rate
+        let reverseLag=playing && backward && time>=frame.reverseLagStart-1e-9 && time<frame.end && frame.pts-time<=0.12*rate
+        return exact || forwardLag || reverseLag
+    }
     func acceptedResource(cache:CVMetalTextureCache)->MediaFrameResource? {
         guard let frame,let epoch else {return nil}
-        let exact=requestedTime>=frame.pts-1e-9 && requestedTime<frame.end
-        // Continuous decode may lag by at most120ms of show time. Paused frames
-        // must cover the exact requested source position; cuts never reuse one.
-        let lag=playing && frame.allowLag && requestedTime>=frame.pts && requestedTime-frame.end<=0.12*epoch.clip.rate
-        guard (exact || lag),frame.end>epoch.clip.sourceIn,frame.pts<epoch.clip.sourceOut else {return nil}
+        guard Self.permitsFrame(frame,time:requestedTime,playing:playing,backward:backward,rate:epoch.clip.rate),frame.end>epoch.clip.sourceIn,frame.pts<epoch.clip.sourceOut else {return nil}
         if resourceFrame === frame {return resource}
         var wrapper:CVMetalTexture?
         let buffer=frame.buffer
@@ -146,7 +150,7 @@ final class MontagePool:VirtualMediaFrames {
             }
             if asset.kind=="image" {
                 if let resource=media?.frameResources(for:[asset.id]),let texture=resource.textures[asset.id] {
-                    frames[id]=MediaFrameResource(texture:texture,wrappers:resource.retained,buffers:resource.buffers)
+                    frames[id]=MediaFrameResource(texture:texture,wrappers:resource.retained,buffers:resource.buffers,owners:resource.owners)
                 } else {fallback(id,message:media?.errorMessages[asset.id] ?? "Loading image clip")}
             } else {
                 guard admitted.contains(id),let cache,let target=sample.sourceTime else {fallback(id,message:"Montage video decoder limit (8) reached");continue}

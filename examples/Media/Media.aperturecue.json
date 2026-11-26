@@ -1,0 +1,562 @@
+{
+  "assets" : [
+    {
+      "id" : "CEC94F44-57D0-4B06-BDFD-EAB98489E494",
+      "kind" : "sequence",
+      "loop" : true,
+      "name" : "01 · frozen numeric image sequence",
+      "path" : "Frames",
+      "sequence" : {
+        "fps" : 2,
+        "frames" : [
+          "frame1.png",
+          "frame2.png",
+          "frame10.png",
+          "frame11.png"
+        ]
+      },
+      "volume" : 0
+    },
+    {
+      "id" : "898DE909-7406-4D71-9EF7-C69CDE885F87",
+      "kind" : "video",
+      "loop" : true,
+      "name" : "02 · ordinary H.264 transport",
+      "path" : "original-time-colors.mov",
+      "volume" : 0
+    },
+    {
+      "id" : "11A9ADA5-5264-4856-B3FB-A4B75EB9030E",
+      "kind" : "video",
+      "loop" : true,
+      "name" : "03 · reverse ping-pong trim",
+      "path" : "original-time-colors.mov",
+      "playback" : {
+        "mode" : "pingPong",
+        "randomInterval" : 0.1,
+        "randomSeed" : 1,
+        "rate" : -1,
+        "trimIn" : 0.25,
+        "trimOut" : 3.75
+      },
+      "volume" : 0
+    },
+    {
+      "id" : "E362E0A8-B4BF-45D4-AE4E-911C1AB8063C",
+      "kind" : "audio",
+      "loop" : true,
+      "name" : "04 · original stereo tones (unassigned, volume 0)",
+      "path" : "original-stereo-tones.wav",
+      "volume" : 0
+    }
+  ],
+  "cues" : [
+
+  ],
+  "fixtures" : [
+
+  ],
+  "geometryLockedSurfaceIDs" : [
+
+  ],
+  "globalMasks" : [
+
+  ],
+  "groups" : [
+
+  ],
+  "materials" : [
+
+  ],
+  "montages" : [
+
+  ],
+  "name" : "ApertureCue Media · original playback demo",
+  "outputs" : [
+    {
+      "edgeBlend" : {
+        "blackLevel" : 0,
+        "bottom" : 0,
+        "gamma" : 1,
+        "left" : 0,
+        "power" : 1,
+        "right" : 0,
+        "top" : 0
+      },
+      "height" : 1080,
+      "id" : "C35E9BDA-1252-4967-985F-6069FE9FB14A",
+      "name" : "Output",
+      "screenIndex" : 0,
+      "width" : 1920
+    }
+  ],
+  "surfaces" : [
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "checker",
+      "group" : "",
+      "id" : "082CBA56-0B5B-48BD-97D3-5569620AFCF7",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mediaID" : "CEC94F44-57D0-4B06-BDFD-EAB98489E494",
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "Sequence · 2 FPS / frozen gaps",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.05,
+          "y" : 0.1
+        },
+        {
+          "x" : 0.47,
+          "y" : 0.1
+        },
+        {
+          "x" : 0.47,
+          "y" : 0.46
+        },
+        {
+          "x" : 0.05,
+          "y" : 0.46
+        }
+      ],
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    },
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "checker",
+      "group" : "",
+      "id" : "BD58C1D2-1CDE-4228-A5AB-9ED4C388539C",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mediaID" : "898DE909-7406-4D71-9EF7-C69CDE885F87",
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "Ordinary video · independent transport",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.53,
+          "y" : 0.1
+        },
+        {
+          "x" : 0.95,
+          "y" : 0.1
+        },
+        {
+          "x" : 0.95,
+          "y" : 0.46
+        },
+        {
+          "x" : 0.53,
+          "y" : 0.46
+        }
+      ],
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    },
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "checker",
+      "group" : "",
+      "id" : "7C80C459-E0C1-4272-8ACD-F7A4B90A5E29",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mediaID" : "11A9ADA5-5264-4856-B3FB-A4B75EB9030E",
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "Reverse ping-pong video",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.28,
+          "y" : 0.55
+        },
+        {
+          "x" : 0.72,
+          "y" : 0.55
+        },
+        {
+          "x" : 0.72,
+          "y" : 0.94
+        },
+        {
+          "x" : 0.28,
+          "y" : 0.94
+        }
+      ],
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    }
+  ],
+  "timeline" : [
+
+  ],
+  "timelineSettings" : {
+    "duration" : 10,
+    "loopEnabled" : false,
+    "loopEnd" : 10,
+    "loopStart" : 0,
+    "markers" : [
+
+    ],
+    "stopAtEnd" : true
+  },
+  "version" : 13
+}

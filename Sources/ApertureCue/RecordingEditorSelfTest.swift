@@ -197,6 +197,7 @@ import MappingCore
         let saveToken = try required(e.beginAutomationGesture(surfaceID: surface.id, parameter: "opacity", at: saveAnchor), "Persistence recording token missing")
         e.recordAutomationValue(0.65, token: saveToken, at: saveAnchor + 1)
         let activeRecoveryURL = directory.appendingPathComponent("recording-active-recovery.aperturecue.json")
+        try ProjectStore.save(e.project,to:activeRecoveryURL)
         try ProjectStore.saveRecovery(e.project, for: activeRecoveryURL)
         let recoveredActive = try ProjectStore.loadRecovery(for: activeRecoveryURL)
         try expect(recoveredActive == e.project && recoveredActive.timeline[0].keyframes.contains { $0.time == 3 && $0.value == 0.65 } && e.recording.gesture != nil && !e.history.canUndo, "Active accepted recording samples were not ordinary recovery data before history commit")

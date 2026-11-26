@@ -306,7 +306,7 @@ import MappingCore
     private static func color(second:Int)->[Int] {
         [[230,20,20,255],[20,230,20,255],[20,20,230,255],[230,230,20,255]][((second%4)+4)%4]
     }
-    private static func makeMovie(at url:URL,fps:Int,phase:Int=0,quadrants:Bool=false,rotate:Bool=false,leadingGap:Double=0,presentationTimes:[Double]?=nil)throws {
+    static func makeMovie(at url:URL,fps:Int,phase:Int=0,quadrants:Bool=false,rotate:Bool=false,leadingGap:Double=0,presentationTimes:[Double]?=nil)throws {
         let width=160,height=96
         let writer=try AVAssetWriter(outputURL:url,fileType:.mov)
         let colorProperties:[String:Any]=[AVVideoColorPrimariesKey:AVVideoColorPrimaries_ITU_R_709_2,AVVideoTransferFunctionKey:AVVideoTransferFunction_ITU_R_709_2,AVVideoYCbCrMatrixKey:AVVideoYCbCrMatrix_ITU_R_709_2]

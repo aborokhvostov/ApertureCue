@@ -31,10 +31,11 @@ final class MontageDecodedFrame:@unchecked Sendable {
     let pts:Double
     let end:Double
     let allowLag:Bool
+    let reverseLagStart:Double
     let transform:CGAffineTransform
     let naturalSize:CGSize
-    init(buffer:CVPixelBuffer,pts:Double,end:Double,allowLag:Bool,transform:CGAffineTransform,naturalSize:CGSize) {
-        self.buffer=buffer;self.pts=pts;self.end=end;self.allowLag=allowLag;self.transform=transform;self.naturalSize=naturalSize
+    init(buffer:CVPixelBuffer,pts:Double,end:Double,allowLag:Bool,transform:CGAffineTransform,naturalSize:CGSize,reverseLagStart:Double?=nil) {
+        self.buffer=buffer;self.pts=pts;self.end=end;self.allowLag=allowLag;self.reverseLagStart=reverseLagStart ?? pts;self.transform=transform;self.naturalSize=naturalSize
     }
 }
 struct MontageDecodeResult:Sendable {
@@ -120,6 +121,7 @@ private final class MontageVideoReader:@unchecked Sendable {
         private var videoStart=0.0,videoEnd=0.0
         private var transform=CGAffineTransform.identity,naturalSize=CGSize.zero
         private var past:Sample?,future:Sample?
+        private var contiguousStart=0.0
         private var eof=false,seekStart=0.0,preroll=1.0
 
         func clear() {
@@ -143,6 +145,10 @@ private final class MontageVideoReader:@unchecked Sendable {
                     guard request.lease.matches(request.generation) else {clear();return MontageDecodeResult()}
                     if future==nil && !eof {future=try nextSample();budget-=1}
                     if let next=future,next.pts<=target+1e-9 {
+                        if let previous=past {
+                            let previousEnd=previous.duration.map {previous.pts+$0} ?? next.pts
+                            if abs(previousEnd-next.pts)>1e-6 {contiguousStart=next.pts}
+                        } else {contiguousStart=next.pts}
                         past=next;future=nil;continue
                     }
                     if past==nil,let next=future,next.pts>target,seekStart>videoStart+1e-9 {
@@ -158,7 +164,7 @@ private final class MontageVideoReader:@unchecked Sendable {
                     let end=min(videoEnd,explicitEnd ?? nextPTS ?? videoEnd,nextPTS ?? videoEnd)
                     guard end>target,end>sample.pts else {return result(message:"Video sample gap at the requested source time")}
                     let adjacent=nextPTS.map {abs($0-end)<1e-6} ?? false
-                    return result(frame:MontageDecodedFrame(buffer:sample.buffer,pts:sample.pts,end:end,allowLag:adjacent,transform:transform,naturalSize:naturalSize))
+                    return result(frame:MontageDecodedFrame(buffer:sample.buffer,pts:sample.pts,end:end,allowLag:adjacent,transform:transform,naturalSize:naturalSize,reverseLagStart:contiguousStart))
                 }
                 return result(message:"Decoding clip frames",needsMore:true)
             } catch {clear();return MontageDecodeResult(message:"Montage video: "+error.localizedDescription)}

@@ -16,6 +16,11 @@ cp examples/Demo/calibration.png examples/Demo/motion.mov "$task_release/Demo/"
 mkdir -p "$task_release/Examples/Materials" "$task_release/Examples/SVG"
 cp examples/Materials/OriginalGradient.fs examples/Materials/OriginalTint.fs "$task_release/Examples/Materials/"
 cp examples/SVG/geometry.svg "$task_release/Examples/SVG/"
+mkdir -p "$task_release/Media/Frames"
+cp examples/Media/Media.aperturecue.json examples/Media/original-time-colors.mov examples/Media/original-stereo-tones.wav "$task_release/Media/"
+for task_frame in frame1 frame2 frame10 frame11; do
+  cp "examples/Media/Frames/$task_frame.png" "$task_release/Media/Frames/"
+done
 cp LICENSE THIRD_PARTY_NOTICES.md "$task_release/"
 cat > "$task_release/START-HERE.txt" <<'TEXT'
 ApertureCue 0.1.0 development preview
@@ -26,6 +31,10 @@ and select Demo/Demo.aperturecue.json beside this file. Press Play.
 Demo/Composition.aperturecue.json demonstrates procedural materials, Bezier
 warps, scoped masks and isolated groups without external media or hardware.
 Original import examples are in Examples/Materials and Examples/SVG.
+Media/Media.aperturecue.json demonstrates frozen image sequences, independent
+source transport and reverse ping-pong. Open Sources in the Media library.
+Its original stereo tone asset is unassigned and volume 0. Assign it to a
+surface and choose the intended volume/route when you want audio.
 
 This locally ad hoc signed build is not notarized. Source and complete
 build instructions: https://github.com/aborokhvostov/ApertureCue

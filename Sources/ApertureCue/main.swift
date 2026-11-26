@@ -3,6 +3,12 @@ import Foundation
 import AppKit
 
 MainActor.assumeIsolated {
+if CommandLine.arguments.contains("--source-editor-test") {exit(MediaSourceEditorSelfTest.runStandalone())}
+if CommandLine.arguments.contains("--durability-writer") {exit(MediaDurabilitySelfTest.writer(arguments:CommandLine.arguments))}
+if CommandLine.arguments.contains("--durability-test") {exit(MediaDurabilitySelfTest.run())}
+if CommandLine.arguments.contains("--media-playback-test") {exit(MediaPlaybackSelfTest.run())}
+if CommandLine.arguments.contains("--media-soak-test") {exit(MediaPlaybackSelfTest.run(soakSeconds:120))}
+if CommandLine.arguments.contains("--audio-test") {exit(MediaAudioSelfTest.run())}
 if CommandLine.arguments.contains("--live-editor-test") {exit(LiveEditorSelfTest.run())}
 if CommandLine.arguments.contains("--live-composition-test") {exit(LiveCompositionSelfTest.run())}
 if CommandLine.arguments.contains("--composition-test") {exit(CompositionSelfTest.run())}
@@ -24,7 +30,12 @@ if CommandLine.arguments.contains("--montage-test") {
 if CommandLine.arguments.contains("--editor-test") {
     exit(EditorSelfTest.run())
 }
-if CommandLine.arguments.contains("--generate-composition-demo") {
+if CommandLine.arguments.contains("--generate-media-demo") {
+    do {
+        let path=CommandLine.arguments.dropFirst(2).first ?? "examples/Media"
+        try MediaDemo.generate(at:URL(fileURLWithPath:path,isDirectory:true));print("Created original media demo in \(path)")
+    } catch {fputs("\(error)\n",stderr);exit(1)}
+} else if CommandLine.arguments.contains("--generate-composition-demo") {
     do {
         let path=CommandLine.arguments.dropFirst(2).first ?? "examples/Demo"
         try DemoGenerator.generateComposition(at:URL(fileURLWithPath:path,isDirectory:true))

@@ -134,4 +134,26 @@ runCase("CompositionTransition.testFullFadeRejectsTransientIsolationOrderButInst
 runCase("CompositionTransition.testSelectiveVisibilityUsesActualEngineSemanticsAndCurrentScene", CompositionTransitionTests.self) { try $0.testSelectiveVisibilityUsesActualEngineSemanticsAndCurrentScene() }
 runCase("CompositionTransition.testRetainsOutgoingLayersAndDoesNotChangeRunningEngineOrProject", CompositionTransitionTests.self) { try $0.testRetainsOutgoingLayersAndDoesNotChangeRunningEngineOrProject() }
 runCase("CompositionTransition.testRepresentativeGeometryAndMalformedSnapshotRejectAtomically", CompositionTransitionTests.self) { try $0.testRepresentativeGeometryAndMalformedSnapshotRejectAtomically() }
+runCase("MediaPlaybackTests.testTrimForwardReverseLoopAndHalfOpenEndpoints", MediaPlaybackTests.self) { try $0.testTrimForwardReverseLoopAndHalfOpenEndpoints() }
+runCase("MediaPlaybackTests.testPingPongHoldZeroRateAndSourceRangeBounds", MediaPlaybackTests.self) { try $0.testPingPongHoldZeroRateAndSourceRangeBounds() }
+runCase("MediaPlaybackTests.testRandomCounterTraceIsSeekOrderIndependentAndSeeded", MediaPlaybackTests.self) { try $0.testRandomCounterTraceIsSeekOrderIndependentAndSeeded() }
+runCase("MediaPlaybackTests.testSourceClockIndependentPauseSeekAndMasterRejoin", MediaPlaybackTests.self) { try $0.testSourceClockIndependentPauseSeekAndMasterRejoin() }
+runCase("MediaPlaybackTests.testSequenceNaturalOrderFrozenGapsFrameIndexAndUnsafeNames", MediaPlaybackTests.self) { try $0.testSequenceNaturalOrderFrozenGapsFrameIndexAndUnsafeNames() }
+runCase("MediaPlaybackTests.testSchemaThirteenSettingsRoundTripAndLegacyExtensionsIgnoredBeforeDecode", MediaPlaybackTests.self) { try $0.testSchemaThirteenSettingsRoundTripAndLegacyExtensionsIgnoredBeforeDecode() }
+runCase("AudioRoutingTests.testPCMMatrixIdentitySwapDownmixSignedGainAndClipping", AudioRoutingTests.self) { try $0.testPCMMatrixIdentitySwapDownmixSignedGainAndClipping() }
+runCase("AudioRoutingTests.testMuteDisabledBoundsNonfiniteAndAtomicFailure", AudioRoutingTests.self) { try $0.testMuteDisabledBoundsNonfiniteAndAtomicFailure() }
+runCase("DurabilityTests.testPortableContentDigestVectors", DurabilityTests.self) { try $0.testPortableContentDigestVectors() }
+runCase("DurabilityTests.testBoundRecoveryRoundTripsPortablePathsAndNeverChangesSavedBytes", DurabilityTests.self) { try $0.testBoundRecoveryRoundTripsPortablePathsAndNeverChangesSavedBytes() }
+runCase("DurabilityTests.testSameSizeAndSameModificationTimeReplacementMakesRecoveryStale", DurabilityTests.self) { try $0.testSameSizeAndSameModificationTimeReplacementMakesRecoveryStale() }
+runCase("DurabilityTests.testCopiedRecoveryCannotAttachToSameBytesAtAnotherDocumentPath", DurabilityTests.self) { try $0.testCopiedRecoveryCannotAttachToSameBytesAtAnotherDocumentPath() }
+runCase("DurabilityTests.testLegacyCorruptAndSymlinkSidecarsArePreserved", DurabilityTests.self) { try $0.testLegacyCorruptAndSymlinkSidecarsArePreserved() }
+runCase("DurabilityTests.testPayloadCorruptionAndFutureEnvelopeAreRejectedWithoutDeletion", DurabilityTests.self) { try $0.testPayloadCorruptionAndFutureEnvelopeAreRejectedWithoutDeletion() }
+runCase("DurabilityTests.testOwnedRecoveryUpdatesAndCleanupUsesPreSaveBaseline", DurabilityTests.self) { try $0.testOwnedRecoveryUpdatesAndCleanupUsesPreSaveBaseline() }
+runCase("DurabilityTests.testBaselineCapturedBeforeExternalSaveCannotRebindLaterAutosave", DurabilityTests.self) { try $0.testBaselineCapturedBeforeExternalSaveCannotRebindLaterAutosave() }
+runCase("DurabilityTests.testOldEditorCannotOverwriteAnotherRevisionAvailableRecovery", DurabilityTests.self) { try $0.testOldEditorCannotOverwriteAnotherRevisionAvailableRecovery() }
+runCase("DurabilityTests.testSequenceCollectionFreezesManifestAndSurvivesSourceRemoval", DurabilityTests.self) { try $0.testSequenceCollectionFreezesManifestAndSurvivesSourceRemoval() }
+runCase("DurabilityTests.testSequenceCollectionMissingSymlinkAndOversizedFramesRollBack", DurabilityTests.self) { try $0.testSequenceCollectionMissingSymlinkAndOversizedFramesRollBack() }
+runCase("DurabilityTests.testSchemaThirteenMediaValidationAndLegacySaveCannotActivateExtensions", DurabilityTests.self) { try $0.testSchemaThirteenMediaValidationAndLegacySaveCannotActivateExtensions() }
+
+runCase("DurabilityTests.testEditorOpenAndSaveReturnBaselineForExactlyTheirProjectBytes", DurabilityTests.self) { try $0.testEditorOpenAndSaveReturnBaselineForExactlyTheirProjectBytes() }
 exit(finishTests())

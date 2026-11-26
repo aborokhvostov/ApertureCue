@@ -67,7 +67,7 @@ extension EditorController {
         a.addButton(withTitle:"Add camera"); a.addButton(withTitle:"Cancel")
         guard a.runModal() == .alertFirstButtonReturn else { return }; let device = devices[picker.indexOfSelectedItem]
         mutate("Add camera") { p in let asset = MediaAsset(name:device.name,path:device.id,kind:"camera",volume:0); p.assets.append(asset)
-            if let i = selectedIndex { p.surfaces[i].mediaID = asset.id } else { let surface = Surface(name:device.name,mediaID:asset.id); p.surfaces.append(surface); selectedID = surface.id }
+            if let i = selectedIndex { p.surfaces[i].mediaID = asset.id;p.surfaces[i].feedbackOutputID=nil } else { let surface = Surface(name:device.name,mediaID:asset.id); p.surfaces.append(surface); selectedID = surface.id }
         }
     }
 
