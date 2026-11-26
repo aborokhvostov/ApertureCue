@@ -40,7 +40,7 @@ and selective cues interpolate equal-count polygons and feather only when space
 and inversion agree. Otherwise the complete mask switches at transition 0.5.
 Other selective fields leave it untouched. Undo/Redo, Save/Open, recovery and
 Collect use the same document data. Multiple independent masks, compound holes,
-Bézier paths, group/global mask scope and arbitrary vertex insertion remain open.
+Bézier paths and group/global mask scope remain open.
 
 Automatic evidence: `PolygonMaskTests` (distance, concavity, inversion,
 monotonic feather, coincident segments, validation, atomic scenes, old-schema
@@ -48,3 +48,22 @@ malformed-extension migration, persistence and Collect), production `SelfTest`
 (pixel oracle with crop, mesh and reflected group, layer isolation, routing and
 blackout) and `EditorSelfTest` (native controls, editing space, history, lock and
 reopen). Local standalone assertion execution is separate from remote XCTest.
+
+## Vertex editing (alpha 14, same schema 11)
+
+Mask vertices opens a numeric editor for the selected polygon. Save changes one
+vertex in the mask’s current coordinate space. Insert after splits the chosen
+closed edge at its midpoint; the last vertex splits the closing edge to vertex 1.
+This insertion preserves the polygon’s coverage and feather. Remove connects
+neighbours, deliberately changing the contour. Limits are 3…128 points; use
+Remove mask to clear it. Existing vertex coordinates may extend outside 0…1,
+within the finite ±10000 document range.
+
+Each accepted operation is one history command. Rejected coordinates/indexes or
+capacity violations leave document/history unchanged. Geometry locks guard both
+UI and controller calls. Numeric modal edits pin the document generation and
+complete selected surface; if either changes while the modal runs, the edit is
+rejected. Selection changes cannot redirect the operation to another layer.
+Mask-mode canvas handles show vertex numbers for polygons with more than four
+points. Changed vertex counts switch discretely at scene transition midpoint;
+matching counts retain the existing interpolation policy.

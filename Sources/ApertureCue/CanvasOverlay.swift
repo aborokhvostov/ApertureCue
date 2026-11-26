@@ -104,7 +104,7 @@ final class CanvasOverlay: NSView {
                 if maskMode && vertices.count > 1 { polygon(vertices,into:mask) }
                 for (index,p) in vertices.enumerated() {
                     let q = cg(p); handles.addEllipse(in:CGRect(x:q.x-5,y:q.y-5,width:10,height:10))
-                    if vertices.count <= 4 || pathMode {
+                    if vertices.count <= 4 || pathMode || maskMode {
                         let value=pathMode && surface.shape == .bezier ? "\(index/3+1)" + (["","i","o"][index%3]) : String(index+1)
                         numberLabels.append((value,NSPoint(x:p.x*bounds.width+8,y:p.y*bounds.height+3)))
                     }

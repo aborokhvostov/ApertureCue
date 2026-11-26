@@ -17,6 +17,31 @@ public struct PolygonMaskSettings: Codable, Equatable, Sendable {
 }
 
 public enum PolygonMaskGeometry {
+    public static func validateVertices(_ vertices: [Point2]) throws {
+        guard (3...128).contains(vertices.count), vertices.allSatisfy({
+            $0.x.isFinite && $0.y.isFinite && abs($0.x) <= 10000 && abs($0.y) <= 10000
+        }) else { throw ProjectError.invalid("a mask needs 3...128 finite vertices within the working range") }
+    }
+
+    /// Split the selected closed edge without changing its coverage or feather.
+    public static func insertingVertex(in vertices: [Point2], after index: Int) throws -> [Point2] {
+        try validateVertices(vertices)
+        guard vertices.count < 128, vertices.indices.contains(index) else {
+            throw ProjectError.invalid("choose an existing mask edge; at most 128 vertices are supported")
+        }
+        var result=vertices
+        result.insert(Point2.interpolate(vertices[index],vertices[(index+1)%vertices.count],t:0.5),at:index+1)
+        return result
+    }
+
+    public static func removingVertex(in vertices: [Point2], at index: Int) throws -> [Point2] {
+        try validateVertices(vertices)
+        guard vertices.count > 3, vertices.indices.contains(index) else {
+            throw ProjectError.invalid("a mask needs at least three vertices; use Remove mask to clear it")
+        }
+        var result=vertices; result.remove(at:index); return result
+    }
+
     public static func validate(_ settings: PolygonMaskSettings) throws {
         guard settings.feather.isFinite, (0...0.5).contains(settings.feather) else {
             throw ProjectError.invalid("mask feather must be finite and within 0...0.5")

@@ -3,6 +3,46 @@ import Foundation
 @testable import MappingCore
 
 final class PolygonMaskTests: XCTestCase {
+    func testEdgeInsertionPreservesConcaveCoverageAndFeather() throws {
+        let original=[Point2(0.1,0.1),Point2(0.9,0.1),Point2(0.9,0.4),Point2(0.4,0.4),Point2(0.4,0.9),Point2(0.1,0.9)]
+        for index in original.indices {
+            let split=try PolygonMaskGeometry.insertingVertex(in:original,after:index)
+            XCTAssertEqual(split[index+1],Point2.interpolate(original[index],original[(index+1)%original.count],t:0.5))
+            XCTAssertEqual(try PolygonMaskGeometry.removingVertex(in:split,at:index+1),original)
+            for inverted in [false,true] {
+                let settings=PolygonMaskSettings(inverted:inverted,feather:0.1)
+                for y in 0...20 { for x in 0...20 {
+                    let point=Point2(Double(x)/20,Double(y)/20)
+                    XCTAssertEqual(PolygonMaskGeometry.alpha(at:point,polygon:split,settings:settings),
+                                   PolygonMaskGeometry.alpha(at:point,polygon:original,settings:settings),accuracy:1e-12)
+                } }
+            }
+        }
+    }
+
+    func testVertexBudgetsInvalidCoordinatesAndSceneTopology() throws {
+        var polygon=[Point2(0,0),Point2(1,0),Point2(0,1)]
+        XCTAssertThrowsError(try PolygonMaskGeometry.removingVertex(in:polygon,at:0))
+        XCTAssertThrowsError(try PolygonMaskGeometry.insertingVertex(in:polygon,after:-1))
+        XCTAssertThrowsError(try PolygonMaskGeometry.insertingVertex(in:polygon,after:Int.max))
+        while polygon.count < 128 { polygon=try PolygonMaskGeometry.insertingVertex(in:polygon,after:polygon.count-1) }
+        XCTAssertThrowsError(try PolygonMaskGeometry.insertingVertex(in:polygon,after:0))
+        XCTAssertThrowsError(try PolygonMaskGeometry.removingVertex(in:polygon,at:128))
+        try PolygonMaskGeometry.validateVertices(polygon)
+        for bad in [Double.nan,Double.infinity,10001,-10001] {
+            var invalid=polygon; invalid[0].x=bad
+            XCTAssertThrowsError(try PolygonMaskGeometry.validateVertices(invalid))
+        }
+        XCTAssertThrowsError(try PolygonMaskGeometry.validateVertices([]))
+        let a=Surface(mask:Point2.unitQuad,maskSettings:.init(space:.outputCanvas,inverted:true,feather:0.1))
+        var b=a; b.mask=try PolygonMaskGeometry.insertingVertex(in:a.mask,after:3)
+        for t in [0.25,0.5,0.75] {
+            let expected=t < 0.5 ? a.mask : b.mask
+            XCTAssertEqual(CueEngine.interpolate(a,b,t:t).mask,expected)
+            XCTAssertEqual(CueSelection.interpolate(a,b,parameters:[.mask],t:t).mask,expected)
+        }
+    }
+
     func testConcaveInvertedFeatherAndDegenerateSegments() throws {
         let polygon=[Point2(0.2,0.2),Point2(0.8,0.2),Point2(0.8,0.4),Point2(0.4,0.4),Point2(0.4,0.8),Point2(0.2,0.8),Point2(0.2,0.8)]
         let style=PolygonMaskSettings(feather:0.1)

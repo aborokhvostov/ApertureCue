@@ -99,4 +99,6 @@ runCase("Montage.shared asset isolation", MontageTests.self) { try $0.testShared
 runCase("PolygonMask.distance inversion feather", PolygonMaskTests.self) { try $0.testConcaveInvertedFeatherAndDegenerateSegments() }
 runCase("PolygonMask.atomic cues coordinate frames", PolygonMaskTests.self) { try $0.testMaskCueAtomicityAndCoordinateSwitching() }
 runCase("PolygonMask.schema eleven persistence", PolygonMaskTests.self) { try $0.testSchemaElevenMigrationStrictnessSaveCollectAndHistory() }
+runCase("PolygonMask.closed edge split coverage", PolygonMaskTests.self) { try $0.testEdgeInsertionPreservesConcaveCoverageAndFeather() }
+runCase("PolygonMask.vertex budgets topology", PolygonMaskTests.self) { try $0.testVertexBudgetsInvalidCoordinatesAndSceneTopology() }
 exit(finishTests())

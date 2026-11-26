@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-alpha.14 — polygon vertex editor, 2026-11-26
+
+- Add numeric mask vertex coordinates, midpoint insertion on every closed edge and removal with a 3…128-point bound. Show polygon handle numbers beyond four vertices.
+- Keep schema 11 and existing mask/cue semantics. Commands preserve input/output/mesh/group/settings, respect geometry locks, reject invalid changes atomically and support Undo/Redo. Modal edits reject changed documents, selection or surface snapshots.
+- Verification and distribution evidence: docs/status.md and docs/verification/distribution.md.
+
 ## 0.1.0-alpha.13 — layer polygon mask controls, 2026-11-19
 
 - Add source UV / output canvas coordinates, inversion and separate mask feather. Keep output masks fixed when a surface, mesh or group moves, applying only to that layer. Geometry lock guards all mask controls.

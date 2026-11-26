@@ -477,6 +477,9 @@ import MappingCore
             self.editSurface("Mask feather") { $0.maskSettings.feather = value }
         })
         geometryControl(ActionButton(surface.mask.isEmpty ? "Add polygon mask" : "Edit polygon mask") { [weak self] in self?.editPolygonMask() })
+        let maskVertices=ActionButton("Mask vertices…") { [weak self] in self?.configureMaskVertices() }
+        geometryControl(maskVertices); maskVertices.isEnabled = !locked && !surface.mask.isEmpty
+        if !surface.mask.isEmpty { add(label("\(surface.mask.count) mask vertices · 3…128",size:11)) }
         geometryControl(ActionButton("Remove mask") { [weak self] in
             guard let self, self.editableGeometryIndex != nil else { return }
             self.overlay.finishDrag(); self.overlay.maskMode = false; self.editSurface("Remove mask") { $0.mask = [] }

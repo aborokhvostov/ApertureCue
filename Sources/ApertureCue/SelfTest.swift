@@ -141,6 +141,27 @@ enum SelfTest {
             renderer.blackout=false; renderer.outputID=nil
             checks.append("mask settings survive output routing and blackout")
 
+            var denseMask=red
+            denseMask.mask=(0..<128).map { index in
+                let angle=Double(index)*2*Double.pi/128
+                return Point2(0.5+0.35*cos(angle),0.5+0.35*sin(angle))
+            }
+            denseMask.maskSettings=PolygonMaskSettings(space:.outputCanvas,inverted:true,feather:0.07)
+            let denseFrame=try frame([denseMask])
+            for y in stride(from:5,to:92,by:5) { for x in stride(from:5,to:124,by:5) {
+                let point=Point2((Double(x)+0.5)/128,(Double(y)+0.5)/96)
+                let alpha=PolygonMaskGeometry.alpha(at:point,polygon:denseMask.mask,settings:denseMask.maskSettings)
+                try expect(abs(pixel(denseFrame,x,y)[0]-Int((alpha*255).rounded()))<=2,"128-vertex mask upload/fill differs")
+            } }
+            var splitMask=denseMask
+            splitMask.mask=try PolygonMaskGeometry.insertingVertex(in:Point2.insetQuad,after:3)
+            var unsplitMask=splitMask; unsplitMask.mask=Point2.insetQuad
+            let splitFrame=try frame([splitMask]),unsplitFrame=try frame([unsplitMask])
+            for y in 0..<96 { for x in 0..<128 {
+                try expect(near(pixel(splitFrame,x,y),pixel(unsplitFrame,x,y),tolerance:1),"Closing-edge insertion changed mask pixels")
+            } }
+            checks.append("128-vertex mask upload and closing-edge split preserve polygon pixels and feather")
+
             let quad = [Point2(0.08, 0.1), Point2(0.92, 0.2), Point2(0.8, 0.92), Point2(0.22, 0.8)]
             let perspective = Surface(name: "Projective UV reference", output: quad, generator: "gradient")
             image = try frame([perspective])

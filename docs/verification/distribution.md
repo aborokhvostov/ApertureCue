@@ -153,7 +153,7 @@ Published as [alpha 12](https://github.com/aborokhvostov/ApertureCue/releases/ta
 
 [Alpha 9 release](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.9) is a prerelease. ZIP and SHA256SUMS were confirmed uploaded; both server SHA-256 digests and ZIP size match local evidence, and the tag resolves to the exact source above. Previous releases remain available.
 
-## Alpha 13 candidate
+## Alpha 13
 
 19 November 2026, Apple M2 / arm64 / macOS 26.6.2, macOS 13+ target. Schema 11 adds source/output-canvas layer polygon masks, inversion and independent feather. See [specification](../polygon-mask-spec.md). Older binaries reject schema 11; use Save As to retain an older project copy.
 
@@ -161,4 +161,14 @@ Local standalone core: 98 methods, zero failed assertions; separate from XCTest.
 
 Manual GUI: the built-in two-surface procedural demo showed Source UV coordinates / Input region, then Output canvas coordinates / Output geometry, inversion and feather 0.120. Undo restored 0.000 and Redo restored 0.120. Screenshot showed an inverted feathered checker layer while its adjacent gradient remained intact. This test did not manually save/relaunch; production hidden integration and core check persistence separately. The test demo was discarded on quit.
 
-Source commit `0de08d920a1f3f91b052e19bd6e9de2c1b63aaa1` was pushed successfully to public main. Repeated subsequent GitHub Actions/API queries failed with TLS handshake timeouts, and the Actions page also timed out. Exact-source remote XCTest is therefore unconfirmed; no alpha 13 release/tag/assets were created. Resume with CI verification for this exact SHA, then publish the already checked ZIP and matching SHA256SUMS. Published alpha 12 remains available.
+Published on 26 November as [alpha 13](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.13) from `0de08d920a1f3f91b052e19bd6e9de2c1b63aaa1`. [CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/44594000550) passed 98 actual XCTest per platform, zero failures: macOS 6.124 s and Linux 3.005 s. The macOS release build, native bundle, archive and artifact completed successfully. The earlier network block is resolved.
+
+The published ZIP has 27 entries, 1,501,097 bytes and SHA-256 `07458895ac0a1e8b82cac0765f665b91463e9f0127e73bc4f339f2de4e46c739`. The checksum manifest has 94 bytes and SHA-256 `49232118d98bbe4bdd895ceeb4ff698fe522fc16dcb2fa107cc5fc5f6563da90`. Both assets are uploaded and GitHub's digests match the local files. Fresh extraction, strict ad hoc signature, original demo and built binary comparison passed; the extracted app passed 58 editor and 50 Metal/media checks. Physical hardware and notarization remain unverified.
+
+## Alpha 14 candidate
+
+26 November 2026 on Apple M2 / arm64 / macOS 26.6.2, using Apple Swift 6.4.2 from Xcode and a macOS 13+ target. Numeric polygon vertex editing, midpoint insertion on closed edges and removal use the existing schema 11; alpha 13 readers retain these polygons. Geometry locks and one-command history apply.
+
+Local standalone core passed 100 methods with zero failed assertions. Production hidden editor passed 60 checks, including closing-edge insertion, numeric edits, minimum-bound/NaN rejection, preserved UV/mesh/group/mask settings, Undo/Redo, locks and save/reopen. Local standalone assertions are separate from actual remote XCTest. The extracted app passed 51 Metal/media checks, including numerical 128-point fill and pixel equality before/after closing-edge insertion. Visible GUI and exact-source remote CI are pending before binary publication.
+
+The ZIP has 27 entries and 1,467,169 bytes, SHA-256 `6fb29ac9ca223ba947a221604d9c33bb909c7507f4934a4afc992dd95590c1ba`. Fresh extraction passed strict ad hoc signature, CRC, executable modes and byte equality with both built binaries and the original ten demo documents/media. No new media/SDK dependencies are included. Notarization, physical projectors/hotplug/fixtures, long-show timing and mask throughput remain unverified.

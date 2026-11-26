@@ -745,6 +745,42 @@ enum EditorSelfTest {
             passed("mask space switches editing view with Undo/Redo; output points stay in canvas coordinates through group and mesh")
             passed("mask inversion/feather native controls, save/reopen and geometry-lock guards")
 
+            try geometryButton("Unlock geometry").performClick(nil)
+            e.editPolygonMask()
+            let nodeBefore=e.project
+            try e.insertMaskVertex(after:e.project.surfaces[0].mask.count-1)
+            var inserted=e.project
+            try expect(inserted.surfaces[0].mask.count==5 && inserted.surfaces[0].mask[4]==Point2.interpolate(nodeBefore.surfaces[0].mask[3],nodeBefore.surfaces[0].mask[0],t:0.5),"Closing mask edge did not split")
+            var exact=inserted.surfaces[0].mask; exact[4]=Point2(0.31,0.53)
+            try e.replaceMaskVertices(exact)
+            inserted=e.project
+            var expectedNode=nodeBefore.surfaces[0]; expectedNode.mask=exact
+            try expect(inserted.surfaces[0]==expectedNode,"Mask node edit changed source UV, mesh, group, cage or settings")
+            e.undoEdit(); e.redoEdit(); try expect(e.project==inserted,"Mask vertex Undo/Redo differs")
+            let beforeReject=e.project, rejectLabel=e.history.undoLabel
+            var invalid=exact; invalid[0].x=Double.nan
+            do { try e.replaceMaskVertices(invalid); throw Failure(message:"Nonfinite mask edit accepted") } catch is ProjectError {}
+            try expect(e.project==beforeReject && e.history.undoLabel==rejectLabel,"Rejected numeric mask edit changed history")
+            try e.removeMaskVertex(at:4); try expect(e.project==nodeBefore,"Remove inserted mask vertex did not restore polygon")
+            try e.removeMaskVertex(at:3)
+            let triangleMask=e.project
+            do { try e.removeMaskVertex(at:0); throw Failure(message:"Two-vertex mask accepted") } catch is ProjectError {}
+            try expect(e.project==triangleMask,"Minimum vertex rejection changed project")
+            e.setMaskSpace(.sourceUV)
+            try e.insertMaskVertex(after:2)
+            let sourceNodes=e.project
+            try expect(e.inputMode && sourceNodes.surfaces[0].mask.count==4,"Source node commands changed editing space")
+            try geometryButton("Lock geometry").performClick(nil)
+            let lockedNodes=e.project
+            try e.insertMaskVertex(after:0); try e.removeMaskVertex(at:0); try e.replaceMaskVertices(exact)
+            try expect(e.project==lockedNodes && !(try geometryButton("Mask vertices…")).isEnabled,"Locked vertex commands were allowed")
+            passed("mask vertex insertion splits closing edge; exact coordinates, removal, rejection and Undo/Redo preserve unrelated fields")
+            let verticesURL=directory.appendingPathComponent("mask-vertices.aperturecue.json")
+            e.saveTo(verticesURL); let verticesSaved=e.project
+            e.newProject(); e.openProject(verticesURL)
+            try expect(e.project==verticesSaved,"Edited polygon topology did not survive save/reopen")
+            passed("source/output polygon vertex commands respect geometry locks and save/reopen")
+
             report["passed"]=true; report["documentSurfaceCount"]=saved.surfaces.count
             report["documentAssetCount"]=saved.assets.count; report["nativeScreenCount"]=NSScreen.screens.count
             try writeReport()
