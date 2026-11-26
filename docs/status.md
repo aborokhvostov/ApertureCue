@@ -8,7 +8,7 @@
 - Текущий компилятор: Apple Swift 6.4.2 / Apple clang 21 из Xcode; прежние проверки выполнены Swift 6.3.3 / CLT; Нативная сборка использует установленные Apple SDK, без Qt/CMake/FFmpeg и без загрузки внешних зависимостей.
 - Установлен MadMapper **Demo 6.0.5**, bundle build `6.0.5.25122226043`. GUI доступен. В отдельном новом тестовом Video-проекте проверены пустой список поверхностей и создание группы. В Demo пункты Open/Save/Collect/Export отключены. Подробности O01–O04 в [research](research.md).
 - Публичные материалы исследованы для ветки MadMapper 6: 44 источника, 84 строки каталога. Это широкий первоначальный каталог, не доказанный исчерпывающий перечень всех меню и параметров конкретной patch-версии.
-- [Исходники](https://github.com/aborokhvostov/ApertureCue) и [prerelease alpha 15](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.15) опубликованы для `031045777b413bb6034bf6e11d34ca883e27ce37`. [Проверка ZIP](verification/distribution.md#alpha-15); предыдущие alpha доступны в истории релизов. Поиск названия не был юридической проверкой товарного знака.
+- [Исходники](https://github.com/aborokhvostov/ApertureCue) и [prerelease alpha 16](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.16) опубликованы для `a35963a12589223701fcfec6ef88ffb502d5a5a7`. [Проверка ZIP](verification/distribution.md#alpha-16); предыдущие alpha доступны в истории релизов. Поиск названия не был юридической проверкой товарного знака.
 - Внешние проекторы/свет/MIDI hardware не подтверждены. Camera adapter проверен по отказу, захват реального устройства не проверен. Локальный графический сеанс может использовать виртуальный дисплей.
 
 ## Реализованный работающий subset
@@ -19,16 +19,14 @@ AppKit editor и Metal compositor: PNG/AVFoundation video, quad/triangle/ellipse
 
 ## Текущий этап
 
-**Этап 3 · Media playback and durability — production-кандидат schema 13.**
-Реализованы независимые source clocks/modes, frozen image sequences, PCM routing
-и exact-revision recovery. Прошли 154 standalone core метода (не XCTest),
-90 production editor, 13 media, 15 offline audio, 5 durability, прежние GPU/live/
-montage/composition/protocol/light проверки и 120-секундный четырёхисточниковый
-soak. Видимый Sources/transport/settings/Save/Quit/reopen workflow прошёл после
-исправления ширины справки. Базовый exact-source CI прошёл 154 XCTest на каждой
-платформе; финальная revision и заменяющий архив проверяются до публикации. [Ledger и отчёты](stage-3-completion.md),
-[media specification](media-playback-spec.md). Аппаратные камера/аудиоканалы
-и длинные шоу остаются отдельными gates.
+**Этап 3 · Media playback and durability — программные критерии объявленного subset завершены, alpha 16 опубликована.** Независимые source clocks/modes, frozen image sequences, bounded PCM routing и exact-revision recovery реализованы в schema 13. [Полный ledger](stage-3-completion.md), [видимый workflow](verification/media-workflow.md), [отчёты](verification/stage-3/).
+
+- Локально: **154 standalone core метода**, 0 failed assertions; это не XCTest. Окончательная production-сборка: **90 editor, 13 media, 15 offline audio, 5 durability/SIGKILL, 51 GPU/media, 27 montage, 25 composition, 3 live-editor, 5 live-presentation, 11 lighting/UDP**, OSC/MIDI localhost — PASS.
+- Четыре H.264/MOV 160×96 источника, 120.024 секунды: 13,736 pulls, 429 без допустимого кадра; максимум legacy drift 0.120726 s и managed PTS age 0.183973 s. Каждый источник устойчиво выдавал кадры; это acquisition workload без logical output, не непрерывный projector playback или long-show guarantee.
+- [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45895275823) для `a35963a12589223701fcfec6ef88ffb502d5a5a7`: **154 настоящих XCTest на macOS и 154 на Linux**, zero failures; macOS SwiftPM release/native bundle/archive/artifact — PASS.
+- Видимый Sources workflow: независимые Play/Pause/Seek/Follow, FPS Undo/Redo, Once/rate/trim, muted matrix Save, Save/Quit/relaunch/Open — PASS. Ручная проверка выявила и исправила ширину справки; final binary совпадает с проверенным архивом.
+- ZIP **2,256,895 bytes / 43 entries**, SHA-256 `a17291c23df787fca255c8314c9a4042c097cbbd3656e4c2f96c5bf702d893a0`. CRC, strict signature, executable mode и byte equality — PASS; восемь focused extracted-app режимов прошли. Tag указывает на проверенный source commit; server-side размеры/digests обоих release assets совпадают с локальными. Сборка ad hoc signed, не notarized.
+- Physical camera capture/disconnect, multichannel wiring/device reconnect, audible AV sync, projectors, optical refresh и многочасовые шоу остаются отдельными H/runtime gates. Это не полное равенство референсу. Следующий программный этап — **4 · Show control**.
 
 **Этап 2 · Geometry and composition — программные критерии объявленного subset завершены, alpha 15 опубликована.** Реализация, локальные frame/editor проверки, ручной workflow, архив и exact-source CI подтверждены. Аппаратные H gates остаются открытыми. [Полный отчёт](verification/composition-workflow.md), [спецификации и acceptance ledger](stage-2-completion.md).
 

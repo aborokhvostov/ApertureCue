@@ -2,11 +2,11 @@
   "acquisitionWaitFixture": {
     "acquisitionEnteredOnMain": false,
     "cancelledRequests": 2,
-    "controlledWaitSeconds": 0.5022524999803863,
+    "controlledWaitSeconds": 0.5034511249978095,
     "mainQueueProbe": {
       "count": 25,
-      "maximumMilliseconds": 0.10570831364020705,
-      "meanMilliseconds": 0.042351658921688795
+      "maximumMilliseconds": 0.07545831613242626,
+      "meanMilliseconds": 0.031348331831395626
     },
     "maximumQueuedAcquisitions": 1,
     "resumedDrawableSize": [
@@ -23,25 +23,25 @@
     "pending acquisition permits renderer destruction and provider return without retaining the renderer"
   ],
   "compositionInterval": {
-    "completedCommands": 110,
+    "completedCommands": 118,
     "drawableSize": [
       1920,
       1080
     ],
-    "droppedRequests": 234,
+    "droppedRequests": 232,
     "failedDrawableRequests": 0,
     "mainQueueProbe": {
-      "count": 305,
-      "maximumMilliseconds": 3.600041673053056,
-      "meanMilliseconds": 0.05607759488410637
+      "count": 304,
+      "maximumMilliseconds": 0.4586250288411975,
+      "meanMilliseconds": 0.03301028080290722
     },
-    "maximumDrawableWaitMilliseconds": 114.72283332841471,
-    "maximumGPUExecutionMilliseconds": 155.65133333439007,
-    "meanEncodeSubmissionMilliseconds": 1.7447219728863081,
-    "seconds": 6.111821250000503,
-    "submittedCommands": 108
+    "maximumDrawableWaitMilliseconds": 128.84550000308082,
+    "maximumGPUExecutionMilliseconds": 142.26824999786913,
+    "meanEncodeSubmissionMilliseconds": 1.5209690077915357,
+    "seconds": 6.077003208338283,
+    "submittedCommands": 117
   },
-  "elapsedSeconds": 7.584085541660897,
+  "elapsedSeconds": 7.551871041650884,
   "gpu": "Apple M2",
   "hardwareVerification": false,
   "limitations": "Local graphics session may use a virtual display. Measures command submissions and main-queue response, not optical refresh or hardware compatibility. No long-show, throughput, decoder/audio or GPU-utilization claim. The gate fixture injects an acquisition wait; it is separate from the real Composition interval.",
@@ -54,11 +54,11 @@
   "schemaVersion": 1,
   "source": "Original Composition demo: five procedural layers, two logical routes combined in one editor-style view, isolated/projective group, cubic masks, materials and color FX; no decoder or network.",
   "startupMainQueueProbe": {
-    "count": 6,
-    "maximumMilliseconds": 434.05924999387935,
-    "meanMilliseconds": 79.6002708375454
+    "count": 5,
+    "maximumMilliseconds": 515.1358333532698,
+    "meanMilliseconds": 111.87395836459473
   },
-  "timestampUTC": "2026-11-26T20:40:58Z",
-  "warmupSeconds": 0.1738058333285153,
+  "timestampUTC": "2026-11-26T21:03:23Z",
+  "warmupSeconds": 0.1495230000000447,
   "windowsShown": true
 }

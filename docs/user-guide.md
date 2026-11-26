@@ -1,8 +1,10 @@
 # Руководство пользователя ApertureCue 0.1
 
-Это ранняя настольная сборка для macOS 13+. Руководство описывает опубликованную [alpha 15](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.15) с форматом проекта schema 12. Точное состояние сборки и проверок находится в [status.md](status.md). Описанные операции не означают полного покрытия MadMapper 6.
+Это ранняя настольная сборка для macOS 13+. Руководство описывает опубликованную [alpha 16](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.16) с форматом проекта schema 13. Точное состояние сборки и проверок находится в [status.md](status.md). Описанные операции не означают полного покрытия MadMapper 6.
 
 ## Запуск и демонстрационный проект
+
+Готовая Apple Silicon сборка доступна в ZIP на странице alpha 16. Распакуйте весь архив, откройте **ApertureCue.app**, затем **File → Open** и `Media/Media.aperturecue.json` для новых source controls или `Demo/Composition.aperturecue.json` для геометрии и материалов. Папки demo и медиа держите вместе с их проектами. Сборка подписана ad hoc, без notarization.
 
 Из корня исходников выполните `./scripts/build.sh`, затем `open dist/ApertureCue.app`. Приложение стартует с двумя процедурными поверхностями и двумя сохранёнными вариантами геометрии. Для собственного демонстрационного изображения и видео выполните:
 
@@ -17,7 +19,7 @@ dist/ApertureCue.app/Contents/MacOS/ApertureCue examples/Demo/Demo.aperturecue.j
 
 ## Источники и папки кадров в schema 13
 
-Эти функции добавляются в исходниках этапа 3; опубликованная alpha 15 их ещё не содержит. В секции MEDIA нажмите **Sources…**, выберите источник и **Assign to selected surface**. Затем доступны **Play source**, **Pause source**, **Seek source** и **Follow master**. Первые три переключают только этот источник на независимые часы; остальные поверхности и master не перематываются. Follow master возвращает источник к шоу. Состояние транспорта временное, настройки сохраняются.
+В секции MEDIA нажмите **Sources…**, выберите источник и **Assign to selected surface**. Затем доступны **Play source**, **Pause source**, **Seek source** и **Follow master**. Первые три переключают только этот источник на независимые часы; остальные поверхности и master не перематываются. Follow master возвращает источник к шоу. Состояние транспорта временное, настройки сохраняются.
 
 В Sources задайте Mode, signed speed, Trim In/Out и **Save source settings**. Пустой Out означает длительность файла. Once удерживает последний кадр; для повторного запуска выполните Seek source = 0 и Play source. Loop повторяет; Hold и скорость 0 фиксируют начальный кадр; PingPong движется туда и обратно; отрицательная скорость начинает с конца диапазона. Random использует сохранённый seed/interval, поэтому повторный seek воспроизводим. Source elapsed и item time отличаются из-за скорости, trim и циклов. Обычная кнопка Loop согласована с сохранённым режимом.
 
@@ -33,7 +35,7 @@ Recovery привязан к точным байтам и пути сохран�
 
 ## Медиа и поверхности
 
-**Import…** или File → Import Media… (`⌘I`) открывает выбор изображений и видео. При импорте источник назначается выбранной поверхности; если поверхности нет, создаётся новая. Для повторного назначения выберите media слева, затем surface и нажмите **Assign to surface**.
+**Import…** или File → Import Media… (`⌘I`) открывает выбор изображений, видео и аудио. При импорте источник назначается выбранной поверхности; если поверхности нет, создаётся новая. Для повторного назначения выберите media слева, затем surface и нажмите **Assign to surface**.
 
 **+ Quad**, **Duplicate**, **Delete** изменяют список поверхностей. Список подписан `back → front`: последующие строки рисуются поверх предыдущих. Кнопки со стрелками меняют порядок. Это собственное соглашение ApertureCue; оно отличается от списка слоёв функционального референса.
 
@@ -154,9 +156,9 @@ File → **Import projected OBJ…** читает polygonal Wavefront OBJ и п�
 
 ## Воспроизведение
 
-**Play/Pause**, **Stop** и slider управляют импортированными видео. Stop ставит на паузу и переводит к началу. Seek в pause должен обновлять кадр, сохраняя pause. В media inspector выбранного видео доступны **Loop ON/OFF**, volume и **Relink media…**. Текущая transport bar общая для media pool; отдельная полнофункциональная плеерная панель на каждый clip ещё не реализована.
+**Play/Pause**, **Stop** и основной slider управляют master show clock и источниками в режиме Follow master. Stop ставит их на паузу и переводит к началу. Seek в pause обновляет кадр, сохраняя pause. Независимые источники продолжают использовать свои часы; управляйте ими через **Sources…** и при необходимости нажмите **Follow master**. В media inspector доступны **Loop ON/OFF**, volume, **Source playback / routing…** и **Relink media…**.
 
-Поддержку конкретного файла определяет AVFoundation установленной macOS. Наличие расширения `.mkv`, `.avi` или `.webm` в классификаторе не гарантирует decoder: при ошибке будет показана диагностика. Проверенный тестовый codec/container должен быть указан в status. AVPlayer воспроизводит встроенное аудио через системный вывод; advanced multichannel routing и frame sync нескольких плееров пока не подтверждены.
+Поддержку конкретного файла определяет AVFoundation установленной macOS. Наличие расширения `.mkv`, `.avi` или `.webm` в классификаторе не гарантирует decoder: при ошибке будет показана диагностика. Проверенный тестовый codec/container должен быть указан в status. Обычный AVPlayer воспроизводит встроенное аудио через системный вывод; явная Audio routing и custom playback используют PCM adapter, описанный выше. Физические многоканальные выходы, слышимая AV-синхронизация и frame sync нескольких плееров отдельно не подтверждены.
 
 **Camera…** запрашивает доступ к камере только по действию пользователя и предлагает доступные устройства. Источник назначается выбранной поверхности. Capture backend сохраняет последний кадр, пропускает опоздавшие и выводит диагностику недоступного устройства. Работа без подключённой камеры и сама реализация adapter не подтверждают capture на конкретной модели; доступность/разрешение/отключение проверяются отдельно. Camera source остаётся live при pause movie transport.
 
@@ -292,13 +294,13 @@ Art-Net™ Designed by and Copyright Artistic Licence.
 
 **File → Save** (`⌘S`) и **Save As** (`⌘⇧S`) записывают `.aperturecue.json`, **Open** (`⌘O`) открывает его. Текущий формат — schema 12: он сохраняет Bézier/source warps, mesh link, projective/isolation groups, дополнительные masks, FX, material library и assignments, feedback и output edge blend. Старые проекты мигрируют; alpha 14 и более ранние сборки новые файлы не открывают. Перед первым Save используйте **Save As…**, чтобы оставить исходник для старой версии. Маршруты из проектов v0–v9 сохраняются, дисплеи для fullscreen выбираются заново. Пути к обычным медиа на диске относительные.
 
-File → **Collect portable project…** создаёт переносимую копию в новой, ещё не существующей папке. Внутри находятся `project.aperturecue.json` и `media/<asset UUID>.<extension>`. Такое именование разделяет одноимённые источники. Приложение копирует обычные media files, проверяет созданный проект и относительные ссылки, затем публикует готовую папку одним переименованием. Missing media, неподходящий source или ошибка копирования отменяют операцию; исходный проект и выбранная папка назначения не перезаписываются.
+File → **Collect portable project…** создаёт переносимую копию в новой, ещё не существующей папке. Внутри находятся `project.aperturecue.json`, обычные ресурсы `media/<asset UUID>.<extension>` и отдельные UUID-папки с точными frozen manifests кадров. Такое именование разделяет одноимённые источники. Приложение копирует обычные image/video/audio files и только перечисленные sequence frames, проверяет созданный проект и относительные ссылки, затем публикует готовую папку одним переименованием. Missing media, неподходящий source или ошибка копирования отменяют операцию; исходный проект и выбранная папка назначения не перезаписываются.
 
 Collect работает в фоне со снимком текущего проекта. Открытый документ не переключается на копию; более поздние правки не входят в уже начатый сбор. Live camera IDs сохраняются как ссылки на устройства и на другом компьютере могут быть недоступны. Для переноса откройте `project.aperturecue.json` из собранной папки и перемещайте её целиком.
 
 Undo (`⌘Z`) и Redo (`⇧⌘Z`) работают с правками документа. Drag записывается одной операцией. История ограничена 100 снимками, очищается при New/Open и не сериализуется между запусками. Действия внешних устройств и текущее время плеера не являются document undo.
 
-Для изменённого проекта с уже выбранным именем каждые примерно 10 секунд записывается отдельный recovery file `.<project filename>.recovery`. Успешное ручное Save удаляет его. При открытии проекта приложение предлагает восстановление, если recovery найден. Восстановление после реального принудительного завершения должно быть отдельно проверено в status; внешний или оставшийся recovery file не имеет автоматического timestamp freshness filter.
+Для изменённого проекта с уже выбранным именем каждые примерно 10 секунд записывается отдельный recovery file `.<project filename>.recovery`, привязанный к точным байтам/пути/mtime сохранённой revision. Restore предлагается только для актуального bound checkpoint и повторно проверяет его перед загрузкой. Устаревший, повреждённый, legacy или чужой sidecar сохраняется с диагностикой. Успешный Save и явный Discard удаляют только собственный checkpoint. Автоматическая separate-process SIGKILL/restart проверка записана в status; power loss и повреждение файловой системы не проверены.
 
 File → Export PNG… (`⌘E`) сохраняет композицию кадра 1920×1080 без handles. Это still export, а не экспорт timeline/movie или standalone show.
 
@@ -312,6 +314,11 @@ File → Export PNG… (`⌘E`) сохраняет композицию кадр
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --self-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --composition-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --editor-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --source-editor-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --media-playback-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --audio-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --durability-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --media-soak-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --protocol-loopback
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --benchmark
@@ -319,4 +326,6 @@ dist/ApertureCue.app/Contents/MacOS/ApertureCue --benchmark
 
 `--self-test` создаёт `artifacts/local/self-test.json`: production Metal и короткий собственный H.264 clip. `--composition-test` записывает `artifacts/local/composition-test.json` для materials/ISF, key/FX, isolation, scoped masks, edge blend, warp/source sampling и предыдущего поколения feedback. `--editor-test` проверяет настоящие document/control callbacks, историю и сохранение, записывая `artifacts/local/editor-test/report.json`. Успех hidden callbacks отдельно от ручной работы в видимом окне. `--protocol-loopback` проверяет локальную UDP доставку OSC и MIDI parser. `--lighting-test` создаёт `artifacts/local/lighting-test.json`: полный GPU → sampling → production sender → настоящий localhost UDP → decoder, включая color order, automation, routing, blackout и simulation без network. `--benchmark` создаёт `artifacts/local/live-benchmark.json` с короткой серией visible drawable submissions.
 
-Фактические результаты каждой серии, включая ещё не выполненные проверки новой интеграции, указаны в [status.md](status.md); сохранённые отчёты — в [verification](verification). Ни один короткий тест не подтверждает длительный show, оптическую частоту проектора, внешний дисплей, физическую fixture или захват конкретной камеры. В benchmark нет video decoding.
+`--source-editor-test` проверяет production Sources callbacks; `--media-playback-test` — source PTS/cache и camera simulator; `--audio-test` — actual-engine offline PCM без hardware output; `--durability-test` — separate-process SIGKILL/restart на собственных временных документах. `--media-soak-test` добавляет 120-секундный четырёхисточниковый прогон с PTS/drift/missing-pull статистикой. Отчёты находятся в одноимённых подпапках `artifacts/local`.
+
+Фактические результаты каждой серии указаны в [status.md](status.md); сохранённые отчёты — в [verification](verification). Ни один короткий тест не подтверждает длительный show, оптическую частоту проектора, внешний дисплей, физическую fixture или захват конкретной камеры. В benchmark нет video decoding.

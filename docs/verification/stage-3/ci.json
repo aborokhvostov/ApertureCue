@@ -1,0 +1,24 @@
+{
+  "sourceCommit": "a35963a12589223701fcfec6ef88ffb502d5a5a7",
+  "runID": 45895275823,
+  "url": "https://github.com/aborokhvostov/ApertureCue/actions/runs/45895275823",
+  "conclusion": "success",
+  "macos": {
+    "jobID": 140167504706,
+    "swift": "6.1.2",
+    "testCount": 154,
+    "failures": 0,
+    "suiteSeconds": 16.582,
+    "swiftPMReleaseBuild": true,
+    "nativeBundle": true,
+    "archive": true,
+    "artifact": true
+  },
+  "linux": {
+    "jobID": 140167504362,
+    "swift": "6.0.3",
+    "testCount": 154,
+    "failures": 0,
+    "suiteSeconds": 5.593
+  }
+}

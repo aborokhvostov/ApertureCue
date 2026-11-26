@@ -28,10 +28,10 @@
     "retainedImagePayloadBytes": 4096,
     "soak": {
       "acceptedPullsBySource": [
-        3401,
-        3402,
-        3339,
-        3116
+        3429,
+        3429,
+        3366,
+        3083
       ],
       "clockResynchronizations": 8,
       "codec": "original H.264 MOV 30fps",
@@ -39,24 +39,24 @@
       "limitations": "No optical output, audible audio, hardware throughput or show-length guarantee; missing pulls include startup and intentional backward-generation resets.",
       "logicalOutputs": 0,
       "managedDecoderCount": 2,
-      "maximumLegacyClockDriftSeconds": 0.1253594999836609,
-      "maximumManagedPTSAgeSeconds": 0.20518972910746622,
-      "missingFramePulls": 378,
-      "polls": 3409,
+      "maximumLegacyClockDriftSeconds": 0.12072574966227206,
+      "maximumManagedPTSAgeSeconds": 0.18397272912358575,
+      "missingFramePulls": 429,
+      "polls": 3434,
       "resolution": [
         160,
         96
       ],
-      "seconds": 120.00346283335239,
+      "seconds": 120.02435929165222,
       "sourceCount": 4,
-      "sourcePulls": 13636,
-      "successfulDecodedSourcePolls": 13628,
-      "totalDecodedFrames": 12936
+      "sourcePulls": 13736,
+      "successfulDecodedSourcePolls": 13729,
+      "totalDecodedFrames": 12963
     }
   },
   "passed": true,
   "platform": "Version 26.6.2 (Build 25G83)",
   "schemaVersion": 1,
   "scope": "Original H.264 MOV/PNG and simulated camera through production MediaPool, decoder, textures and source transports. No physical camera/audio/output hardware.",
-  "timestampUTC": "2026-11-26T20:43:10Z"
+  "timestampUTC": "2026-11-26T21:05:35Z"
 }

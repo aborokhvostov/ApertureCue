@@ -89,7 +89,7 @@ long-show audio/video drift remain separate hardware/runtime gates. No audio
 montage, pitch-preserving time stretch, DSP effects, clock synchronization or
 full reference routing compatibility is implied.
 
-## Production automatic verification — 26 November 2026
+## Production automatic verification — 26–27 November 2026
 
 The optimized production app built with the installed Swift 6.4.2 toolchain on
 Apple M2 / macOS 26.6.2 passed all **15 native offline integration checks**.

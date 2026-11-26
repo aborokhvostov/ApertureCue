@@ -44,7 +44,7 @@
     },
     "trimmedScheduledFrames": 2400
   },
-  "elapsedSeconds": 1.9372317083762027,
+  "elapsedSeconds": 1.1749950833036564,
   "hardwareAudioStarted": false,
   "hardwareVerification": false,
   "limitations": "No audible output, physical device routing/hotplug, speaker calibration, optical AV sync or long-show drift claim. Offline sample-clock drift is reported separately from physical output latency; reverse audio is deliberately silent.",
@@ -52,5 +52,5 @@
   "platform": "Version 26.6.2 (Build 25G83)",
   "schemaVersion": 1,
   "scope": "Production AVFoundation PCM extraction, per-source matrix and bounded AVAudioEngine graph in silent manual offline mode; original Float32 WAV/MOV fixtures",
-  "timestampUTC": "2026-11-26T20:37:35Z"
+  "timestampUTC": "2026-11-26T21:00:28Z"
 }

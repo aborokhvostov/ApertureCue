@@ -14,6 +14,13 @@ strict ad hoc signature and byte equality. Its extracted app passed 12 modes.
 The visible workflow then found an oversized Sources window caused by a long
 unwrapped help label; that archive is superseded and will not be released.
 
+The corrected production executable passed all 13 modes again, including the
+90-check editor and a 120.024-second soak. The final soak made 13,736 pulls,
+with 429 missing pulls, 0.120726-second maximum legacy drift and 0.183973-second
+maximum managed PTS age. Every source published sustained frames. Its source
+revision is `a35963a12589223701fcfec6ef88ffb502d5a5a7`; final distribution and CI
+records identify that same release source separately from the baseline.
+
 ## Visible native workflow
 
 The workflow uses only a separate temporary copy of the original Media demo.
@@ -64,3 +71,15 @@ wiring, actual device reconnect/sample-rate changes, audible AV synchronization,
 projectors, optical refresh and long-show stability remain unverified. The video
 soak is a two-minute 160×96 source-acquisition workload with no logical output;
 it is not a measured projector presentation or a many-hour show run.
+
+
+## Final CI and distribution
+
+[Exact-source CI](stage-3/ci.json) passed 154 actual XCTest on each macOS/Linux,
+plus the macOS release/native bundle/archive/artifact for the corrected source.
+[Final distribution](stage-3/distribution.json) records the replacement 43-entry
+ZIP, signature/CRC/executable/byte-equality checks and eight focused extracted-app
+modes. [Published metadata](stage-3/release.json) verifies the alpha 16 tag and both
+uploaded asset sizes/server-side SHA-256 values against the local files. The
+release binary is the one used for the corrected visible workflow; the oversized
+baseline archive was not released.

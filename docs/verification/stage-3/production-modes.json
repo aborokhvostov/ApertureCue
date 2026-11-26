@@ -2,66 +2,66 @@
   {
     "mode": "source-editor-test",
     "exitCode": 0,
-    "elapsedSeconds": 4.722
+    "elapsedSeconds": 3.274
   },
   {
     "mode": "media-playback-test",
     "exitCode": 0,
-    "elapsedSeconds": 2.361
+    "elapsedSeconds": 2.51
   },
   {
     "mode": "audio-test",
     "exitCode": 0,
-    "elapsedSeconds": 2.018
+    "elapsedSeconds": 1.244
   },
   {
     "mode": "durability-test",
     "exitCode": 0,
-    "elapsedSeconds": 0.208
+    "elapsedSeconds": 0.191
   },
   {
     "mode": "self-test",
     "exitCode": 0,
-    "elapsedSeconds": 2.945
+    "elapsedSeconds": 2.542
   },
   {
     "mode": "montage-test",
     "exitCode": 0,
-    "elapsedSeconds": 3.472
+    "elapsedSeconds": 3.911
   },
   {
     "mode": "editor-test",
     "exitCode": 0,
-    "elapsedSeconds": 185.213
+    "elapsedSeconds": 157.568
   },
   {
     "mode": "composition-test",
     "exitCode": 0,
-    "elapsedSeconds": 1.234
+    "elapsedSeconds": 2.138
   },
   {
     "mode": "live-editor-test",
     "exitCode": 0,
-    "elapsedSeconds": 9.928
+    "elapsedSeconds": 9.036
   },
   {
     "mode": "live-composition-test",
     "exitCode": 0,
-    "elapsedSeconds": 7.661
+    "elapsedSeconds": 7.583
   },
   {
     "mode": "protocol-loopback",
     "exitCode": 0,
-    "elapsedSeconds": 0.047
+    "elapsedSeconds": 0.041
   },
   {
     "mode": "lighting-test",
     "exitCode": 0,
-    "elapsedSeconds": 0.809
+    "elapsedSeconds": 0.661
   },
   {
     "mode": "media-soak-test",
     "exitCode": 0,
-    "elapsedSeconds": 123.562
+    "elapsedSeconds": 123.129
   }
 ]

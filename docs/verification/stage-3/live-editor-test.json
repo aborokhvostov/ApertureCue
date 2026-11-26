@@ -10,7 +10,7 @@
     "native Output mode action restores composition and ordinary auto-resize resumes frames without changing the model"
   ],
   "drawableSizing": "Production MTKView.autoResizeDrawable; actual view size and acquired texture dimensions are reported.",
-  "elapsedSeconds": 9.863479666702915,
+  "elapsedSeconds": 8.96000783337513,
   "gpu": "Apple M2",
   "hardwareVerification": false,
   "interval": {
@@ -18,19 +18,19 @@
       1506,
       848
     ],
-    "completedCommands": 200,
+    "completedCommands": 139,
     "lastTextureSize": [
       1506,
       848
     ],
     "mainQueueProbe": {
-      "count": 300,
-      "maximumMilliseconds": 6.548958306666464,
-      "meanMilliseconds": 0.6197912494341532
+      "count": 292,
+      "maximumMilliseconds": 35.01145832706243,
+      "meanMilliseconds": 1.360110016396167
     },
-    "maximumDrawableWaitMilliseconds": 62.428416684269905,
-    "seconds": 6.000501791655552,
-    "showClockDelta": 5.979451416642405,
+    "maximumDrawableWaitMilliseconds": 172.23254166310653,
+    "seconds": 6.004108916618861,
+    "showClockDelta": 5.978679291671142,
     "staticOverlayLayerIdentityPreserved": true
   },
   "limitations": "Local graphics session may use a virtual display. Main-queue response and submitted commands are measured; accessibility clients, optical refresh, physical devices, GPU utilization and long-show behavior are unmeasured. Static layer identity is a regression gate for time-only ticks, not a frame-rate claim.",
@@ -65,11 +65,11 @@
   "schemaVersion": 1,
   "scope": "Actual EditorController, generated original Composition project, production 30 Hz timer, live materials, AppKit overlay layers and native mode picker actions.",
   "startupMainQueueProbe": {
-    "count": 21,
-    "maximumMilliseconds": 2464.084749983158,
-    "meanMilliseconds": 124.40157142035397
+    "count": 20,
+    "maximumMilliseconds": 2009.134708379861,
+    "meanMilliseconds": 105.83924375241622
   },
-  "timestampUTC": "2026-11-26T20:40:48Z",
-  "warmupSeconds": 0.6622819583280943,
+  "timestampUTC": "2026-11-26T21:03:14Z",
+  "warmupSeconds": 0.5665355833480135,
   "windowsShown": true
 }

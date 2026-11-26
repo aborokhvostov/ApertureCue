@@ -1,8 +1,10 @@
 # Stage 3 — media playback and durability
 
-Schema 13 production candidate after alpha 15. Scope remains roadmap V02–V06,
-V12, A01/A02 and P01–P03. Local production automatic checks pass; final visible
-workflow, extracted execution and exact-source CI are separate acceptance gates.
+Declared Stage 3 software acceptance passes for schema 13 and source
+`a35963a12589223701fcfec6ef88ffb502d5a5a7`: production automatic checks, scoped
+visible workflow, fresh archive/extracted execution and exact-source CI. Scope
+remains roadmap V02–V06, V12, A01/A02 and P01–P03. Hardware/runtime gates below
+remain open. [Alpha 16](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.16) is published; its tag and asset digests match the checked source/archive.
 
 Acceptance workstreams:
 
@@ -68,7 +70,7 @@ stability remain open H/runtime gates. No 4K/60, optical frame lock, universal
 codec support or full reference equivalence is claimed.
 
 
-## Local automatic evidence — 26 November 2026
+## Local automatic evidence — 26–27 November 2026 (Europe/Moscow)
 
 Apple M2 / arm64, 8 GiB RAM, macOS 26.6.2 build 25G83; Apple Swift 6.4.2,
 macOS 13 deployment target. The final app uses the optimized `scripts/build.sh`
@@ -89,17 +91,17 @@ exit codes/durations; the individual reports retain fixture scopes and limits.
 | Composition/cache/feedback | 25 checks | [Composition](verification/stage-3/composition-test.json) |
 | Live editor/presentation | 3 full-editor and 5 presentation checks | [Editor live](verification/stage-3/live-editor-test.json), [presentation](verification/stage-3/live-composition-test.json) |
 | Protocol/light | OSC/MIDI localhost PASS, 11 GPU-to-UDP lighting checks | [Loopback](verification/stage-3/protocol-loopback.txt), [lighting](verification/stage-3/lighting-test.json) |
-| Video soak | 14 checks including 120.003 seconds / four sources | [Soak](verification/stage-3/media-soak-test.json) |
+| Video soak | 14 checks including 120.024 seconds / four sources | [Soak](verification/stage-3/media-soak-test.json) |
 
-The soak made 3,409 polls / 13,636 source pulls. Accepted pulls by source were
-3,401 / 3,402 / 3,339 / 3,116; 378 pulls had no eligible frame. Two managed readers
-were active, with 12,936 total decoded frames and eight legacy clock corrections.
-Maximum legacy clock drift was 0.125360 seconds. Maximum managed target-to-PTS
-age was 0.205190 seconds, below the declared scaled-rate late-frame plus sample
-interval bound. Missing pulls are reported rather than described as uninterrupted
-playback; startup and discontinuity resets are included. No logical output was
-presented in this acquisition workload. The separate live checks cover native
-presentation, without an optical refresh or throughput claim.
+The final soak made 3,434 polls / 13,736 source pulls. Accepted pulls by source
+were 3,429 / 3,429 / 3,366 / 3,083; 429 pulls had no eligible frame. Two managed
+readers were active, with 12,963 total decoded frames and eight legacy clock
+corrections. Maximum legacy clock drift was 0.120726 seconds. Maximum managed
+target-to-PTS age was 0.183973 seconds, below the declared scaled-rate late-frame
+plus sample interval bound. Missing pulls are reported rather than described as
+uninterrupted playback; startup and discontinuity resets are included. No logical
+output was presented in this acquisition workload. The separate live checks cover
+native presentation, without an optical refresh or throughput claim.
 
 The audio oracle rendered 65,536 frames at 48 kHz (1.365333333 seconds) with zero
 source sample-clock error. Trim 0.25…0.30 admitted 2,400 frames; fractional Out
@@ -126,3 +128,40 @@ archive are recorded in the [native journal](verification/media-workflow.md).
 The [baseline exact-source CI](verification/stage-3/baseline-ci.json) passed
 154 actual XCTest on each macOS/Linux plus macOS release/native packaging.
 That baseline is retained separately from the final layout revision and release.
+
+
+The corrected production app from `a35963a12589223701fcfec6ef88ffb502d5a5a7`
+passed all 13 modes again after the visible layout fix. Its binary matches the
+manual workflow binary. The full optimized editor result is 90 checks; the final
+soak values above refer to this corrected executable. The baseline archive is
+superseded, and the replacement archive has its own distribution record.
+
+
+Final archive verification passes: 43 entries, CRC, safe unique names, executable
+mode, strict ad hoc signature and byte equality for app and original examples.
+The final extracted app passes eight focused source/media/audio/durability,
+GPU/montage/composition and live-editor modes. [Distribution details](verification/stage-3/distribution.json)
+and [build identity](verification/stage-3/build.json) bind these results to the
+same binary used for the visible workflow. The build remains unnotarized.
+
+
+[Final exact-source CI](verification/stage-3/ci.json) passed for
+`a35963a12589223701fcfec6ef88ffb502d5a5a7`: 154 actual XCTest on macOS Swift 6.1.2
+and 154 on Linux Swift 6.0.3, zero failures. macOS SwiftPM release build, native
+bundle, archive and uploaded artifact also passed. This is separate from the
+local 154-method standalone assertion run and from logged-in graphics checks.
+
+
+## Published stage and next work
+
+[Release metadata](verification/stage-3/release.json) confirms prerelease alpha 16
+from the checked source above, published 27 November 2026 Europe/Moscow
+(26 November 21:10:27 UTC). Both uploaded assets match their local byte sizes and
+SHA-256 values; the ZIP is 2,256,895 bytes / 43 entries, SHA-256
+`a17291c23df787fca255c8314c9a4042c097cbbd3656e4c2f96c5bf702d893a0`.
+
+The declared Stage 3 software acceptance is complete. Next software work belongs
+to Stage 4 Show control: wider recording/montage tools, external clocks and
+Conductor scheduling, with their own behavior gates. Physical devices and
+show-length stability stay open separately; this stage does not establish full
+reference equivalence.

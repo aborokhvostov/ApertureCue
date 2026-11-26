@@ -222,3 +222,35 @@ GitHub confirms the exact tag and both assets uploaded. ZIP size/digest match
 the fresh archive above; SHA256SUMS is 94 bytes with SHA-256
 `e429216310f6e51960058585d69173a3c7965bac85f5bd6058d02cf12439b05b`.
 [Machine-readable CI](stage-2/ci.json), [release](stage-2/release.json).
+
+
+## Alpha 16
+
+Published 27 November 2026 Europe/Moscow (26 November 21:10:27 UTC),
+[prerelease alpha 16](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.16)
+uses source `a35963a12589223701fcfec6ef88ffb502d5a5a7`.
+[Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45895275823)
+passed 154 actual XCTest on each macOS/Linux and macOS release/native/archive/artifact.
+
+The Apple M2 / arm64 / macOS 26.6.2 / Swift 6.4.2 local app targets macOS 13+,
+uses ad hoc signing and is not notarized. ZIP: **2,256,895 bytes / 43 entries**,
+SHA-256 `a17291c23df787fca255c8314c9a4042c097cbbd3656e4c2f96c5bf702d893a0`.
+The 94-byte SHA256SUMS file hashes to
+`7788cefad922d447896d55e7dbdc16c218cd1f802e7697b65148b56461ff773b`.
+Both uploaded assets have matching server-side digests/sizes and uploaded state;
+the release is prerelease, not draft, and its tag points to the tested source.
+
+CRC, safe unique paths, executable mode, strict signature and app/demo/example
+byte equality pass after fresh extraction. The final extracted app passes
+Sources 9, media 13, offline audio 15, durability 5, GPU/media 51, montage 27,
+composition 25 and live-editor 3. The same binary completed the scoped visible
+Save/Quit/relaunch/Open workflow and the full production 13-mode suite including
+90 editor checks and the 120-second four-source soak. The earlier archive that
+exposed the long help-label width was superseded and never released.
+
+[Build/distribution identity](stage-3/distribution.json), [release metadata](stage-3/release.json),
+[native journal](media-workflow.md) and [stage ledger](../stage-3-completion.md)
+record source, fixture resolution/codec/count/duration and limitations separately.
+The original Media demo includes four PNG frames, H.264 MOV and an unassigned
+volume-zero stereo WAV. No hardware camera/audio/projector compatibility,
+audible sync, optical refresh, long-show, 4K/60 or reference-equivalence claim.

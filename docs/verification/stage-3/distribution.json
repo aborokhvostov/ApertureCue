@@ -10,5 +10,48 @@
   "appAndDemoMatch": true,
   "executableSHA256": "9258894c54c2acec03c1e8ddab5ba624636a1efc3afb298f66259745f3b9674d",
   "coreLibrarySHA256": "3a70b69f4d17339815e21e432e2ead2d230f522c9b4095ebcb7cb6df2814107f",
-  "manualCandidateBinaryMatch": true
+  "manualCandidateBinaryMatch": true,
+  "extractedChecks": [
+    {
+      "mode": "source-editor-test",
+      "exitCode": 0,
+      "elapsedSeconds": 14.49
+    },
+    {
+      "mode": "media-playback-test",
+      "exitCode": 0,
+      "elapsedSeconds": 5.817
+    },
+    {
+      "mode": "audio-test",
+      "exitCode": 0,
+      "elapsedSeconds": 3.699
+    },
+    {
+      "mode": "durability-test",
+      "exitCode": 0,
+      "elapsedSeconds": 0.329
+    },
+    {
+      "mode": "self-test",
+      "exitCode": 0,
+      "elapsedSeconds": 4.67
+    },
+    {
+      "mode": "montage-test",
+      "exitCode": 0,
+      "elapsedSeconds": 4.755
+    },
+    {
+      "mode": "composition-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.028
+    },
+    {
+      "mode": "live-editor-test",
+      "exitCode": 0,
+      "elapsedSeconds": 10.825
+    }
+  ],
+  "sourceCommit": "a35963a12589223701fcfec6ef88ffb502d5a5a7"
 }

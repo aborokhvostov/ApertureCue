@@ -13,12 +13,12 @@
     "writerTerminationReason": "uncaughtSignal",
     "writerTerminationStatus": 9
   },
-  "elapsedSeconds": 0.1254480000352487,
+  "elapsedSeconds": 0.12341037497390062,
   "hardwareVerification": false,
   "limitations": "Not a power-loss, disk-full, filesystem-corruption or simultaneous-adversarial-writer test. No user project, external application or hardware was accessed.",
   "passed": true,
   "platform": "Version 26.6.2 (Build 25G83)",
   "schemaVersion": 1,
   "scope": "Original isolated temporary project; real spawned writer, complete atomic recovery checkpoint, SIGKILL, fresh file/model verification and stale/corrupt rejection",
-  "timestampUTC": "2026-11-26T20:37:35Z"
+  "timestampUTC": "2026-11-26T21:00:28Z"
 }

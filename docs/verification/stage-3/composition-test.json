@@ -42,7 +42,7 @@
     "feedback rejects negative/zero/overflow dimensions before allocation and recovers atomically"
   ],
   "codecs": "none; procedural sources only",
-  "elapsedSeconds": 1.0739144583349116,
+  "elapsedSeconds": 1.98482887505088,
   "feedbackSize": [
     32,
     18
@@ -60,7 +60,7 @@
   "platform": "Version 26.6.2 (Build 25G83)",
   "schemaVersion": 1,
   "scope": "Actual Metal composition, bounded expression/ISF/FX, scoped masks, group isolation, edge attenuation and previous-generation loopback; original procedural sources only.",
-  "timestampUTC": "2026-11-26T20:40:47Z",
+  "timestampUTC": "2026-11-26T21:03:12Z",
   "unmeasured": "Physical devices, optical seams/refresh, throughput, long-run stability, decoder/audio timing and GPU utilization.",
   "windowsShown": false
 }

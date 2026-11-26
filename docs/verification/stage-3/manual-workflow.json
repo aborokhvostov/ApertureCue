@@ -24,5 +24,6 @@
     "Saved unassigned muted stereo-swap matrix",
     "Save/Quit/relaunch/Open retains FPS/playback/matrix; runtime follows master again"
   ],
-  "limitations": "Scoped manual native workflow only; no physical camera/audio channel/projector/long-show claim. Unrelated file-panel content excluded."
+  "limitations": "Scoped manual native workflow only; no physical camera/audio channel/projector/long-show claim. Unrelated file-panel content excluded.",
+  "sourceCommit": "a35963a12589223701fcfec6ef88ffb502d5a5a7"
 }
