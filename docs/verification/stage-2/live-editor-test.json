@@ -1,75 +1,75 @@
 {
-  "actualWindowContentSize": [
+  "actualWindowContentSize" : [
     1280,
     800
   ],
-  "checkCount": 3,
-  "checks": [
+  "checkCount" : 3,
+  "checks" : [
     "actual visible Composition editor keeps static overlay layers while its production timer, material clock and drawables advance",
-    "native Input mode action redraws the overlay without changing saved source/output geometry",
+    "native Input mode action redraws the overlay without changing saved source\/output geometry",
     "native Output mode action restores composition and ordinary auto-resize resumes frames without changing the model"
   ],
-  "drawableSizing": "Production MTKView.autoResizeDrawable; actual view size and acquired texture dimensions are reported.",
-  "elapsedSeconds": 7.824066000001039,
-  "gpu": "Apple M2",
-  "hardwareVerification": false,
-  "interval": {
-    "actualViewDrawableSize": [
+  "drawableSizing" : "Production MTKView.autoResizeDrawable; actual view size and acquired texture dimensions are reported.",
+  "elapsedSeconds" : 8.2558920416631736,
+  "gpu" : "Apple M2",
+  "hardwareVerification" : false,
+  "interval" : {
+    "actualViewDrawableSize" : [
       1506,
       848
     ],
-    "completedCommands": 360,
-    "lastTextureSize": [
+    "completedCommands" : 279,
+    "lastTextureSize" : [
       1506,
       848
     ],
-    "mainQueueProbe": {
-      "count": 300,
-      "maximumMilliseconds": 3.44437500461936,
-      "meanMilliseconds": 0.21017041775242734
+    "mainQueueProbe" : {
+      "count" : 300,
+      "maximumMilliseconds" : 2.6514583150856197,
+      "meanMilliseconds" : 0.099943471723236144
     },
-    "maximumDrawableWaitMilliseconds": 25.360083382111043,
-    "seconds": 6.002093458315358,
-    "showClockDelta": 5.9978474582894705,
-    "staticOverlayLayerIdentityPreserved": true
+    "maximumDrawableWaitMilliseconds" : 26.412749954033643,
+    "seconds" : 6.0011441666865721,
+    "showClockDelta" : 5.9920315416529775,
+    "staticOverlayLayerIdentityPreserved" : true
   },
-  "limitations": "Local graphics session may use a virtual display. Main-queue response and submitted commands are measured; accessibility clients, optical refresh, physical devices, GPU utilization and long-show behavior are unmeasured. Static layer identity is a regression gate for time-only ticks, not a frame-rate claim.",
-  "modalDialogs": false,
-  "modeActions": {
-    "inputOverlayRedrawn": true,
-    "modelPreserved": true,
-    "outputOverlayRedrawn": true,
-    "resizedLastTextureSize": [
-      1504,
-      846
+  "limitations" : "Local graphics session may use a virtual display. Main-queue response and submitted commands are measured; accessibility clients, optical refresh, physical devices, GPU utilization and long-show behavior are unmeasured. Static layer identity is a regression gate for time-only ticks, not a frame-rate claim.",
+  "modalDialogs" : false,
+  "modeActions" : {
+    "inputOverlayRedrawn" : true,
+    "modelPreserved" : true,
+    "outputOverlayRedrawn" : true,
+    "resizedLastTextureSize" : [
+      1506,
+      848
     ],
-    "resizedViewDrawableSize": [
-      1504,
-      846
+    "resizedViewDrawableSize" : [
+      1506,
+      848
     ],
-    "resizedWindowRequestedContentSize": [
+    "resizedWindowRequestedContentSize" : [
       1279,
       801
     ]
   },
-  "overlayLogicalSize": [
+  "overlayLogicalSize" : [
     753,
     424
   ],
-  "passed": true,
-  "platform": "Version 26.6.2 (Build 25G83)",
-  "requestedWindowContentSize": [
+  "passed" : true,
+  "platform" : "Version 26.6.2 (Build 25G83)",
+  "requestedWindowContentSize" : [
     1280,
     800
   ],
-  "schemaVersion": 1,
-  "scope": "Actual EditorController, generated original Composition project, production 30 Hz timer, live materials, AppKit overlay layers and native mode picker actions.",
-  "startupMainQueueProbe": {
-    "count": 19,
-    "maximumMilliseconds": 972.0780000207014,
-    "meanMilliseconds": 53.77539693328895
+  "schemaVersion" : 1,
+  "scope" : "Actual EditorController, generated original Composition project, production 30 Hz timer, live materials, AppKit overlay layers and native mode picker actions.",
+  "startupMainQueueProbe" : {
+    "count" : 20,
+    "maximumMilliseconds" : 1459.9369166535325,
+    "meanMilliseconds" : 74.682524998206645
   },
-  "timestampUTC": "2026-11-26T18:58:46Z",
-  "warmupSeconds": 0.4486518333433196,
-  "windowsShown": true
+  "timestampUTC" : "2026-11-26T19:16:26Z",
+  "warmupSeconds" : 0.45662129169795662,
+  "windowsShown" : true
 }

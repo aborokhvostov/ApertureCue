@@ -1,5 +1,5 @@
 {
-  "artnetSamples": [
+  "artnetSamples" : [
     26,
     64,
     229,
@@ -10,11 +10,11 @@
     192,
     25
   ],
-  "artnetSourcePort": 6454,
-  "checks": [
-    "ArtDmx actual UDP port 6454, universe 1, one-based address 4, three gradient RGB samples ±2/255",
-    "sACN actual UDP port 5568, source/CID framing and same sampled channel bytes",
-    "fixture universe/address edit and GRB reordering",
+  "artnetSourcePort" : 6454,
+  "checks" : [
+    "ArtDmx actual UDP port 6454, universe 1, one-based address 4, three gradient RGB samples ±2\/255",
+    "sACN actual UDP port 5568, source\/CID framing and same sampled channel bytes",
+    "fixture universe\/address edit and GRB reordering",
     "RGBW white extraction in full pipeline",
     "evaluated opacity automation reaches sampled network channels",
     "renderer output routing before fixture sampling",
@@ -24,12 +24,12 @@
     "sACN stop emits ordinary zero data then three consecutive StreamTerminated packets retaining CID",
     "stop discards in-flight GPU sampling completion and permits a clean restart"
   ],
-  "destination": "127.0.0.1",
-  "gpu": "Apple M2",
-  "hardwareVerification": false,
-  "packetCount": 17,
-  "passed": true,
-  "sacnSamples": [
+  "destination" : "127.0.0.1",
+  "gpu" : "Apple M2",
+  "hardwareVerification" : false,
+  "packetCount" : 17,
+  "passed" : true,
+  "sacnSamples" : [
     26,
     64,
     229,
@@ -40,12 +40,12 @@
     192,
     25
   ],
-  "samplePixelConvention": "floor(normalizedPosition*dimension), shader samples that pixel center",
-  "sampleResolution": [
+  "samplePixelConvention" : "floor(normalizedPosition*dimension), shader samples that pixel center",
+  "sampleResolution" : [
     320,
     180
   ],
-  "schemaVersion": 1,
-  "scope": "Production lighting pipeline with localhost UDP only; no Art-Net/sACN fixture hardware compatibility claim",
-  "timestampUTC": "2026-11-26T18:59:51Z"
+  "schemaVersion" : 1,
+  "scope" : "Production lighting pipeline with localhost UDP only; no Art-Net\/sACN fixture hardware compatibility claim",
+  "timestampUTC" : "2026-11-26T19:17:38Z"
 }

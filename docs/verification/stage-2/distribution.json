@@ -1,76 +1,57 @@
 {
   "archive": "ApertureCue-macOS-arm64.zip",
   "sizeBytes": 1960870,
-  "sha256": "a080011e1747f631e43c38679ab5170fca078a63be1e5ec17095285bf3bb6e0e",
+  "sha256": "3ee1279efe8f98093ed5dfb858a1c3f11c790a828a4fb445fc749439093eff91",
   "entryCount": 34,
   "crcPassed": true,
   "signaturePassed": true,
   "executableModePassed": true,
   "appAndDemoMatch": true,
-  "productionChecks": [
+  "sourceCommit": "031045777b413bb6034bf6e11d34ca883e27ce37",
+  "extractedChecks": [
     {
       "mode": "live-editor-test",
       "exitCode": 0,
-      "elapsedSeconds": 8.99
+      "elapsedSeconds": 9.226
     },
     {
       "mode": "live-composition-test",
       "exitCode": 0,
-      "elapsedSeconds": 7.087
+      "elapsedSeconds": 7.507
     },
     {
       "mode": "composition-test",
       "exitCode": 0,
-      "elapsedSeconds": 0.299
+      "elapsedSeconds": 0.85
     },
     {
       "mode": "editor-test",
       "exitCode": 0,
-      "elapsedSeconds": 46.186
+      "elapsedSeconds": 52.074
     },
     {
       "mode": "self-test",
       "exitCode": 0,
-      "elapsedSeconds": 2.092
+      "elapsedSeconds": 2.151
     },
     {
       "mode": "montage-test",
       "exitCode": 0,
-      "elapsedSeconds": 1.705
+      "elapsedSeconds": 1.773
     },
     {
       "mode": "protocol-loopback",
       "exitCode": 0,
-      "elapsedSeconds": 0.041
+      "elapsedSeconds": 0.035
     },
     {
       "mode": "lighting-test",
       "exitCode": 0,
-      "elapsedSeconds": 0.616
+      "elapsedSeconds": 0.617
     }
   ],
   "executableSHA256": "e7abc1f0a39240b69bd483239d948af44ce8445bd3453c7a923b04607add8518",
   "coreLibrarySHA256": "c7786db04a2150dae775a7be58be628b24b08339c79fdfe97c5d73af9572496b",
-  "extractedChecks": [
-    {
-      "mode": "editor-test",
-      "exitCode": 0,
-      "elapsedSeconds": 74.872
-    },
-    {
-      "mode": "composition-test",
-      "exitCode": 0,
-      "elapsedSeconds": 2.494
-    },
-    {
-      "mode": "live-editor-test",
-      "exitCode": 0,
-      "elapsedSeconds": 8.295
-    },
-    {
-      "mode": "live-composition-test",
-      "exitCode": 0,
-      "elapsedSeconds": 7.271
-    }
-  ]
+  "manualCandidateBinaryMatch": true,
+  "manualCandidateSource": "e5918a2cbbeb41d3d06bf914db38647b94dab623"
 }

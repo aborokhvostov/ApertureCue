@@ -31,8 +31,12 @@ this does not establish full reference parity. Hardware H gates stay separate.
 - Visible final GUI: original Composition rendering, numeric warp edit/Undo/Redo,
   material and FX edits, Save/Quit/relaunch/reopen and Play/Pause — PASS within
   the [documented manual scope](verification/composition-workflow.md#manual-checks).
-- Exact-source macOS/Linux XCTest and publication: pending. No release-complete
-  claim precedes actual remote results and confirmed uploaded assets.
+- [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45881995353) for `031045777b413bb6034bf6e11d34ca883e27ce37` passed
+  **133 actual XCTest on macOS and 133 on Linux**, zero failures, plus macOS
+  release/native build, archive and artifact. [Alpha 15](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.15) is published;
+  its source tag and both uploaded asset sizes/digests match local verification.
+- **Declared Stage 2 software acceptance is complete.** Physical H gates and
+  broader reference features remain open; the next software stage is media/durability.
 
 CPU cache requested payloads share 64 MiB; each renderer uses at most 16 MiB and
 overlay tessellation at most 16 MiB, with 256-entry LRU bounds. GPU payload leases
@@ -63,6 +67,7 @@ The first exact-source [CI run](https://github.com/aborokhvostov/ApertureCue/act
 for `e5918a2` failed before tests: Swift 6.1.2 on macOS and 6.0.3 on Linux
 could not type-check a compact matrix-product `reduce` expression. An explicitly
 typed accumulation loop preserves the calculation and avoids that compiler
-limit. The local optimized/standalone reports above describe the preceding
-candidate; the corrected archive and exact-source CI are being rerun before
-publication. No failed CI run is counted as an XCTest pass.
+limit. The corrected build passed 133 standalone core methods and all eight production
+modes from the fresh archive; current raw reports describe `0310457`. The manual
+GUI workflow preceded the compiler-only rewrite; editor sources are unchanged.
+Exact-source CI subsequently passed on both platforms, including macOS packaging. No failed CI run is counted as an XCTest pass.

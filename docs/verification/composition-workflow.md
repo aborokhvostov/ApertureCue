@@ -24,7 +24,7 @@ not arbitrary shader source. SVG likewise has a strict documented subset. See
 
 ## Automatic checks
 
-Final optimized native build passed **81 editor**, **25 composition**, **51 GPU/media**, **27 montage**, **11 lighting/UDP**, **5 live presentation**, **3 full-editor live checks** and OSC/MIDI localhost checks. Core passed **133 standalone methods**, zero failed assertions. [Raw reports](stage-2/). Freshly extracted final ZIP passed 81 editor, 25 composition, 5 live presentation and 3 full-editor live checks. Exact-source XCTest CI is recorded separately when complete.
+Final optimized native build passed **81 editor**, **25 composition**, **51 GPU/media**, **27 montage**, **11 lighting/UDP**, **5 live presentation**, **3 full-editor live checks** and OSC/MIDI localhost checks. Core passed **133 standalone methods**, zero failed assertions. [Raw reports](stage-2/). Freshly extracted final ZIP passed 81 editor, 25 composition, 5 live presentation and 3 full-editor live checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45881995353) passed 133 actual XCTest per platform on macOS/Linux, zero failures, plus macOS packaging.
 The standalone assertion harness is separate from actual XCTest CI. Initial
 integration found and corrected malformed mesh-weight indexing, legacy reset and
 mode/cage integration, PNG export in Input preview, last-feedback deletion,
@@ -54,9 +54,9 @@ thread in its [custom Metal view example](https://developer.apple.com/documentat
 The new `--live-composition-test` measures a real visible 1920×1080 original
 Composition interval separately from controlled drawable-wait, resize/hide,
 nil-result recovery and renderer-lifetime fixtures. Final optimized run passed **5 checks**. Over its six-second 1920×1080 interval,
-304 main-queue probes recorded a maximum 1.753 ms and mean 0.109 ms; startup
-was separate (maximum 157.156 ms). A controlled 0.510 s acquisition wait ran on
-the worker while 26 main probes continued (maximum 0.078 ms). These observations
+300 main-queue probes recorded a maximum 41.612 ms and mean 0.203 ms; startup
+was separate (maximum 235.296 ms). A controlled 0.503 s acquisition wait ran on
+the worker while 26 main probes continued (maximum 2.048 ms). These observations
 are specific to this local run, not latency or refresh guarantees. [Raw report](stage-2/live-composition-test.json).
 
 ## Full editor and tool regression
@@ -67,7 +67,7 @@ Input/Output actions and ordinary auto-resize. Duplicate surface/selection/mode
 assignments and unchanged layout sizes no longer rebuild the static overlay.
 The first successful diagnostic full-editor run preserved layer identity for
 six seconds, kept the model intact and resumed acquired drawables after mode
-changes and resize. The final optimized run passed all three checks: 360 completed commands during 6.002 seconds at 1506×848, 300 main probes, maximum 3.444 ms and mean 0.210 ms, with static overlay layer identity preserved. This is an automatic visible-editor test, not manual GUI evidence.
+changes and resize. The final optimized run passed all three checks: 279 completed commands during 6.001 seconds at 1506×848, 300 main probes, maximum 2.651 ms and mean 0.100 ms, with static overlay layer identity preserved. This is an automatic visible-editor test, not manual GUI evidence.
 
 Tool modes now have one backing owner instead of independent Boolean flags;
 path/mask entry cannot retain warp or freehand routing. Native regressions cover
@@ -77,7 +77,7 @@ mere mode switch.
 
 ## Manual checks
 
-The final extracted app opened separate temporary copies of both the original
+The first locally accepted extracted candidate opened separate temporary copies of both the original
 image/video Demo and the five-layer procedural Composition through File → Open.
 The Composition screenshot showed the curved color layer, isolated masked blend,
 posterized material layer and original cubic accent. On layer 02, Save point
@@ -95,7 +95,7 @@ Pause retained 00:05. The temporary project was closed. The original repository
 demos and existing recovery snapshot were not altered by this manual run.
 
 Earlier accessibility/screenshot timeouts are retained as observations, not a
-final manual pass. The final extracted run completed the workflow above without
+final manual pass. That extracted run completed the workflow above without
 those timeouts. The optional launch_app wrapper was unavailable; it was not used
 to establish success. Hidden native callbacks and the automated visible-editor
 suite remain A evidence. No claim of manual coverage for every new control,
@@ -117,6 +117,9 @@ The first exact-source [CI run](https://github.com/aborokhvostov/ApertureCue/act
 for `e5918a2` failed before tests: Swift 6.1.2 on macOS and 6.0.3 on Linux
 could not type-check a compact matrix-product `reduce` expression. An explicitly
 typed accumulation loop preserves the calculation and avoids that compiler
-limit. The local optimized/standalone reports above describe the preceding
-candidate; the corrected archive and exact-source CI are being rerun before
-publication. No failed CI run is counted as an XCTest pass.
+limit. The corrected build passed all 133 standalone core methods and all eight
+production modes from its freshly extracted archive. The raw reports above now
+describe that corrected source (`0310457`). The manual GUI run preceded this
+compiler-only rewrite; no editor source changed after it. SHA-256 comparison confirms that the
+optimized executable and core dylib are byte-identical across that rewrite. Exact-source CI passed on both platforms and completed macOS packaging; see
+[CI summary](stage-2/ci.json) and [published asset identity](stage-2/release.json). No failed CI run is counted as an XCTest pass.

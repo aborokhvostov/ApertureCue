@@ -196,7 +196,7 @@ EditorController uses its ordinary auto-sized view. These are short behavior
 checks, not optical refresh, sustained throughput or long-show measurements.
 
 The final ZIP has **34 entries, 1,960,870 bytes**, SHA-256
-`a080011e1747f631e43c38679ab5170fca078a63be1e5ec17095285bf3bb6e0e`.
+`3ee1279efe8f98093ed5dfb858a1c3f11c790a828a4fb445fc749439093eff91`.
 CRC, safe archive paths, executable modes, strict ad hoc signature and exact
 executable/library/Info/demo/example bytes after fresh extraction all passed.
 The archive includes nine original demo documents and PNG/H.264 media, two
@@ -204,10 +204,21 @@ original ISF examples, an original SVG, GPL license and notices. Recovery
 sidecars, working copies, optional proprietary SDKs and build caches are excluded.
 Arm64 only; ad hoc signed, not notarized or universal.
 
-[Manual journal](composition-workflow.md#manual-checks): separate original demo
+[Manual journal](composition-workflow.md#manual-checks), on the first accepted
+extracted candidate before the compiler-only matrix rewrite: separate original demo
 copies, visible Composition, output Bézier numeric edit and Undo/Redo, FX and
 material override edit, Save/Quit/relaunch/reopen, Play/Pause. The repository's
 original demo files and existing recovery snapshot were preserved. No physical
 projector, display hotplug, optical seam, audio drift, camera, MIDI device or
-lighting fixture verification is implied. Exact-source CI and publication remain
-pending and will be recorded here after their actual results.
+lighting fixture verification is implied. Published as [alpha 15](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.15)
+from `031045777b413bb6034bf6e11d34ca883e27ce37`. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45881995353)
+passed 133 actual XCTest per platform, zero failures: macOS Swift 6.1.2 suite
+14.436 s and Linux Swift 6.0.3 suite 6.824 s. macOS SwiftPM release/native app,
+archive and artifact passed. The first failed CI exposed the compact-expression
+type-check limit; the explicit matrix loop resolved it. The final local executable
+and core library are byte-identical to the manually exercised candidate.
+
+GitHub confirms the exact tag and both assets uploaded. ZIP size/digest match
+the fresh archive above; SHA256SUMS is 94 bytes with SHA-256
+`e429216310f6e51960058585d69173a3c7965bac85f5bd6058d02cf12439b05b`.
+[Machine-readable CI](stage-2/ci.json), [release](stage-2/release.json).
