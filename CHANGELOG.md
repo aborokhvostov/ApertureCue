@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0-alpha.16 — media playback and durability, 2026-11-26
+## 0.1.0-alpha.16 — media playback and durability, 2026-11-27
 
 - Add independent per-source transport and saved trim/signed speed/Once/Loop/Hold/PingPong/seeded Random modes. Preserve adjacent source clocks, generation-tag frame publication and source state through relink/refresh; keep ordinary montage/rotation behavior.
 - Add naturally sorted frozen image-sequence folders, explicit FPS/Refresh, bounded image payload leases, coalesced loads, permanent corrupt-frame diagnostics and transient admission retry. Include an original media/sequence/stereo-tone demo.

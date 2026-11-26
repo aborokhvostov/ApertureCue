@@ -1,6 +1,6 @@
 # Текущее состояние ApertureCue
 
-Обновлено: 26 ноября 2026 (Europe/Moscow), macOS first. Исследование начато 25 октября. Полное функциональное равенство MadMapper **не достигнуто**. Задача продолжается по [roadmap](roadmap.md); [матрица](feature-matrix.md) различает исследование, реализацию, автоматические, ручные и аппаратные проверки.
+Обновлено: 27 ноября 2026 (Europe/Moscow), macOS first. Исследование начато 25 октября. Полное функциональное равенство MadMapper **не достигнуто**. Задача продолжается по [roadmap](roadmap.md); [матрица](feature-matrix.md) различает исследование, реализацию, автоматические, ручные и аппаратные проверки.
 
 ## Окружение и референс
 
@@ -24,8 +24,9 @@ AppKit editor и Metal compositor: PNG/AVFoundation video, quad/triangle/ellipse
 и exact-revision recovery. Прошли 154 standalone core метода (не XCTest),
 90 production editor, 13 media, 15 offline audio, 5 durability, прежние GPU/live/
 montage/composition/protocol/light проверки и 120-секундный четырёхисточниковый
-soak. Распакованный app, видимый workflow и exact-source CI проверяются отдельно
-до публикации. [Ledger и отчёты](stage-3-completion.md),
+soak. Видимый Sources/transport/settings/Save/Quit/reopen workflow прошёл после
+исправления ширины справки. Базовый exact-source CI прошёл 154 XCTest на каждой
+платформе; финальная revision и заменяющий архив проверяются до публикации. [Ledger и отчёты](stage-3-completion.md),
 [media specification](media-playback-spec.md). Аппаратные камера/аудиоканалы
 и длинные шоу остаются отдельными gates.
 

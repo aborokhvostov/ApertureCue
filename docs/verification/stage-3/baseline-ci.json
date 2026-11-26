@@ -1,0 +1,25 @@
+{
+  "sourceCommit": "58b90313f731fc1d2f7a9afb345dab1073d27282",
+  "runID": 45893321145,
+  "url": "https://github.com/aborokhvostov/ApertureCue/actions/runs/45893321145",
+  "conclusion": "success",
+  "scope": "Baseline before visible Sources help-label width correction; not the final release revision",
+  "macos": {
+    "jobID": 140161043973,
+    "swift": "6.1.2",
+    "testCount": 154,
+    "failures": 0,
+    "suiteSeconds": 15.437,
+    "swiftPMReleaseBuild": true,
+    "nativeBundle": true,
+    "archive": true,
+    "artifact": true
+  },
+  "linux": {
+    "jobID": 140161043628,
+    "swift": "6.0.3",
+    "testCount": 154,
+    "failures": 0,
+    "suiteSeconds": 4.838
+  }
+}

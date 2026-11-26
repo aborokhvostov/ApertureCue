@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "localDates": [
+    "2026-11-26",
+    "2026-11-27"
+  ],
+  "timezone": "Europe/Moscow",
+  "platform": "macOS 26.6.2 build 25G83 / arm64 / Apple M2",
+  "scope": "Visible native Sources, independent transport and saved playback/audio controls on a separate original Media demo copy",
+  "passed": true,
+  "windowWidthPoints": 670,
+  "sourceCount": 4,
+  "surfaceCount": 3,
+  "outputWindows": 0,
+  "hardwareVerification": false,
+  "hardwareAudioPlaybackRequested": false,
+  "executableSHA256": "9258894c54c2acec03c1e8ddab5ba624636a1efc3afb298f66259745f3b9674d",
+  "observations": [
+    "Sources fits the display with wrapped help",
+    "Sequence independent Play/Pause/Seek; master unchanged",
+    "FPS 2 to 4 with Undo/Redo",
+    "Ordinary video independent seek/play/pause/follow-master",
+    "Saved Once, rate 0.5, trim 0.25...3.25",
+    "Saved unassigned muted stereo-swap matrix",
+    "Save/Quit/relaunch/Open retains FPS/playback/matrix; runtime follows master again"
+  ],
+  "limitations": "Scoped manual native workflow only; no physical camera/audio channel/projector/long-show claim. Unrelated file-panel content excluded."
+}

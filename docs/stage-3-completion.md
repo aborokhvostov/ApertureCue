@@ -114,3 +114,15 @@ Earlier development runs, including a soak with no managed frames, are excluded
 from this acceptance. The strengthened final soak explicitly requires sustained
 frames from every source. Original demo generation was retried in isolation after
 an overloaded parallel encoder run; this is not a startup-latency claim.
+
+
+## Visible workflow and final revision
+
+The first visible Sources window exposed a long unwrapped help label that
+expanded its minimum width beyond the display. Hidden callback checks had not
+established screen-fit behavior. Its multiline preferred width and horizontal
+compression priority are corrected; the final visible workflow and replacement
+archive are recorded in the [native journal](verification/media-workflow.md).
+The [baseline exact-source CI](verification/stage-3/baseline-ci.json) passed
+154 actual XCTest on each macOS/Linux plus macOS release/native packaging.
+That baseline is retained separately from the final layout revision and release.

@@ -1,13 +1,14 @@
 {
   "archive": "ApertureCue-macOS-arm64.zip",
-  "sizeBytes": 2256867,
-  "sha256": "f4ef7333d464ae51d5262e442bb069b098378d9d9a5c5bddc7d7983a24e7df29",
+  "sizeBytes": 2256895,
+  "sha256": "a17291c23df787fca255c8314c9a4042c097cbbd3656e4c2f96c5bf702d893a0",
   "entryCount": 43,
   "crcPassed": true,
   "safeUniquePaths": true,
   "signaturePassed": true,
   "executableModePassed": true,
   "appAndDemoMatch": true,
-  "executableSHA256": "d8083e535bc5915930a85c409dd1144baff5ff89d52f545d386da1572898092d",
-  "coreLibrarySHA256": "3a70b69f4d17339815e21e432e2ead2d230f522c9b4095ebcb7cb6df2814107f"
+  "executableSHA256": "9258894c54c2acec03c1e8ddab5ba624636a1efc3afb298f66259745f3b9674d",
+  "coreLibrarySHA256": "3a70b69f4d17339815e21e432e2ead2d230f522c9b4095ebcb7cb6df2814107f",
+  "manualCandidateBinaryMatch": true
 }

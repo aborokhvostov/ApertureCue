@@ -172,7 +172,10 @@ extension EditorController {
         fps.isEnabled=asset.kind=="sequence";reset.isEnabled=temporal
         for control in transport.arrangedSubviews.compactMap({$0 as? NSControl}) {control.isEnabled=temporal && assigned}
         for control in seekRow.arrangedSubviews.compactMap({$0 as? NSControl}) {control.isEnabled=temporal && assigned}
-        let help=label("Assign a source to a surface before using its transport. Elapsed time is independent of trim/item time. Play/Pause/Seek source leave the master and other sources intact. Follow master rejoins the show. Random uses the saved seed; a sequence plays frozen filenames consecutively. Missing frames show fallback; directory additions require Refresh. Reverse/random audio is silent with a diagnostic.",size:11);help.maximumNumberOfLines=0
+        let help=label("Assign a source to a surface before using its transport. Elapsed time is independent of trim/item time. Play/Pause/Seek source leave the master and other sources intact. Follow master rejoins the show. Random uses the saved seed; a sequence plays frozen filenames consecutively. Missing frames show fallback; directory additions require Refresh. Reverse/random audio is silent with a diagnostic.",size:11)
+        help.maximumNumberOfLines=0;help.lineBreakMode = .byWordWrapping
+        help.preferredMaxLayoutWidth=580;help.cell?.wraps=true
+        help.setContentCompressionResistancePriority(.defaultLow,for:.horizontal)
         let assign=ActionButton("Assign to selected surface") {[weak editor] in editor?.selectedMediaID=asset.id;editor?.assignMedia()}
         assign.isEnabled=editor.selectedIndex != nil
         let rows=FlippedStackView(views:[importButtons,picker,assign,clock,label("Mode / signed speed / sequence FPS"),stack([mode,rate,fps],vertical:false),label("Trim In / Out (empty = duration)"),stack([input,output],vertical:false),label("Random seed / interval seconds"),stack([seed,interval],vertical:false),stack([save,reset],vertical:false),transport,seekRow,stack([routing,refresh],vertical:false),help])
