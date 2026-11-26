@@ -30,7 +30,13 @@ public struct Affine2D: Codable, Equatable, Sendable {
         let m=values,n=other.values
         var out=Array(repeating:0.0,count:9)
         for row in 0..<3 { for column in 0..<3 {
-            out[row*3+column]=(0..<3).reduce(0) { $0+m[row*3+$1]*n[$1*3+column] }
+            var sum:Double=0
+            for component in 0..<3 {
+                let left=m[row*3+component]
+                let right=n[component*3+column]
+                sum+=left*right
+            }
+            out[row*3+column]=sum
         } }
         return Affine2D(a:out[0],b:out[3],c:out[1],d:out[4],tx:out[2],ty:out[5],px:out[6],py:out[7],pw:out[8])
     }

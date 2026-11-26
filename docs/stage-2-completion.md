@@ -56,3 +56,13 @@ programs/full ISF, broader SVG/FX and shared group automation remain explicitly
 outside the declared subset. Physical seams, display hotplug/refresh, external
 projectors and long-show timing/throughput remain separate open hardware/run gates.
 The next software stage after acceptance is media timing and durability.
+
+## Compiler compatibility follow-up
+
+The first exact-source [CI run](https://github.com/aborokhvostov/ApertureCue/actions/runs/45881718483)
+for `e5918a2` failed before tests: Swift 6.1.2 on macOS and 6.0.3 on Linux
+could not type-check a compact matrix-product `reduce` expression. An explicitly
+typed accumulation loop preserves the calculation and avoids that compiler
+limit. The local optimized/standalone reports above describe the preceding
+candidate; the corrected archive and exact-source CI are being rerun before
+publication. No failed CI run is counted as an XCTest pass.
