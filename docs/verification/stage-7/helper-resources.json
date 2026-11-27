@@ -1,0 +1,19 @@
+{
+  "syphon": {
+    "wallSeconds": 3.01,
+    "userCPUSeconds": 1.53,
+    "systemCPUSeconds": 0.27,
+    "maximumRSSBytes": 123125760,
+    "peakFootprintBytes": 78381992
+  },
+  "abletonLink": {
+    "wallSeconds": 5.78,
+    "userCPUSeconds": 0.62,
+    "systemCPUSeconds": 0.69,
+    "maximumRSSBytes": 81330176,
+    "peakFootprintBytes": 33833848
+  },
+  "sourceCommit": "e63cbea2d03ae5e4797cac2cdbb55c063e69debc",
+  "scope": "macOS time -l metrics of each short native loopback invocation, not per-component or sustained throughput",
+  "hardwareVerification": false
+}

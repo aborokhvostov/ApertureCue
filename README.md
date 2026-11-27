@@ -31,11 +31,13 @@ recording, scan capture imports and optional lighting adapters. Open
 the procedural RGBW matrix and animated position channels. [Stage 6 scope](docs/stage-6-completion.md)
 
 Stage 7 adds a local external video inbox, a separately built Syphon helper,
-and explicitly armed PJLink, Firmata, MIDI Time Code and gamepad sessions.
+and explicitly armed PJLink, Firmata, MIDI Time Code and gamepad sessions. A separately built Ableton Link helper also supports scene launch at the next four-beat boundary.
 Open `Demo/ExternalVideo.aperturecue.json` and use **Devices → External video…**.
 [Video producer and Syphon helper](docs/external-video-spec.md) · [Ableton Link scene recall](docs/ableton-link.md) · [Stage 7 scope](docs/stage-7-completion.md)
 
-[Download the Apple Silicon development build (alpha 19)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.19). The archive includes the original Light Engine and earlier demo projects. The app uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-19)
+[Download the Apple Silicon development build (alpha 20)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.20). The archive includes the original external-video and earlier demo projects. The app uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-20)
+
+Alpha 20 passed 215 XCTest each on macOS and Linux. The optimized app passed 29 modes, with 10 repeated from the ZIP and a separate Syphon interoperability test. [GitHub Actions](https://github.com/aborokhvostov/ApertureCue/actions/runs/45968409998) · [Stage 7 evidence](docs/stage-7-completion.md)
 
 Alpha 19 completes the declared Stage 6 software checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45958866571) passed 199 XCTest on each macOS and Linux. The optimized app passed 24 modes, with eight tested again after ZIP extraction. Physical fixture, camera, USB and SPI checks have separate gates.
 

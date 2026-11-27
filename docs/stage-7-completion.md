@@ -25,3 +25,22 @@ PTYs and loopback responders. Physical model compatibility requires testing
 the concrete device, firmware and macOS driver with its production path.
 
 [External video inbox](external-video-spec.md)
+
+## Verification
+
+[Alpha 20](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.20) publishes the tested macOS work in schema 17. Windows and vendor media, depth input, Ableton Link media/timeline rate and Start/Stop Sync, sustained Syphon throughput and physical device profiles keep the full stage open.
+
+| Gate | Result |
+|---|---|
+| Portable core | 215 methods ran locally in the standalone assertion harness with zero failed assertions. [Local report](verification/stage-7/core-summary.json) |
+| GitHub Actions | 215 XCTest each on macOS and Linux, zero failures. The macOS job built SwiftPM release, signed the native app ad hoc and archived it with the original examples. [Run](https://github.com/aborokhvostov/ApertureCue/actions/runs/45968409998) |
+| Original media | The 96×64 BGRA8 input restored one Metal surface and logical output across producer loss. The independent Syphon helper at upstream `f4761677a45b8034a3c2069ec0f3d2553da81fba` produced exact RGBA `[221, 92, 23, 255]`, black, then the source color again. [Inbox checks](verification/stage-7/external-video.json) · [Syphon checks](verification/stage-7/syphon-loopback.json) |
+| Devices | The PJLink TCP simulator verified auth, status, writes and cancellation. The Firmata PTY verified exact serial input and individual pin output, reboot and remapping. Virtual gamepads verified focus and action routing. [PJLink](verification/stage-7/pjlink.json) · [Firmata](verification/stage-7/firmata.json) · [Gamepad](verification/stage-7/gamepad.json) |
+| Time code | A separate virtual CoreMIDI source verified locate, play, dropout, arbitration and reacquisition. Maximum phase error across 74 samples was 0.449 ms. [MIDI Time Code](verification/stage-7/midi-time-code.json) |
+| Native regression | 29 modes passed on the macOS 26.6.2 MacBook Air M2, Apple M2 GPU, 8 GiB. The 120.015-second managed media workload used four H.264/MOV 160×96 sources at 30 fps without outputs. 112 out of 13,952 pulls had no eligible frame. Maximum legacy drift was 124.464 ms and maximum managed PTS age was 198.516 ms. An initial CoreMIDI fixture client creation failed before the adapter was exercised. Two exact-binary repeats passed. [Mode results](verification/stage-7/production-modes.json) · [Media soak](verification/stage-7/media-soak.json) · [CoreMIDI retries](verification/stage-7/midi-control-startup.json) |
+| Visible operator workflow | An isolated diagnostic app discovered and assigned an original CLI source, showed `Receiving`, and disabled assignment when the inbox stopped. The MIDI Time Code panel opened disarmed. The extracted app opened the packaged demo and showed both the inbox and Link initially disarmed. [Diagnostic workflow](verification/stage-7/manual-diagnostic.json) · [Extracted app](verification/stage-7/manual-release.json) |
+| Fresh archive | Ten modes passed again after extracting the identical signed app and original demo bytes. The public tag and both asset digests match the verified local files. [Distribution record](verification/stage-7/distribution.json) · [Release record](verification/stage-7/release.json) |
+| Hardware | Device-specific reports remain open for projectors, Arduino boards, MIDI timecode, gamepads, camera and specialty captures. Throughput across third-party Syphon sources and live-rig CPU/GPU use remain unmeasured. |
+| Ableton Link | Independent test peers supplied real tempo and phase in an isolated software network. The app dispatched one queued scene on the next four-beat boundary and cleared pending launches after loss. The maximum phase difference across 24 common-time readings was 0.000003 beats. [Link verification](verification/stage-7/ableton-link.json) |
+
+The offscreen Metal check rendered 300 frames at 640×360 with two procedural surfaces and one output. It measured 432.9 readbacks per second and 0.201 ms mean GPU execution per command. The short Syphon and Link tests also recorded process CPU time and peak memory. [Offscreen workload](verification/stage-7/self.json) · [Helper resource measurements](verification/stage-7/helper-resources.json) · [Visible synthetic composition](verification/stage-7/live-composition.json) · [Test regressions](verification/stage-7/test-harness-regressions.json)

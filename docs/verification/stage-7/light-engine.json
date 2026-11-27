@@ -1,0 +1,62 @@
+{
+  "checkCount": 5,
+  "checks": [
+    "Nearest and clipped box kernels match a sharp two-by-two RGBA oracle",
+    "Production editor applies atomic patch edits and Undo/Redo, persists the current schema and restores an off session",
+    "Metal reads two logical routes from the same composition tick and encodes scoped color and animated 16-bit position",
+    "ArtDmx input on an isolated port rejects duplicates and other universes, routes real sACN, retires on input loss",
+    "Armed capture replay sends exact bytes, replaces a selected frame on seek and retires the stream on stop"
+  ],
+  "elapsedSeconds": 1.6454852083115838,
+  "fixtureResolution": [
+    320,
+    180
+  ],
+  "hardwareVerification": false,
+  "logicalOutputs": 2,
+  "observations": {
+    "accentSlots46to54": [
+      26,
+      108,
+      26,
+      128,
+      0,
+      0,
+      64,
+      166,
+      0
+    ],
+    "gpu": "Apple M2",
+    "invalidOrDuplicateInputs": 2,
+    "routedChannels": [
+      42,
+      97
+    ],
+    "wallSlots1to20": [
+      0,
+      26,
+      204,
+      26,
+      4,
+      0,
+      149,
+      51,
+      33,
+      0,
+      120,
+      51,
+      62,
+      0,
+      91,
+      51,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "passed": true,
+  "schemaVersion": 1,
+  "surfaceCount": 2,
+  "timestampUTC": "2026-11-27T08:56:45Z"
+}

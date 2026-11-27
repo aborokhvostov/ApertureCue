@@ -1,0 +1,207 @@
+[
+  {
+    "mode": "external-video-test",
+    "exitCode": 0,
+    "elapsedSeconds": 2.167,
+    "startedAt": "2026-11-27T08:56:33+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "pjlink-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.09,
+    "startedAt": "2026-11-27T08:56:35+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "firmata-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.589,
+    "startedAt": "2026-11-27T08:56:36+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "midi-time-code-test",
+    "exitCode": 0,
+    "elapsedSeconds": 5.354,
+    "startedAt": "2026-11-27T08:56:38+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "gamepad-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.322,
+    "startedAt": "2026-11-27T08:56:43+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "light-engine-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.786,
+    "startedAt": "2026-11-27T08:56:44+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "dmx-sequence-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.091,
+    "startedAt": "2026-11-27T08:56:46+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "led-scan-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.319,
+    "startedAt": "2026-11-27T08:56:46+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "lighting-adapter-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.22,
+    "startedAt": "2026-11-27T08:56:46+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "control-mapping-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.582,
+    "startedAt": "2026-11-27T08:56:47+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "midi-control-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.438,
+    "startedAt": "2026-11-27T08:58:31+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808",
+    "initialAttemptExitCode": 1,
+    "passingRetryCount": 2
+  },
+  {
+    "mode": "osc-query-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.664,
+    "startedAt": "2026-11-27T08:56:49+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "lighting-transport-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.55,
+    "startedAt": "2026-11-27T08:56:50+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "conductor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.61,
+    "startedAt": "2026-11-27T08:56:52+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "show-schedule-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.591,
+    "startedAt": "2026-11-27T08:56:53+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "show-control-test",
+    "exitCode": 0,
+    "elapsedSeconds": 4.614,
+    "startedAt": "2026-11-27T08:56:53+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "montage-test",
+    "exitCode": 0,
+    "elapsedSeconds": 5.615,
+    "startedAt": "2026-11-27T08:56:58+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "composition-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.72,
+    "startedAt": "2026-11-27T08:57:03+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "media-playback-test",
+    "exitCode": 0,
+    "elapsedSeconds": 4.497,
+    "startedAt": "2026-11-27T08:57:04+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "source-editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 6.134,
+    "startedAt": "2026-11-27T08:57:09+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 254.044,
+    "startedAt": "2026-11-27T08:57:15+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "audio-test",
+    "exitCode": 0,
+    "elapsedSeconds": 2.778,
+    "startedAt": "2026-11-27T09:01:29+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "durability-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.13,
+    "startedAt": "2026-11-27T09:01:32+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "self-test",
+    "exitCode": 0,
+    "elapsedSeconds": 2.503,
+    "startedAt": "2026-11-27T09:01:32+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "live-editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 8.32,
+    "startedAt": "2026-11-27T09:01:34+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "live-composition-test",
+    "exitCode": 0,
+    "elapsedSeconds": 7.252,
+    "startedAt": "2026-11-27T09:01:43+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "protocol-loopback",
+    "exitCode": 0,
+    "elapsedSeconds": 0.102,
+    "startedAt": "2026-11-27T09:01:50+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "lighting-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.939,
+    "startedAt": "2026-11-27T09:01:50+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  {
+    "mode": "media-soak-test",
+    "exitCode": 0,
+    "elapsedSeconds": 122.229,
+    "startedAt": "2026-11-27T09:01:51+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  }
+]

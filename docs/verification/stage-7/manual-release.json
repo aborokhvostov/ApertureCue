@@ -1,0 +1,15 @@
+{
+  "archiveSHA256": "8e173519b219ba7d459e5c1a49b26a86b0ee5d884c2b74916c51579af43a3b70",
+  "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808",
+  "sourceCommit": "e63cbea2d03ae5e4797cac2cdbb55c063e69debc",
+  "localDate": "2026-11-27",
+  "timezone": "Europe/Moscow",
+  "checks": [
+    "LaunchServices opened the signed app from a fresh extraction in a logged-in macOS session",
+    "The Show menu offered Ableton Link, and its panel showed Link off with no selected helper and disabled Connect and Queue actions",
+    "File Open displayed the original packaged ExternalVideo project, its feed surface and comparison gradient",
+    "The surface inspector opened the External Video panel, which showed Inbox stopped and disabled Add feed to Media",
+    "Quit closed the test instance without writing to the demo"
+  ],
+  "hardwareVerification": false
+}

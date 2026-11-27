@@ -1,0 +1,44 @@
+{
+  "checkCount": 5,
+  "checks": [
+    "Official Syphon discovered an original server in a separate process",
+    "Selected video feeds the regular Metal composition with matching display pixels",
+    "Loss expires an unchanged frame and the assigned surface renders black",
+    "A replacement producer recovers without reassigning the surface",
+    "Schema 17 reopens the logical feed without rearming the session"
+  ],
+  "elapsedSeconds": 2.9890092499554157,
+  "fixtureSize": [
+    96,
+    64
+  ],
+  "hardwareVerification": false,
+  "logicalOutputs": 1,
+  "measurements": {
+    "lossAfterProducerStopSeconds": 0.8291956667089835
+  },
+  "passed": true,
+  "samplesRGBA": [
+    [
+      221,
+      92,
+      23,
+      255
+    ],
+    [
+      0,
+      0,
+      0,
+      255
+    ],
+    [
+      221,
+      92,
+      23,
+      255
+    ]
+  ],
+  "scope": "syphon-loopback",
+  "surfaceCount": 1,
+  "timestampUTC": "2026-11-27T08:56:33Z"
+}

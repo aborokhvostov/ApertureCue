@@ -1,0 +1,22 @@
+{
+  "cameraAccess": false,
+  "checkCount": 4,
+  "checks": [
+    "versioned original capture round-trips and decodes known top-left centers under ambient drift",
+    "native import commits once, respects overlap validation and integrates with Undo/Redo",
+    "saved scan fixture drives the expected nine DMX slots in production patch order",
+    "optional partial import preserves patch addresses and writes zero for an occluded LED"
+  ],
+  "elapsedSeconds": 0.2515036666300148,
+  "fixtureDimensions": [
+    48,
+    36
+  ],
+  "fixtureFlashes": 3,
+  "hardwareVerification": false,
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "schemaVersion": 1,
+  "scope": "Original simulated grayscale flash stack and hidden native fixture editor; normalized positions and patched byte oracle",
+  "timestampUTC": "2026-11-27T08:56:46Z"
+}

@@ -1,0 +1,17 @@
+{
+  "checkCount": 4,
+  "checks": [
+    "selected virtual UID and one-clock ownership are enforced; full-frame locate is paused and origin-relative",
+    "separate CoreMIDI process sends paced quarter frames and measures native show phase",
+    "endpoint loss freezes at the holdover boundary and only the same UID restores ownership",
+    "reverse time code scrubs without reverse playback and local seek revokes pending input"
+  ],
+  "elapsedSeconds": 5.272752541641239,
+  "hardwareVerification": false,
+  "maximumPhaseErrorSeconds": 0.0004490000592340948,
+  "passed": true,
+  "phaseSampleCount": 74,
+  "schemaVersion": 1,
+  "scope": "Native editor clock with independent-process original virtual CoreMIDI source and selected virtual UID recovery",
+  "timestampUTC": "2026-11-27T08:56:43Z"
+}

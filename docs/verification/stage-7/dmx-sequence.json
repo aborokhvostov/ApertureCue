@@ -1,0 +1,22 @@
+{
+  "checkCount": 5,
+  "checks": [
+    "Live capture preserves exact microsecond timing, raw values and explicit retirement",
+    "Default preview holds gaps and remains isolated from an already armed output",
+    "Explicit output handoff carries exact snapshots, seek generation and one retirement",
+    "Replacing a sequence or losing output arm invalidates the prior native timer",
+    "Asynchronous save and load round-trip; invalid and stale files leave session data safe"
+  ],
+  "elapsedSeconds": 0.03306724998401478,
+  "hardwareVerification": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "scope": "Native DMX sequence session, original raw universe values, injected monotonic clock and isolated output callbacks",
+  "timestampUTC": "2026-11-27T08:56:46Z",
+  "workload": {
+    "maximumFixtureSlotsPerUniverse": 4,
+    "recordedDurationMicroseconds": 750000,
+    "snapshotCount": 3,
+    "universeCount": 2
+  }
+}

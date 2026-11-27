@@ -1,0 +1,1 @@
+PASS OSC immediate-bundle UDP localhost loopback and MIDI parser. No lighting/MIDI hardware verified.

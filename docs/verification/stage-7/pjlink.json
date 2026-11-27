@@ -1,0 +1,16 @@
+{
+  "checkCount": 5,
+  "checks": [
+    "Fragmented TCP greeting and replies preserve warming, unavailable mute and diagnostics",
+    "SHA-256 upgrade and password digest match independent golden bytes",
+    "Explicit legacy mode emits the independent MD5 and mute bytes",
+    "Unsupported upgrade and ERRA close without retrying or sending a downgraded write",
+    "Peer close, monotonic deadline and user cancellation release the TCP exchange"
+  ],
+  "elapsedSeconds": 1.0174462500144728,
+  "hardwareVerification": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "scope": "Production PJLink client with independent original fragmented localhost TCP simulator",
+  "timestampUTC": "2026-11-27T08:56:36Z"
+}

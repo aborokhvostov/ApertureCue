@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "e63cbea2d03ae5e4797cac2cdbb55c063e69debc",
+  "optimized": true,
+  "architecture": "arm64",
+  "platform": "macOS 26.6.2 build 25G83",
+  "cpu": "Apple M2",
+  "gpu": "Apple M2",
+  "memoryGiB": 8,
+  "swift": "Apple Swift 6.4.2",
+  "deploymentTarget": "macOS 13.0",
+  "bundleVersion": 20,
+  "signing": "ad hoc; unnotarized",
+  "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808",
+  "coreLibrarySHA256": "951a8c6a5e2254a38b824d49e48b2172c14ca223c481eebf7953e5166f7b720e",
+  "hardwareVerification": false
+}

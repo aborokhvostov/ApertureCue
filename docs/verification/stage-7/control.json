@@ -1,0 +1,18 @@
+{
+  "checkCount": 5,
+  "checks": [
+    "saved tracks remain silent until the session arms outputs",
+    "timed natural crossing emits the expected typed OSC and virtual MIDI exactly once",
+    "scrubbing skips old events, releases MIDI notes and retains later crossings",
+    "separate sender process locks on real localhost UDP, measures phase and holds the show on loss",
+    "reacquisition restores paused position silently; local seek takes control back"
+  ],
+  "elapsedSeconds": 4.547886125044897,
+  "externalClockMaximumPhaseErrorSeconds": 0.0011370431166142225,
+  "externalClockSampleCount": 128,
+  "hardwareVerification": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "scope": "Production editor, localhost UDP, isolated CoreMIDI virtual source, external clock fixture process",
+  "timestampUTC": "2026-11-27T08:56:58Z"
+}

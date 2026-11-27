@@ -1,6 +1,6 @@
 # Руководство пользователя ApertureCue 0.1
 
-Это ранняя настольная сборка для macOS 13+. Руководство описывает alpha 20 и формат проекта schema 17. [Список сборок](https://github.com/aborokhvostov/ApertureCue/releases) · [Состояние проекта](status.md).
+Это ранняя настольная сборка для macOS 13+. Руководство описывает alpha 20 и формат проекта schema 17. [Скачать alpha 20](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.20) · [Список сборок](https://github.com/aborokhvostov/ApertureCue/releases) · [Состояние проекта](status.md).
 
 ## Запуск и демонстрационный проект
 

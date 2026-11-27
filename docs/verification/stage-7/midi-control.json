@@ -1,0 +1,16 @@
+{
+  "checkCount": 5,
+  "checks": [
+    "Discovery and virtual input isolate the selected UID and decode exact 14-bit controller values",
+    "Typed feedback reaches only the selected virtual destination with exact MIDI bytes",
+    "Replacing a selected input discards queued old-generation commands",
+    "Exact UID reconnection clears the decoder, keeps feedback isolated and drops sends while disconnected",
+    "Realtime flood is bounded and stopping rejects further callbacks"
+  ],
+  "elapsedSeconds": 1.1912642083480023,
+  "hardwareVerification": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "scope": "Production CoreMIDI adapter with original virtual source and destination fixtures",
+  "timestampUTC": "2026-11-27T08:58:32Z"
+}

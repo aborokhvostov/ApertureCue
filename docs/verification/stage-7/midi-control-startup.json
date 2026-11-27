@@ -1,0 +1,36 @@
+{
+  "initialAttempt": {
+    "mode": "midi-control-test",
+    "exitCode": 1,
+    "elapsedSeconds": 0.05,
+    "startedAt": "2026-11-27T08:56:49+00:00",
+    "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+  },
+  "initialReport": {
+    "checkCount": 0,
+    "checks": [],
+    "elapsedSeconds": 0.02064308332046494,
+    "failure": "CoreMIDI fixture client failed",
+    "hardwareVerification": false,
+    "passed": false,
+    "schemaVersion": 1,
+    "scope": "Production CoreMIDI adapter with original virtual source and destination fixtures",
+    "timestampUTC": "2026-11-27T08:56:49Z"
+  },
+  "passingRetries": [
+    {
+      "mode": "midi-control-test",
+      "exitCode": 0,
+      "elapsedSeconds": 2.765,
+      "startedAt": "2026-11-27T08:58:28+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    },
+    {
+      "mode": "midi-control-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.438,
+      "startedAt": "2026-11-27T08:58:31+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "checkCount": 4,
+  "checks": [
+    "selected bridge and independent loopback Link peer converged on tempo and phase",
+    "selected native scene launched once near the next bar without changing show transport",
+    "timeline edit, seek and last peer departure cancel pending actions",
+    "recovery does not replay and closing the native panel disarms"
+  ],
+  "elapsedSeconds": 3.7095754999900237,
+  "maximumPhaseErrorBeats": 2.9999999999752447e-06,
+  "nativeLaunchPhaseBeats": 0.012577,
+  "passed": true,
+  "phaseSampleCount": 24,
+  "schemaVersion": 1,
+  "scope": "Native selected cue, independently built read-only Link bridge, separate controllable upstream peer, private loopback multicast",
+  "timestampUTC": "2026-11-27T08:56:30Z"
+}

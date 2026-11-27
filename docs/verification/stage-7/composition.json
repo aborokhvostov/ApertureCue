@@ -1,0 +1,66 @@
+{
+  "additionalFrameSizes": [
+    [
+      64,
+      64
+    ],
+    [
+      127,
+      95
+    ],
+    [
+      320,
+      180
+    ]
+  ],
+  "checkCount": 25,
+  "checks": [
+    "CPU cache payload and entry limits enforce LRU, cross-owner refusal, pruning and lease cleanup",
+    "material expression samples cropped source and typed uniforms through production Metal",
+    "material show time, render size and negative GLSL modulo have independent numeric pixels",
+    "ISF normalized coordinates and image reads preserve y-up semantics without changing native UV",
+    "invalid material source retains accepted shader/cache and exact last-good pixels",
+    "chroma/luma key, softness, spill, saturation, inversion and posterization match independent CPU values before tint",
+    "accepted material executes normal/add/multiply/screen blend variants with premultiplied pixel oracles",
+    "isolated group opacity applies once to composition while default groups preserve per-layer alpha",
+    "isolated group normal/add/multiply/screen modes blend the composed item with its background",
+    "nested isolated groups preserve transparent intermediate alpha and inherited visibility",
+    "group FX key the composed color after isolation, rather than independently keying child layers",
+    "group-local masks stay in group scope and global masks attenuate the complete composition",
+    "projective group-local mask inverse horizon preserves every unrelated backdrop pixel",
+    "multiple mask intersection and inverted holes reveal underlying layers without masking them",
+    "Bezier ellipse mask coverage and derivative antialias agree with an independent analytic boundary",
+    "edge blend channel oracle and complementary simulated projector ramps sum to unity",
+    "Bezier output deformation preserves independent source crop under an analytic inverse oracle",
+    "regular input mesh follows stroke arc/across UV after crop, independently from geometric cage UV",
+    "Bezier source warp follows stroke arc/across UV after crop, within half-texel/UNORM tolerance",
+    "self-loopback reads one completed prior generation and drops input while GPU work is pending",
+    "two-route feedback cycles share one immutable previous generation independent of route order",
+    "feedback reset suppresses stale GPU completion and permits a new generation",
+    "invalid feedback topology cancels publication; blackout is a new black generation",
+    "feedback retains at most four leased generations and resumes after consumers release them",
+    "feedback rejects negative/zero/overflow dimensions before allocation and recovers atomically"
+  ],
+  "codecs": "none; procedural sources only",
+  "elapsedSeconds": 0.6290797083056532,
+  "feedbackSize": [
+    32,
+    18
+  ],
+  "frameSize": [
+    128,
+    96
+  ],
+  "gpu": "Apple M2",
+  "hardwareVerification": false,
+  "maximumFixtureOutputs": 2,
+  "maximumFixtureSurfaces": 4,
+  "outputMeaning": "Offscreen logical routes only; no physical displays.",
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "schemaVersion": 1,
+  "scope": "Actual Metal composition, bounded expression/ISF/FX, scoped masks, group isolation, edge attenuation and previous-generation loopback; original procedural sources only.",
+  "timestampUTC": "2026-11-27T08:57:04Z",
+  "unmeasured": "Physical devices, optical seams/refresh, throughput, long-run stability, decoder/audio timing and GPU utilization.",
+  "windowsShown": false
+}

@@ -1,0 +1,24 @@
+{
+  "platform": "macOS 26.6.2 arm64",
+  "firmataEditorStartup": {
+    "sourceCommit": "435130b9ad3473428adccc90eb62f2b81be91592",
+    "observed": "The native Firmata QA window triggered a stale row callback during first AppKit layout after replacing the editor project. The table delegate trapped while indexing its new document.",
+    "resolution": "Guard row lookups against the current document and refresh the fixture after replacement. The integration test requests stale surface and media rows to verify both paths."
+  },
+  "firmataPTYWait": {
+    "sourceCommit": "8dc950620cdb29cf265c405c003f91471d0fc8a1",
+    "observed": "The original wait could expire without reading the REPORT_VERSION byte. In an isolated optimized reproduction, a queued AppKit callback delayed the loop for 0.748 seconds. A direct PTY read then recovered byte 249.",
+    "resolution": "Wait for descriptor readiness with a bounded poll and final nonblocking read. The updated isolated fixture received byte 249 after 0.040 seconds and passed all six AppKit and PTY checks."
+  },
+  "lightingTransport": {
+    "sourceCommit": "8dc950620cdb29cf265c405c003f91471d0fc8a1",
+    "observed": "The integrated receiver occasionally observed extra local datagrams during the combined rate, retirement and Stop check.",
+    "resolution": "Wait for the main queue to commit the successfully transmitted retirement batch before issuing Stop. Retain the exact packet-count and wire checks."
+  },
+  "abletonLinkPipe": {
+    "sourceCommit": "e0a500b1bbcd48f90d5ebbaf8bded60310c6a574",
+    "observed": "In a focused Swift bridge diagnostic, Foundation's length-based pipe read batched about 33 observations. The 689–774 ms gaps exceeded the phase continuity budget.",
+    "resolution": "Use a bounded nonblocking read on each readiness callback. The scoped bridge then delivered observations every 16–24 ms from the official Link fixture, followed the peer tempo, confirmed one four-beat crossing, and cancelled on observed last-peer departure."
+  },
+  "hardwareVerification": false
+}

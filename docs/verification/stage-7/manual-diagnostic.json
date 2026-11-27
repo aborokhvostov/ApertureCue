@@ -1,0 +1,14 @@
+{
+  "build": "unoptimized diagnostic snapshot",
+  "localDate": "2026-11-27",
+  "timezone": "Europe/Moscow",
+  "executableSHA256": "1e570f1768b77dcb34eca6259a70f2e89a114f45cd49979adbb1b80358947ed5",
+  "checks": [
+    "The Devices menu offered External video, PJLink projector, and Arduino / Firmata",
+    "Started isolated inbox, discovered original CLI producer, assigned to selected surface, and saw Receiving status",
+    "Stop inbox returned to stopped and disabled the attach action",
+    "Show menu had Gamepad and MIDI Time Code; the MTC window opened and showed no armed clock",
+    "Quit and discarded the isolated document"
+  ],
+  "hardwareVerification": false
+}

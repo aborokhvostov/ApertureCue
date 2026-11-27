@@ -1,0 +1,15 @@
+{
+  "checkCount": 4,
+  "checks": [
+    "two native virtual snapshots isolate the selected controller and produce one rising-edge action",
+    "focus loss clears edges and simultaneous actions retain a fixed order",
+    "queued gamepad intents use the same native cue, playback and blackout paths as other inputs",
+    "disconnection and project reset disarm the session and reconnect requires explicit arming"
+  ],
+  "elapsedSeconds": 0.2914055416476913,
+  "hardwareVerification": false,
+  "passed": true,
+  "schemaVersion": 1,
+  "scope": "Native tests with GameController extended snapshots and existing show control intent actions",
+  "timestampUTC": "2026-11-27T08:56:44Z"
+}

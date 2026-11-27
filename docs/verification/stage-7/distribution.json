@@ -1,0 +1,88 @@
+{
+  "archive": "ApertureCue-macOS-arm64.zip",
+  "sizeBytes": 3388480,
+  "sha256": "8e173519b219ba7d459e5c1a49b26a86b0ee5d884c2b74916c51579af43a3b70",
+  "entryCount": 47,
+  "crcPassed": true,
+  "safeUniquePaths": true,
+  "signaturePassed": true,
+  "deploymentTarget": "macOS 13.0",
+  "optionalSDKDependencyFree": true,
+  "executableModePassed": true,
+  "appAndDemoMatch": true,
+  "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808",
+  "coreLibrarySHA256": "951a8c6a5e2254a38b824d49e48b2172c14ca223c481eebf7953e5166f7b720e",
+  "sourceCommit": "e63cbea2d03ae5e4797cac2cdbb55c063e69debc",
+  "extractedChecks": [
+    {
+      "mode": "external-video-test",
+      "exitCode": 0,
+      "elapsedSeconds": 5.305,
+      "startedAt": "2026-11-27T08:57:16+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    },
+    {
+      "mode": "pjlink-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.171,
+      "startedAt": "2026-11-27T08:57:21+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    },
+    {
+      "mode": "firmata-test",
+      "exitCode": 0,
+      "elapsedSeconds": 2.305,
+      "startedAt": "2026-11-27T08:57:22+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    },
+    {
+      "mode": "midi-time-code-test",
+      "exitCode": 0,
+      "elapsedSeconds": 5.593,
+      "startedAt": "2026-11-27T08:57:25+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    },
+    {
+      "mode": "gamepad-test",
+      "exitCode": 0,
+      "elapsedSeconds": 0.805,
+      "startedAt": "2026-11-27T08:57:30+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    },
+    {
+      "mode": "control-mapping-test",
+      "exitCode": 0,
+      "elapsedSeconds": 4.713,
+      "startedAt": "2026-11-27T08:57:31+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    },
+    {
+      "mode": "show-control-test",
+      "exitCode": 0,
+      "elapsedSeconds": 5.514,
+      "startedAt": "2026-11-27T08:57:36+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    },
+    {
+      "mode": "media-playback-test",
+      "exitCode": 0,
+      "elapsedSeconds": 4.085,
+      "startedAt": "2026-11-27T08:57:41+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    },
+    {
+      "mode": "light-engine-test",
+      "exitCode": 0,
+      "elapsedSeconds": 2.502,
+      "startedAt": "2026-11-27T08:57:45+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    },
+    {
+      "mode": "osc-query-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.836,
+      "startedAt": "2026-11-27T08:57:48+00:00",
+      "executableSHA256": "f6aae8917bf23321aa49fbc63b2229866f90e914ea4b11e37fae5ba598d2c808"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "native editor ignores rows left over from a previous document",
+    "original pseudo-terminal discovery opens the native panel without pin writes",
+    "10-bit analog input routes through the normal editor control transaction",
+    "explicit digital write touches one pin and checks the firmware pin state",
+    "board reboot clears pending write and routing without replay",
+    "serial hang-up, explicit reconnect, digital input and report shutdown"
+  ],
+  "connection": "original macOS pseudo-terminal",
+  "failure": null,
+  "pass": true,
+  "physicalDevicesTested": 0,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "wallSeconds": 1.5326971666654572
+}

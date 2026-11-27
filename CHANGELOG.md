@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0-alpha.20 — External media and hardware
+## 0.1.0-alpha.20 — External media and hardware, 2026-11-27
 
 - Add a bounded local external-video inbox and a separately built Syphon receive helper. Schema 17 stores the feed name and leaves the inbox stopped when opening a project.
 - Add PJLink projector status and individual power and AV-mute controls, and selected Arduino/Firmata pin mapping with capability and readback checks.

@@ -1,0 +1,56 @@
+{
+  "checkCount": 15,
+  "checks": [
+    "empty, malformed and excessive CoreAudio device catalog sizes are handled without borrowing an empty array pointer or changing hardware",
+    "main cancellation only invalidates a serial while actual reader cancellation remains on the worker before any stale packet copy",
+    "original stereo Float32 WAV decodes through the real four-channel engine matrix with signed gains and one clamp",
+    "post-matrix master fader scales the clipped output after its bounded render-quantum gain ramp",
+    "Pause is silent and retains the per-source sample position",
+    "generation-tagged seek flushes old PCM and clips after the complete matrix sum",
+    "rapid successive seeks cancel stale extraction completions and retain at most two queued PCM chunks",
+    "per-source zero volume and unsupported reverse direction are silent with an explicit reverse diagnostic",
+    "AVFoundation resamples original 44.1 kHz PCM to the 48 kHz graph without changing the seek region",
+    "real engine offline sample-clock drift is bounded independently of hardware latency and positive double-rate playback advances source time",
+    "original MOV first audio track is decoded and seeked through the same production PCM route",
+    "explicit source trim Out bounds PCM scheduling before the controller's next tick",
+    "natural EOF caps the reported source clock at duration and a new-generation seek resumes the correct PCM",
+    "fractional trim Out admits only samples with PTS before Out and bounds both playing and paused reported positions",
+    "global eight-source admission rejects a ninth without hardware playback, retains leases through asynchronous work and permits reuse after cancellation"
+  ],
+  "details": {
+    "doubleRateSourceDeltaSeconds": 0.3413333333333335,
+    "fractionalTrimScheduledFrames": 4801,
+    "matrixConstantChannels": [
+      -0.40000003576278687,
+      0.20000001788139343,
+      -0.10000000894069672,
+      1.0000001192092896
+    ],
+    "offlineSampleClock": {
+      "absoluteErrorSeconds": 0,
+      "outputSampleRate": 48000,
+      "physicalClock": false,
+      "renderedFrames": 65536,
+      "seconds": 1.3653333333333333
+    },
+    "rapidSeekDiscardedCompletions": 1,
+    "readerCancellationOwnership": {
+      "gateEnteredOnWorker": true,
+      "mainProbeRan": true,
+      "packetsCopiedAfterInvalidation": 0,
+      "readerCancellationCount": 1,
+      "readerCancelledOnMain": false,
+      "readReturnedCancelled": true
+    },
+    "trimmedScheduledFrames": 2400
+  },
+  "elapsedSeconds": 2.18596720835194,
+  "hardwareAudioStarted": false,
+  "hardwareVerification": false,
+  "limitations": "No audible output, physical device routing/hotplug, speaker calibration, optical AV sync or long-show drift claim. Offline sample-clock drift is reported separately from physical output latency; reverse audio is deliberately silent.",
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "schemaVersion": 1,
+  "scope": "Production AVFoundation PCM extraction, per-source matrix and bounded AVAudioEngine graph in silent manual offline mode; original Float32 WAV/MOV fixtures",
+  "timestampUTC": "2026-11-27T09:01:32Z"
+}
