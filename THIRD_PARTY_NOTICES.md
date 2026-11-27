@@ -1,6 +1,6 @@
 # Third-party notices and dependency review
 
-Review date: 25 October 2026. This inventory describes the checked-in source and native build configuration. It is not a license grant for third-party SDKs that may be added later.
+Review date: 27 November 2026. This inventory describes the checked-in source and native build configuration. It is not a license grant for third-party SDKs that may be added later.
 
 ## Original project
 
@@ -15,8 +15,9 @@ Copyright (C) 2026 ApertureCue contributors. The original ApertureCue sources, p
 | AppKit, UniformTypeIdentifiers | Native desktop windows, controls, panels and document types | macOS system frameworks; not bundled. |
 | Metal and MetalKit | GPU API, drawable views and texture loader | macOS system frameworks; not bundled. The project's Metal shader was authored for ApertureCue. |
 | AVFoundation, CoreVideo, QuartzCore | Video/audio playback, pixel buffers, Metal texture bridge and clock | macOS system frameworks; not bundled. Codec availability is determined by the installed operating system. |
-| CoreMIDI | Optional MIDI input adapter | macOS system framework; not bundled. |
-| Darwin/libSystem | POSIX UDP sockets and process/memory primitives | Operating-system libraries, not copied. Individual Darwin source components have their own licenses; this project does not incorporate their source. |
+| CoreMIDI | Optional MIDI input, selected-output feedback and timed virtual MIDI source | macOS system framework; not bundled. |
+| macOS DNS Service Discovery | Optional local-only OSCQuery discovery | macOS system library; not bundled. |
+| Darwin/libSystem | POSIX UDP and loopback TCP sockets, process/memory primitives | Operating-system libraries, not copied. Individual Darwin source components have their own licenses; this project does not incorporate their source. |
 | XCTest | Standard SwiftPM test harness where installed | Build/test environment component; not linked into the application. The direct fallback assertion runner in `Tests/Runner` is original project code. |
 | `MappingCore` dynamic library | Original model, geometry, project store and protocol codecs | ApertureCue's own code, `GPL-3.0-or-later`; packaged beside the executable. |
 
@@ -38,7 +39,7 @@ Syphon, Spout, NDI, Blackmagic, Canon SDKs, depth-camera SDKs, USB-DMX vendor li
 
 The official [Art-Net 4 specification, revision 1.4dp, 23 October 2025](https://art-net.org.uk/downloads/art-net.pdf) permits royalty-free protocol use, requires a user-guide credit and requires manufacturers implementing it to apply for an OEM code. The prescribed credit is reproduced in [the user guide](docs/user-guide.md#protocol-credits). ApertureCue's code was written independently; the protocol document and vendor SDK are not redistributed or relicensed as project source.
 
-OEM status: **no ApertureCue OEM code is assigned or claimed; no registration application has been submitted**. The [official OEM listing/application page](https://art-net.org.uk/oem-code-zone/#apply-for-oem-code) did not list ApertureCue at this review. Do not invent or reuse another product's code. Registration and the unimplemented discovery/management requirements remain release-conformance work; tested ArtDmx data packets alone are not full Art-Net 4 conformance.
+OEM status: **no ApertureCue OEM code is assigned or claimed; no registration application has been submitted**. The [official OEM listing/application page](https://art-net.org.uk/oem-code-zone/#apply-for-oem-code) describes the application process. The current subset covers ArtDmx and explicitly targeted ArtPoll/ArtPollReply diagnostics. Registration, subscriber management and full network discovery remain open. [Lighting transport scope](docs/lighting-transport-spec.md)
 
 sACN is specified by ESTA's ANSI E1.31. The checked IPv4 data-packet subset should not be advertised as current full-standard compliance: the [official published-document listing](https://tsp.esta.org/tsp/documents/published_docs.php) now identifies E1.31-2025 as current and 2018 as superseded. The publicly indexed [2018 text](https://tsp.esta.org/tsp/documents/docs/ANSI_E1-31-2018.pdf), section 9.1.1, establishes destination-port behavior; no source-port obligation is inferred from Art-Net. Full review of the 2025 text remains pending because the official download requires sign-in. No address was submitted and no standards PDF is bundled.
 

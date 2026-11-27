@@ -25,6 +25,9 @@ Enable local discovery to register `_oscjson._tcp` with macOS DNS-SD. The servic
 resolves to `localhost.`. Registration uses `kDNSServiceInterfaceIndexLocalOnly`,
 so it appears in discovery to other apps running on this Mac. You can use the
 HTTP URL directly when discovery is off or unavailable.
+If macOS does not respond to registration in five seconds, the app releases the
+advertisement and shows the loopback URL. After granting the applicable macOS
+permission, restart OSC Query with local discovery enabled to advertise again.
 
 ## Scope and bounds
 

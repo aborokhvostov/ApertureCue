@@ -21,6 +21,7 @@ final class OSCQueryServer {
     private static let maxSubscriptions = 32
     private static let maxBufferedBytes = 16_384
     private static let healthInterval = 0.05
+    private static let discoveryTimeout = 5.0
     private static let pathChanged = OSCQueryWebSocketFrame.encoded(opcode: 1, payload: Data("{\"COMMAND\":\"PATH_CHANGED\",\"DATA\":\"/\"}".utf8))
 
     private enum Mode { case http, webSocket, ending }
@@ -93,6 +94,7 @@ final class OSCQueryServer {
     private var queuePort: UInt16 = 0
     private var registration: DNSServiceRef?
     private var discoveryCallback: DiscoveryCallback?
+    private var discoveryDeadline: Double?
 
     private final class DiscoveryCallback {
         weak var server: OSCQueryServer?
@@ -151,9 +153,7 @@ final class OSCQueryServer {
         ticker = nil
         if let listener { Darwin.close(listener) }
         listener = nil
-        if let registration { DNSServiceRefDeallocate(registration) }
-        registration = nil
-        discoveryCallback = nil
+        releaseDiscovery()
         for client in clients.values { Darwin.close(client.descriptor) }
         clients.removeAll()
         queuePort = 0
@@ -173,6 +173,7 @@ final class OSCQueryServer {
                                         "_oscjson._tcp", "local.", "localhost.", port.bigEndian, 0, nil, {
             _, _, error, name, _, _, context in
             guard let context, let owner = Unmanaged<DiscoveryCallback>.fromOpaque(context).takeUnretainedValue().server else { return }
+            owner.discoveryDeadline = nil
             owner.lock.withLock {
                 if error == kDNSServiceErr_NoError, let name {
                     owner.currentDiscovery = .ready(name: String(cString: name))
@@ -191,7 +192,28 @@ final class OSCQueryServer {
         }
         registration = service
         discoveryCallback = callback
+        discoveryDeadline = ProcessInfo.processInfo.systemUptime + Self.discoveryTimeout
         lock.withLock { currentDiscovery = .registering }
+    }
+
+    private func releaseDiscovery() {
+        if let registration { DNSServiceRefDeallocate(registration) }
+        registration = nil
+        discoveryCallback = nil
+        discoveryDeadline = nil
+    }
+
+    private func expireDiscovery(at now: Double) {
+        if case .failed = discoveryStatus, registration != nil {
+            releaseDiscovery()
+        } else if let deadline = discoveryDeadline, now >= deadline {
+            // The OS can withhold this callback while local network permission
+            // is unresolved. Stop only the optional Bonjour registration.
+            releaseDiscovery()
+            lock.withLock {
+                currentDiscovery = .failed("Local discovery did not reply. The OSC Query URL at 127.0.0.1:\(queuePort) is still available.")
+            }
+        }
     }
 
     private func acceptConnections(now: Double) throws {
@@ -367,6 +389,7 @@ final class OSCQueryServer {
 
     private func checkClients() {
         let now = ProcessInfo.processInfo.systemUptime
+        expireDiscovery(at: now)
         do { try acceptConnections(now: now) }
         catch {
             stopLocked(finalStatus: .failed(error.localizedDescription))

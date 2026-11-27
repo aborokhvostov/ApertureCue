@@ -12,5 +12,17 @@
 <key>NSHighResolutionCapable</key><true/>
 <key>NSCameraUsageDescription</key><string>Use a selected camera as a projection source.</string>
 <key>NSMicrophoneUsageDescription</key><string>Optional live audio analysis for show control.</string>
+<key>NSLocalNetworkUsageDescription</key><string>Use local OSCQuery discovery and communicate with selected OSC and lighting endpoints when you start them.</string>
+<key>NSBonjourServices</key><array><string>_oscjson._tcp</string></array>
+<key>NSAppTransportSecurity</key>
+<dict>
+    <key>NSExceptionDomains</key>
+    <dict>
+        <key>127.0.0.1</key>
+        <dict><key>NSExceptionAllowsInsecureHTTPLoads</key><true/></dict>
+        <key>localhost.</key>
+        <dict><key>NSExceptionAllowsInsecureHTTPLoads</key><true/></dict>
+    </dict>
+</dict>
 <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict></plist>

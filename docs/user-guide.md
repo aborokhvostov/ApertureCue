@@ -1,10 +1,10 @@
 # Руководство пользователя ApertureCue 0.1
 
-Это ранняя настольная сборка для macOS 13+. Руководство описывает опубликованную [alpha 17](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.17) с форматом проекта schema 14. Точное состояние сборки и проверок находится в [status.md](status.md). Описанные операции не означают полного покрытия MadMapper 6.
+Это ранняя настольная сборка для macOS 13+. Руководство описывает alpha 18 и формат проекта schema 15. Точное состояние сборок и проверок находится в [status.md](status.md).
 
 ## Запуск и демонстрационный проект
 
-Готовая Apple Silicon сборка доступна в ZIP на странице alpha 17. Распакуйте весь архив, откройте **ApertureCue.app**, затем **File → Open** и `Media/Media.aperturecue.json` для новых source controls или `Demo/Composition.aperturecue.json` для геометрии и материалов. Папки demo и медиа держите вместе с их проектами. Для нового этапа откройте `Demo/ShowControl.aperturecue.json` и выберите **Show → Conductor…**. Сборка подписана ad hoc, без notarization.
+Распакуйте весь ZIP для Apple Silicon, откройте **ApertureCue.app** и выберите **File → Open**. Для OSC и MIDI откройте `Demo/ControlMapping.aperturecue.json`, для Conductor — `Demo/ShowControl.aperturecue.json`, для медиа — `Media/Media.aperturecue.json`. Папки с проектами и их медиа храните вместе. Сборка подписана ad hoc, без нотариального заверения Apple. [Список сборок](https://github.com/aborokhvostov/ApertureCue/releases)
 
 Из корня исходников выполните `./scripts/build.sh`, затем `open dist/ApertureCue.app`. Приложение стартует с двумя процедурными поверхностями и двумя сохранёнными вариантами геометрии. Для собственного демонстрационного изображения и видео выполните:
 
