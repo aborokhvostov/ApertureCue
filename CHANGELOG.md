@@ -5,6 +5,7 @@
 - Add a bounded local external-video inbox and a separately built Syphon receive helper. Schema 17 stores the feed name and leaves the inbox stopped when opening a project.
 - Add PJLink projector status and individual power and AV-mute controls, and selected Arduino/Firmata pin mapping with capability and readback checks.
 - Add selected MIDI Time Code with separate timing ownership and optional extended gamepad controls through the existing show action path.
+- Add opt-in Ableton Link scene launches on the next four-beat boundary through a separately built helper.
 
 ## 0.1.0-alpha.19 — Light engine, 2026-11-27
 

@@ -18,6 +18,7 @@ extension EditorController {
     @objc func openShowControlTools() { showControls() }
 
     func resetShowControlSessions() {
+        abletonLinkSession.reset()
         gamepadSession.reset()
         conductorRuntime.reset()
         conductorWindow?.close()

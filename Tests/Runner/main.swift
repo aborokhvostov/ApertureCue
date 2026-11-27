@@ -216,4 +216,6 @@ runCase("PJLinkTests.testFragmentsExactCommandsAndTypedReplies", PJLinkTests.sel
 runCase("PJLinkTests.testRejectsMalformedAndMismatchedWireData", PJLinkTests.self) { try $0.testRejectsMalformedAndMismatchedWireData() }
 runCase("PJLinkTests.testModernHandshakeBindsFreshNonceAndSequentialReplies", PJLinkTests.self) { try $0.testModernHandshakeBindsFreshNonceAndSequentialReplies() }
 runCase("PJLinkTests.testExplicitAuthModesAndNoDowngradeOrWriteBatch", PJLinkTests.self) { try $0.testExplicitAuthModesAndNoDowngradeOrWriteBatch() }
+runCase("AbletonLinkCueTests.testQueuesStrictNextBoundaryAndRecallsOneTime", AbletonLinkCueTests.self) { try $0.testQueuesStrictNextBoundaryAndRecallsOneTime() }
+runCase("AbletonLinkCueTests.testCancelsOnSignalLossDiscontinuityAndLateCrossing", AbletonLinkCueTests.self) { try $0.testCancelsOnSignalLossDiscontinuityAndLateCrossing() }
 exit(finishTests())

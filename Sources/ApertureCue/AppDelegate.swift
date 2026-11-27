@@ -74,6 +74,7 @@ import MappingCore
         show.addItem(item("OSC / MIDI Tracks and Clock…", #selector(EditorController.openShowControlTools), ""))
         show.addItem(item("Gamepad controls…", #selector(EditorController.showGamepadControls), ""))
         show.addItem(item("MIDI Time Code…", #selector(EditorController.showMIDITimeCode), ""))
+        show.addItem(item("Ableton Link…", #selector(EditorController.showAbletonLink), ""))
         show.addItem(item("Control mappings…", #selector(EditorController.configureControl), ""))
         show.addItem(item("Lighting network…", #selector(EditorController.showLightingNetwork), ""))
         let light = NSMenu()
@@ -117,6 +118,7 @@ import MappingCore
     let showScheduleRuntime = ShowScheduleRuntime()
     var showScheduleWindow: ShowScheduleWindow?
     let showControlSession = NativeShowControlSession()
+    let abletonLinkSession = AbletonLinkSession()
     let recording = AutomationRecordingState()
     var timelineWindow: TimelineWindowController?
     var cueWindow: CueWindowController?
@@ -824,6 +826,7 @@ import MappingCore
         flushControlMappings(at: now)
         applyExternalShowClock(at: now)
         advanceShow(at: now)
+        pollAbletonLink()
         pollShowSchedule(at: Date())
         media.update()
         if externalVideo?.update(at: now) == true { updateRender() }

@@ -10,6 +10,7 @@ import MappingCore
         private var master: Int32 = -1
         private var slave: Int32 = -1
         private var received = Data()
+        @MainActor private weak var panel: FirmataWindow?
 
         init() throws {
             guard openpty(&master, &slave, nil, nil, nil) == 0 else { throw error("Could not allocate a pseudo-terminal") }
@@ -30,6 +31,7 @@ import MappingCore
         @MainActor func attach(to panel: FirmataWindow) {
             let owned = slave
             slave = -1
+            self.panel = panel
             panel.connectVirtual(owning: owned)
         }
 
@@ -44,33 +46,68 @@ import MappingCore
             guard wrote == bytes.count else { throw error("Pseudo-terminal board could not send its fixture bytes") }
         }
 
-        func expect(_ expected: [UInt8]) throws {
-            let start = ProcessInfo.processInfo.systemUptime
-            while received.count < expected.count, ProcessInfo.processInfo.systemUptime - start < 0.65 {
-                try collect()
-                if received.count < expected.count { RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.008)) }
+        @MainActor func expect(_ expected: [UInt8]) throws {
+            let deadline = ProcessInfo.processInfo.systemUptime + 1.25
+            do {
+                // The adapter writes on its worker. Waiting on the descriptor
+                // avoids running unrelated AppKit startup work inside the wire deadline.
+                while received.count < expected.count, ProcessInfo.processInfo.systemUptime < deadline {
+                    try collect(until: deadline)
+                }
+                if received.count < expected.count { try collect(until: ProcessInfo.processInfo.systemUptime) }
+            } catch {
+                throw diagnose("Reading expected serial bytes \(expected) failed. \(error.localizedDescription)")
             }
             guard received.prefix(expected.count).elementsEqual(expected) else {
-                throw error("Expected serial bytes \(expected) and received \(Array(received))")
+                throw diagnose("Expected serial bytes \(expected) and received \(Array(received))")
             }
             received.removeFirst(expected.count)
         }
 
-        func expectIdle() throws {
-            let start = ProcessInfo.processInfo.systemUptime
-            repeat {
-                try collect()
-                guard received.isEmpty else { throw error("Unexpected automatic pin commands \(Array(received))") }
-                RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.01))
-            } while ProcessInfo.processInfo.systemUptime - start < 0.12
+        @MainActor func expectIdle() throws {
+            let deadline = ProcessInfo.processInfo.systemUptime + 0.12
+            do {
+                while received.isEmpty, ProcessInfo.processInfo.systemUptime < deadline {
+                    try collect(until: deadline)
+                }
+                if received.isEmpty { try collect(until: ProcessInfo.processInfo.systemUptime) }
+            } catch {
+                throw diagnose("Waiting for an idle pseudo-terminal failed. \(error.localizedDescription)")
+            }
+            guard received.isEmpty else { throw diagnose("Unexpected automatic pin commands \(Array(received))") }
         }
 
-        private func collect() throws {
+        private func collect(until deadline: Double) throws {
+            let remaining = max(0, deadline - ProcessInfo.processInfo.systemUptime)
+            var entry = pollfd(fd: master, events: Int16(POLLIN), revents: 0)
+            let result = Darwin.poll(&entry, 1, Int32((remaining * 1_000).rounded(.up)))
+            if result < 0, errno == EINTR { return }
+            guard result >= 0 else { throw error("Pseudo-terminal poll failed. \(String(cString: strerror(errno)))") }
+            guard result > 0 else { return }
+            if entry.revents & Int16(POLLIN) == 0 {
+                throw error("Pseudo-terminal poll returned flags \(entry.revents).")
+            }
             var data = [UInt8](repeating: 0, count: 512)
             let count = data.withUnsafeMutableBytes { Darwin.read(master, $0.baseAddress, $0.count) }
             if count < 0, errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR { return }
-            guard count >= 0 else { throw error("Pseudo-terminal fixture could not read queued bytes") }
+            guard count >= 0 else { throw error("Pseudo-terminal read failed. \(String(cString: strerror(errno)))") }
+            guard count > 0 else { throw error("Pseudo-terminal returned end-of-file with poll flags \(entry.revents).") }
             received.append(contentsOf: data.prefix(count))
+        }
+
+        @MainActor private func diagnose(_ problem: String) -> SystemFailure {
+            // On failure only, give any queued adapter status a chance to reach the panel.
+            RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.01))
+            guard let state = panel?.connectionState else { return error(problem) }
+            let phase: String
+            switch state.phase {
+            case .disconnected: phase = "disconnected"
+            case .discovering: phase = "discovering"
+            case .ready: phase = "ready"
+            case .failed(let failure): phase = failure.localizedDescription
+            }
+            let detail = state.error.map { " \($0)" } ?? ""
+            return error("\(problem). Adapter was \(phase).\(detail)")
         }
 
         private func error(_ message: String) -> SystemFailure { SystemFailure(message: message) }

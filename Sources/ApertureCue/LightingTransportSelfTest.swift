@@ -228,6 +228,7 @@ enum LightingTransportSelfTest {
         try require(a.cid == b.cid && a.cid == sync.cid && a.synchronizationAddress == 300 &&
                     b.synchronizationAddress == 300 && sync.address == 300 && sync.sequence == 1,
                     "sACN framing did not bind both data universes to an independent sync sequence")
+        try wait(2) { !controller.isNetworkFrameInFlight }
         let firstTime = ProcessInfo.processInfo.systemUptime
         for byte: UInt8 in 1...60 { controller.publishUniverseFrame([1: [byte]]) }
         let retired = try receive(receiver, count: 6).map(\.0)
@@ -245,6 +246,9 @@ enum LightingTransportSelfTest {
                         packet.channels == [0] && packet.sequence == zero.sequence &+ UInt8(offset + 1),
                         "Per-universe termination broke sequence, flags or ordering")
         }
+        // Receivers can see every datagram before the worker commits the new
+        // stream on the main queue. Measure Stop after retirement is committed.
+        try wait(2) { !controller.isNetworkFrameInFlight }
         controller.stop()
         let stopped = try receive(receiver, count: 5).map(\.0)
         try require(try SACNCodec.decode(stopped[0]).universe == 1 &&
@@ -319,7 +323,7 @@ enum LightingTransportSelfTest {
             while let frame = receiver.receive(), replies.count < 64 { replies.append(frame) }
             return replies.count >= count
         }
-        try require(replies.count == count, "Unexpected lighting datagram count")
+        try require(replies.count == count, "Expected \(count) lighting datagrams on port \(receiver.port), received \(replies.count)")
         return replies
     }
 }

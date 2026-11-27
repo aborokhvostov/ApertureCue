@@ -17,6 +17,7 @@ if CommandLine.arguments.contains("--firmata-test") { exit(FirmataSelfTest.run()
 if CommandLine.arguments.contains("--midi-time-code-fixture") { exit(MIDITimeCodeSelfTest.runFixture(arguments: CommandLine.arguments)) }
 if CommandLine.arguments.contains("--midi-time-code-test") { exit(MIDITimeCodeSelfTest.run()) }
 if CommandLine.arguments.contains("--gamepad-test") { exit(GamepadSelfTest.run()) }
+if CommandLine.arguments.contains("--ableton-link-test") { exit(AbletonLinkSelfTest.run(arguments: CommandLine.arguments)) }
 if CommandLine.arguments.contains("--control-mapping-test") {exit(ControlMappingSelfTest.run())}
 if CommandLine.arguments.contains("--midi-control-test") {exit(MIDIControlAdapterSelfTest.run())}
 if CommandLine.arguments.contains("--osc-query-client-test") {exit(OSCQuerySelfTest.runClient(arguments:CommandLine.arguments))}

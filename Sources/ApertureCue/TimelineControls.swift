@@ -39,6 +39,7 @@ extension EditorController {
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func stopShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
+        cancelAbletonLinkCue()
         releaseExternalShowClock()
         flushShowControlNotes()
         conductorRuntime.stopAll()
@@ -52,6 +53,7 @@ extension EditorController {
     func seekShow(to seconds:Double,at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
         feedback?.reset()
         guard seconds.isFinite else { return }
+        cancelAbletonLinkCue()
         releaseExternalShowClock()
         flushShowControlNotes()
         stopAutomationRecording(reason:"Seek",at:hostTime)
@@ -65,6 +67,7 @@ extension EditorController {
             stopAutomationRecording(reason:!result.isPlaying ? "Playback paused or ended" : result.discontinuity ? "Playback discontinuity / loop wrap" : "Recording reached graph end",at:hostTime)
         }
         if result.discontinuity {
+            cancelAbletonLinkCue()
             flushShowControlNotes()
             feedback?.reset()
             montageSerial &+= 1

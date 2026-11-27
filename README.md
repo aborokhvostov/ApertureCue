@@ -33,7 +33,7 @@ the procedural RGBW matrix and animated position channels. [Stage 6 scope](docs/
 Stage 7 adds a local external video inbox, a separately built Syphon helper,
 and explicitly armed PJLink, Firmata, MIDI Time Code and gamepad sessions.
 Open `Demo/ExternalVideo.aperturecue.json` and use **Devices → External video…**.
-[Video producer and Syphon helper](docs/external-video-spec.md) · [Stage 7 scope](docs/stage-7-completion.md)
+[Video producer and Syphon helper](docs/external-video-spec.md) · [Ableton Link scene recall](docs/ableton-link.md) · [Stage 7 scope](docs/stage-7-completion.md)
 
 [Download the Apple Silicon development build (alpha 19)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.19). The archive includes the original Light Engine and earlier demo projects. The app uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-19)
 
@@ -135,6 +135,10 @@ endpoints, a separate OSCQuery HTTP/WebSocket and local DNS-SD client, and
 controlled Art-Net and sACN UDP receivers. They write reports under
 `artifacts/local/`. The sACN multicast check receives on the Mac's loopback
 interface and checks the destination group from the received packet metadata.
+
+Stage 7 has independent Syphon and Ableton Link tests with separately built
+helpers. The [Syphon format](docs/external-video-spec.md) and [Link setup](docs/ableton-link.md)
+describe the helpers and the test scope.
 
 The GitHub Actions workflow defines macOS build/core-test/package jobs and a Linux Swift 6 core-test job. The exact revision must pass actual remote jobs before a release is called verified. Windows desktop support and Windows CI are pending; the Linux job does not build a desktop UI. Physical projectors, multiple external displays and lighting devices have separate verification requirements.
 

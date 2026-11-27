@@ -46,6 +46,12 @@ contains no Syphon framework, proprietary receiver runtime or helper binary.
 The macOS build uses the system GameController, CryptoKit and serial APIs.
 [External video integration and vendor scope](docs/stage-7-completion.md)
 
+The separate Ableton Link helper uses Ableton Link 4.1.1 under the upstream
+GPL-2.0-or-later option and its pinned Asio submodule under the Boost Software
+License 1.0. The helper builds from an operator-supplied SDK checkout. The
+application archive contains only ApertureCue binaries and original demos.
+[Ableton Link license](https://github.com/Ableton/link/blob/Link-4.1.1/LICENSE.md)
+
 ## Art-Net protocol credit and registration
 
 The official [Art-Net 4 specification, revision 1.4dp, 23 October 2025](https://art-net.org.uk/downloads/art-net.pdf) permits royalty-free protocol use, requires a user-guide credit and requires manufacturers implementing it to apply for an OEM code. The prescribed credit is reproduced in [the user guide](docs/user-guide.md#protocol-credits). ApertureCue's code was written independently; the protocol document and vendor SDK are not redistributed or relicensed as project source.

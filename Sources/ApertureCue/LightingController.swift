@@ -62,6 +62,7 @@ import MappingCore
     private var patch: FixturePatchPlan?
     private var samplerBusy = false
     private var senderBusy = false
+    var isNetworkFrameInFlight: Bool { senderBusy }
     private var generation: UInt64 = 0
     private var pending: [Int: [UInt8]]?
     private var wake: DispatchWorkItem?
