@@ -7,13 +7,16 @@ import MappingCore
     private final class FixtureOutput: @unchecked Sendable {
         private let lock = NSLock()
         private let received = DispatchSemaphore(value: 0)
+        private var buffer = [UInt8](repeating: 0, count: 256)
         private var current = Data()
         private var lines: [Data] = []
+        private var closed = false
 
         func read(_ handle: FileHandle) {
-            guard let bytes = try? handle.read(upToCount: 256), !bytes.isEmpty else { received.signal(); return }
             lock.withLock {
-                for byte in bytes {
+                guard !closed, let count = try? AbletonLinkPipe.read(handle, into: &buffer) else { return }
+                guard count > 0 else { received.signal(); return }
+                for byte in buffer.prefix(count) {
                     if byte == 10 {
                         if lines.count < 4 { lines.append(current); received.signal() }
                         current.removeAll(keepingCapacity: true)
@@ -21,6 +24,14 @@ import MappingCore
                         current.append(byte)
                     }
                 }
+            }
+        }
+
+        func close(_ handle: FileHandle) {
+            handle.readabilityHandler = nil
+            lock.withLock {
+                closed = true
+                try? handle.close()
             }
         }
 
@@ -51,6 +62,7 @@ import MappingCore
             var environment = ProcessInfo.processInfo.environment
             environment["APERTURECUE_LINK_DIAGNOSTIC"] = "loopback-only"
             process.environment = environment
+            try AbletonLinkPipe.configure(output.fileHandleForReading)
             output.fileHandleForReading.readabilityHandler = { [reader] handle in reader.read(handle) }
             try process.run()
             guard try reader.take() == "ready" else { throw SystemFailure(message: "Invalid Link fixture peer greeting") }
@@ -65,8 +77,7 @@ import MappingCore
                 try? send("quit")
                 try? input.fileHandleForWriting.close()
             }
-            output.fileHandleForReading.readabilityHandler = nil
-            try? output.fileHandleForReading.close()
+            reader.close(output.fileHandleForReading)
         }
 
         func send(_ text: String) throws {
