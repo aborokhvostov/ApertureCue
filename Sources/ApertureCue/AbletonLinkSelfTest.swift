@@ -38,6 +38,7 @@ import MappingCore
         private let input = Pipe()
         private let output = Pipe()
         private let reader = FixtureOutput()
+        private var stopped = false
 
         init(_ executable: URL) throws {
             guard executable.lastPathComponent == "aperturecue-link-peer",
@@ -58,6 +59,8 @@ import MappingCore
         deinit { stop() }
 
         func stop() {
+            guard !stopped else { return }
+            stopped = true
             if process.isRunning {
                 try? send("quit")
                 try? input.fileHandleForWriting.close()
@@ -70,14 +73,14 @@ import MappingCore
             try input.fileHandleForWriting.write(contentsOf: Data((text + "\n").utf8))
         }
 
-        func sample(_ time: UInt64) throws -> (tempo: Double, phase: Double) {
+        func sample(_ time: UInt64) throws -> (peers: Int, tempo: Double, phase: Double) {
             try send("sample \(time)")
             let values = try reader.take().split(separator: " ")
-            guard values.count == 5, UInt64(values[1]) == time,
+            guard values.count == 5, UInt64(values[1]) == time, let peers = Int(values[0]),
                   let tempo = Double(values[2]), let phase = Double(values[4]), (0..<4).contains(phase) else {
                 throw SystemFailure(message: "Invalid common-time Link sample")
             }
-            return (tempo, phase)
+            return (peers, tempo, phase)
         }
     }
 
@@ -125,7 +128,18 @@ import MappingCore
             let peer = try Peer(fixtureURL)
             defer { peer.stop() }
             try session.connect(helper, fixture: true)
-            try expect(pump(5, editor) { session.observation?.peers == 1 }, "Two independent Link processes did not discover each other")
+            var settledSince: UInt64?
+            try expect(pump(6, editor) {
+                guard let sample = session.observation, sample.peers == 1,
+                      let other = try? peer.sample(sample.hostMicros), other.peers == 1,
+                      abs(sample.tempo - other.tempo) < 0.002, phaseDistance(sample.phase, other.phase) < 0.025 else {
+                    settledSince = nil
+                    return false
+                }
+                if let settledSince { return sample.hostMicros - settledSince >= 200_000 }
+                settledSince = sample.hostMicros
+                return false
+            }, "Two independent Link processes did not settle on common tempo and phase")
             try peer.send("tempo 137")
             try expect(pump(4, editor) { abs((session.observation?.tempo ?? 0) - 137) < 0.002 },
                        "Bridge did not follow the independent peer tempo")
@@ -134,8 +148,7 @@ import MappingCore
                 try expect(pump(0.5, editor) { (session.observation?.sequence ?? 0) > previous }, "Link bridge stopped sending samples")
                 guard let sample = session.observation else { throw SystemFailure(message: "Link lost while measuring phase") }
                 let other = try peer.sample(sample.hostMicros)
-                let raw = abs(sample.phase - other.phase)
-                phaseErrors.append(min(raw, 4 - raw))
+                phaseErrors.append(phaseDistance(sample.phase, other.phase))
                 previous = sample.sequence
             }
             try expect((phaseErrors.max() ?? .infinity) < 0.025, "Independent Link peers did not agree on phase")
@@ -203,6 +216,11 @@ import MappingCore
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ description: String) throws {
         guard condition() else { throw SystemFailure(message: description) }
+    }
+
+    private static func phaseDistance(_ left: Double, _ right: Double) -> Double {
+        let raw = abs(left - right)
+        return min(raw, 4 - raw)
     }
 
     private static func pump(_ seconds: Double, _ editor: EditorController, until condition: () -> Bool) -> Bool {
