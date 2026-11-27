@@ -271,3 +271,24 @@ reopened the saved Show Control fixture and showed Disarmed and Outputs off.
 
 [Distribution identity](stage-4/distribution.json) · [Release metadata](stage-4/release.json) ·
 [Stage results and measurements](../stage-4-completion.md)
+
+## Alpha 18
+
+[Alpha 18](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.18)
+was published on 27 November 2026 Europe/Moscow from
+`9ad241aa7f0d529d78069508fdfa56344c5cfb5c`.
+[Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45952678380)
+passed 183 XCTest on each macOS and Linux. The macOS artifact contains the
+application and original demos assembled by `scripts/package.sh`.
+
+The Apple Silicon app targets macOS 13+ and uses ad hoc signing without
+notarization. The 45-entry ZIP is 2,877,513 bytes and hashes to
+`f5c74665f9c7f64f98c3764899861d898a8fb9ee2adb22c61b64462e28776d5d`.
+The 94-byte `SHA256SUMS` hashes to
+`c1528cd852a6194621beb37c9da41603ab1c22085e312a60065d1f26bac95db4`.
+CRC, paths, signature, executable mode and app/demo byte identity passed
+after fresh extraction. Seven focused modes passed from that archive.
+The uploaded digests and sizes match both local assets.
+
+[Distribution identity](stage-5/distribution.json) · [Release metadata](stage-5/release.json) ·
+[Stage results and measurements](../stage-5-completion.md)

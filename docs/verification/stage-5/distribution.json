@@ -1,0 +1,51 @@
+{
+  "archive": "ApertureCue-macOS-arm64.zip",
+  "sizeBytes": 2877513,
+  "sha256": "f5c74665f9c7f64f98c3764899861d898a8fb9ee2adb22c61b64462e28776d5d",
+  "entryCount": 45,
+  "crcPassed": true,
+  "safeUniquePaths": true,
+  "signaturePassed": true,
+  "executableModePassed": true,
+  "appAndDemoMatch": true,
+  "executableSHA256": "ada89464bb594f2d25a11a0e3b8d08763959b366d3a03ae2da4126dd47cf0c21",
+  "coreLibrarySHA256": "d330a78a335d16563a1ca741af6798baf29d4bf92900267d1b1f93d71fabe78e",
+  "sourceCommit": "9ad241aa7f0d529d78069508fdfa56344c5cfb5c",
+  "extractedChecks": [
+    {
+      "mode": "control-mapping-test",
+      "exitCode": 0,
+      "elapsedSeconds": 3.405
+    },
+    {
+      "mode": "midi-control-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.855
+    },
+    {
+      "mode": "osc-query-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.735
+    },
+    {
+      "mode": "lighting-transport-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.574
+    },
+    {
+      "mode": "protocol-loopback",
+      "exitCode": 0,
+      "elapsedSeconds": 0.044
+    },
+    {
+      "mode": "lighting-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.038
+    },
+    {
+      "mode": "show-control-test",
+      "exitCode": 0,
+      "elapsedSeconds": 3.668
+    }
+  ]
+}

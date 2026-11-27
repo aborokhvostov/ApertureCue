@@ -1,0 +1,19 @@
+{
+  "checkCount": 5,
+  "checks": [
+    "local ICS import binds its scene, supports Undo/Redo and rejects duplicate UID atomically",
+    "disarmed runtime has no effect and an armed wall-clock crossing uses production scene GO once",
+    "armed schedule reconciles document edits without an open Schedule window",
+    "Save/Open preserves the calendar and disarms the schedule on document replacement",
+    "deleting a scene prunes calendar references and Undo restores them"
+  ],
+  "elapsedSeconds": 0.4185201666550711,
+  "hardwareVerification": false,
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "schemaVersion": 1,
+  "scope": "Original local ICS, native document and hidden Schedule window, injected wall clock, production CueEngine",
+  "systemCalendarAccess": false,
+  "timestampUTC": "2026-11-27T06:42:43Z",
+  "windowsShown": false
+}

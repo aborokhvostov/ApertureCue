@@ -1,0 +1,15 @@
+{
+  "build": "unoptimized diagnostic snapshot",
+  "executableSHA256": "5e3c0f6e57171b6cafd13beb0f32fe823d6eec04a85b2133cc1712c060c3f7e9",
+  "localDate": "2026-11-27",
+  "timezone": "Europe/Moscow",
+  "checks": [
+    "Opened an isolated copy of the original Control Mapping demo in the visible AppKit editor",
+    "Control panel listed all four saved mappings and showed OSC, Query and MIDI stopped",
+    "Starting loopback OSC enabled Learn and Start Query; stopping returned both controls to disabled",
+    "Added an original disposable OSC binding and removed it using the Edit menu Undo shortcut",
+    "Show > Lighting network opened settings with Art-Net unicast, sACN unicast and sACN multicast modes",
+    "Quit without saving the diagnostic edits"
+  ],
+  "hardwareVerification": false
+}

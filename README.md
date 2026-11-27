@@ -24,9 +24,11 @@ service. Lighting adds targeted Art-Net discovery and IPv4 sACN multicast with
 optional synchronization. Open `Demo/ControlMapping.aperturecue.json` and
 choose **Show → Control mappings…**. [Stage 5 scope](docs/stage-5-completion.md)
 
-[Download the Apple Silicon development build (alpha 17)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.17). It includes the original Show Control, Media and Composition projects and uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-17).
+[Download the Apple Silicon development build (alpha 18)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.18). It includes the original Control Mapping, Show Control, Media and Composition projects and uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-18).
 
-Alpha 17 completes the declared Stage 4 software checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45946371538) passed 171 XCTest on each macOS and Linux. The scoped visible workflow and seven extracted-app modes also passed.
+Alpha 18 completes the declared Stage 5 software checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45952678380) passed 183 XCTest on each macOS and Linux. The optimized app passed 20 modes, with seven focused modes repeated from the ZIP. Physical controllers and lighting nodes have separate verification gates.
+
+[Alpha 17](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.17) completes the declared Stage 4 software checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45946371538) passed 171 XCTest on each macOS and Linux. The scoped visible workflow and seven extracted-app modes also passed.
 
 Alpha 16 completes the declared Stage 3 software criteria. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45895275823) passed 154 actual XCTest on each macOS/Linux, alongside production media/editor/audio/recovery, scoped visible workflow and fresh-archive checks. Physical camera/audio wiring, audible AV synchronization and show-length stability remain open. Open Media/Media.aperturecue.json and use Sources to try the new controls.
 

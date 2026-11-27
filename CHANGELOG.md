@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0-alpha.18 — Control protocols
+## 0.1.0-alpha.18 — Control protocols, 2026-11-27
 
 - Add saved UUID-based MIDI and OSC mappings, Learn, explicitly selected feedback, and a session control panel. Schema 15 migrates earlier projects with no new mappings.
 - Add scoped IPv4 OSC send/receive, bounded blob packets and OSCQuery HTTP/WebSocket with opt-in local discovery.

@@ -1,0 +1,24 @@
+{
+  "checkCount": 5,
+  "checks": [
+    "Parallel rows retain independent clocks and drive the production Metal frame on Apple M2",
+    "Row replacement, bank switch and Show Stop clear only the documented active rows",
+    "Undo/Redo retimes a track without changing an existing cell",
+    "Schema 14 Save/Open preserves banks, signals, automation, easing and markers with a fresh session",
+    "Two instant full/selective cues crossed in one tick publish in order"
+  ],
+  "durationSeconds": 0.5228330416721292,
+  "failure": "",
+  "hardwareVerification": false,
+  "logicalOutputCount": 1,
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "resolution": [
+    128,
+    80
+  ],
+  "schemaVersion": 1,
+  "scope": "Native editor commands, fake host time and production Metal export of an original procedural show",
+  "surfaceCount": 2,
+  "timestampUTC": "2026-11-27T06:42:43Z"
+}

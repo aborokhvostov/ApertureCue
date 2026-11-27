@@ -1,0 +1,20 @@
+{
+  "checkCount": 6,
+  "checks": [
+    "HTTP upgrade key, segmented masked frames, accepted close payloads and bounded receive corpus",
+    "separate process discovered the LocalOnly service and read host info, namespace, values, ranges and status codes",
+    "independent WebSocket received live OSC values and IGNORE suppressed the unsubscribed update",
+    "PATH_CHANGED invalidated the old tree and reconnect delivered the current value to a new subscription",
+    "snapshot replacement is atomic and the listener enforces read-only limits and exact host/origin on loopback",
+    "stop removed listener and discovery and restart reopened the same loopback port"
+  ],
+  "elapsedSeconds": 1.6107497083139606,
+  "hardwareVerification": false,
+  "independentClientProcess": true,
+  "loopbackOnly": true,
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "schemaVersion": 1,
+  "scope": "Production IPv4-loopback TCP, separate Foundation HTTP/WebSocket client and LocalOnly DNS-SD browse/resolve, synthetic parameter tree",
+  "timestampUTC": "2026-11-27T06:42:40Z"
+}

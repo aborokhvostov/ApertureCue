@@ -1,0 +1,102 @@
+[
+  {
+    "mode": "control-mapping-test",
+    "exitCode": 0,
+    "elapsedSeconds": 3.787
+  },
+  {
+    "mode": "midi-control-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.894
+  },
+  {
+    "mode": "osc-query-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.689
+  },
+  {
+    "mode": "lighting-transport-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.589
+  },
+  {
+    "mode": "conductor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.734
+  },
+  {
+    "mode": "show-schedule-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.454
+  },
+  {
+    "mode": "show-control-test",
+    "exitCode": 0,
+    "elapsedSeconds": 3.788
+  },
+  {
+    "mode": "montage-test",
+    "exitCode": 0,
+    "elapsedSeconds": 2.479
+  },
+  {
+    "mode": "composition-test",
+    "exitCode": 0,
+    "elapsedSeconds": 2.879
+  },
+  {
+    "mode": "media-playback-test",
+    "exitCode": 0,
+    "elapsedSeconds": 2.91
+  },
+  {
+    "mode": "source-editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 4.401
+  },
+  {
+    "mode": "editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 131.971
+  },
+  {
+    "mode": "audio-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.584
+  },
+  {
+    "mode": "durability-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.133
+  },
+  {
+    "mode": "self-test",
+    "exitCode": 0,
+    "elapsedSeconds": 3.141
+  },
+  {
+    "mode": "live-editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 10.744
+  },
+  {
+    "mode": "live-composition-test",
+    "exitCode": 0,
+    "elapsedSeconds": 7.702
+  },
+  {
+    "mode": "protocol-loopback",
+    "exitCode": 0,
+    "elapsedSeconds": 0.036
+  },
+  {
+    "mode": "lighting-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.836
+  },
+  {
+    "mode": "media-soak-test",
+    "exitCode": 0,
+    "elapsedSeconds": 122.974
+  }
+]

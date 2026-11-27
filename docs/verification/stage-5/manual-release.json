@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "9ad241aa7f0d529d78069508fdfa56344c5cfb5c",
+  "executableSHA256": "ada89464bb594f2d25a11a0e3b8d08763959b366d3a03ae2da4126dd47cf0c21",
+  "localDate": "2026-11-27",
+  "timezone": "Europe/Moscow",
+  "checks": [
+    "Launched the freshly extracted signed build in the native macOS GUI",
+    "Opened Control Mappings from the built-in procedural project",
+    "Started OSC, then OSCQuery on 127.0.0.1:9002 with Local discovery unchecked",
+    "Stopped Query and restarted it on the same loopback port",
+    "Added a disposable OSC mapping, confirmed it appeared in the table and removed it with Undo",
+    "Stopping OSC stopped its Query server and left MIDI disconnected; quit and discarded test edits"
+  ],
+  "limitations": "Accessibility polling timed out after the extracted app Open dialog. The visible final-panel workflow used the built-in demo. Saved mapping persistence was verified by the extracted and optimized integration commands, and the supplied demo was opened by the diagnostic GUI.",
+  "hardwareVerification": false
+}
