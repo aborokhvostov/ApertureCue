@@ -1,0 +1,24 @@
+{
+  "checkCount": 5,
+  "checks": [
+    "writer refuses an invalid ownership token before mutating the generated fixture",
+    "the exact spawned writer is forcibly terminated by SIGKILL after its complete atomic recovery checkpoint",
+    "fresh reads retain the saved bytes and recover the distinct unsaved model after forced termination",
+    "external replacement makes the old snapshot stale without changing either file",
+    "corrupt recovery is preserved and autosave refuses to overwrite it"
+  ],
+  "details": {
+    "projectSchema": 14,
+    "savedBytesUnchanged": true,
+    "writerTerminationReason": "uncaughtSignal",
+    "writerTerminationStatus": 9
+  },
+  "elapsedSeconds": 0.06411245831986889,
+  "hardwareVerification": false,
+  "limitations": "Not a power-loss, disk-full, filesystem-corruption or simultaneous-adversarial-writer test. No user project, external application or hardware was accessed.",
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "schemaVersion": 1,
+  "scope": "Original isolated temporary project; real spawned writer, complete atomic recovery checkpoint, SIGKILL, fresh file/model verification and stale/corrupt rejection",
+  "timestampUTC": "2026-11-27T05:34:06Z"
+}

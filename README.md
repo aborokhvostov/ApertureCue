@@ -18,7 +18,9 @@ signed-rate video/PCM montage with adjacent crossfades. The original
 `Demo/ShowControl.aperturecue.json` shows standalone automation cells and master
 markers. [Stage 4 behavior and verification](docs/stage-4-completion.md)
 
-[Download the Apple Silicon development build (alpha 16)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.16). It includes the original Media/Composition/Demo projects and uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-16).
+[Download the Apple Silicon development build (alpha 17)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.17). It includes the original Show Control, Media and Composition projects and uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-17).
+
+Alpha 17 completes the declared Stage 4 software checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45946371538) passed 171 XCTest on each macOS and Linux. The scoped visible workflow and seven extracted-app modes also passed.
 
 Alpha 16 completes the declared Stage 3 software criteria. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45895275823) passed 154 actual XCTest on each macOS/Linux, alongside production media/editor/audio/recovery, scoped visible workflow and fresh-archive checks. Physical camera/audio wiring, audible AV synchronization and show-length stability remain open. Open Media/Media.aperturecue.json and use Sources to try the new controls.
 

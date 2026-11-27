@@ -1,10 +1,10 @@
 # Руководство пользователя ApertureCue 0.1
 
-Это ранняя настольная сборка для macOS 13+. Руководство описывает опубликованную [alpha 16](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.16) с форматом проекта schema 13. Точное состояние сборки и проверок находится в [status.md](status.md). Описанные операции не означают полного покрытия MadMapper 6.
+Это ранняя настольная сборка для macOS 13+. Руководство описывает опубликованную [alpha 17](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.17) с форматом проекта schema 14. Точное состояние сборки и проверок находится в [status.md](status.md). Описанные операции не означают полного покрытия MadMapper 6.
 
 ## Запуск и демонстрационный проект
 
-Готовая Apple Silicon сборка доступна в ZIP на странице alpha 16. Распакуйте весь архив, откройте **ApertureCue.app**, затем **File → Open** и `Media/Media.aperturecue.json` для новых source controls или `Demo/Composition.aperturecue.json` для геометрии и материалов. Папки demo и медиа держите вместе с их проектами. Сборка подписана ad hoc, без notarization.
+Готовая Apple Silicon сборка доступна в ZIP на странице alpha 17. Распакуйте весь архив, откройте **ApertureCue.app**, затем **File → Open** и `Media/Media.aperturecue.json` для новых source controls или `Demo/Composition.aperturecue.json` для геометрии и материалов. Папки demo и медиа держите вместе с их проектами. Для нового этапа откройте `Demo/ShowControl.aperturecue.json` и выберите **Show → Conductor…**. Сборка подписана ad hoc, без notarization.
 
 Из корня исходников выполните `./scripts/build.sh`, затем `open dist/ApertureCue.app`. Приложение стартует с двумя процедурными поверхностями и двумя сохранёнными вариантами геометрии. Для собственного демонстрационного изображения и видео выполните:
 
@@ -13,7 +13,7 @@ dist/ApertureCue.app/Contents/MacOS/ApertureCue --generate-demo examples/Demo
 dist/ApertureCue.app/Contents/MacOS/ApertureCue examples/Demo/Demo.aperturecue.json
 ```
 
-Генератор также создаёт `Composition.aperturecue.json` — полностью процедурный пример schema 12 без внешних ресурсов. Откройте его через File → Open, нажмите Play для анимации материала и выбирайте слои 02/03/04 для Bezier warp, Group composition/Scoped masks и Key/FX. Два logical outputs A/B показывают разное содержимое в preview; реальные дисплеи не назначаются. Для сравнения выберите сцены Original spectrum/Alternate layer FX и GO.
+Генератор также создаёт `Composition.aperturecue.json` — полностью процедурный пример без внешних ресурсов. Приложение открывает и комплектную версию этого проекта из schema 12. Откройте его через File → Open, нажмите Play для анимации материала и выбирайте слои 02/03/04 для Bezier warp, Group composition/Scoped masks и Key/FX. Два logical outputs A/B показывают разное содержимое в preview; реальные дисплеи не назначаются. Для сравнения выберите сцены Original spectrum/Alternate layer FX и GO.
 
 Генератор создаёт `calibration.png` 960×540, `motion.mov` H.264 640×360, 30 fps, 3 секунды и `Demo.aperturecue.json`. Это собственные тестовые материалы. При повторном запуске генератора существующий `motion.mov` не заменяется; для независимого опыта выберите новую папку.
 

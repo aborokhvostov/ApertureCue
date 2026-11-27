@@ -1,0 +1,64 @@
+{
+  "acquisitionWaitFixture": {
+    "acquisitionEnteredOnMain": false,
+    "cancelledRequests": 2,
+    "controlledWaitSeconds": 0.501224291685503,
+    "mainQueueProbe": {
+      "count": 25,
+      "maximumMilliseconds": 0.03570830449461937,
+      "meanMilliseconds": 0.020751662086695433
+    },
+    "maximumQueuedAcquisitions": 1,
+    "resumedDrawableSize": [
+      400,
+      225
+    ]
+  },
+  "checkCount": 5,
+  "checks": [
+    "real 1920×1080 Composition drawables complete while bounded main-queue probes are measured",
+    "held drawable acquisition leaves main responsive, coalesces ticks and cancels a stale resize before resuming",
+    "hidden-window completion cancels without submitting or retaining an extra queued request",
+    "three nil drawable results release every reserved slot and permit the next real presentation",
+    "pending acquisition permits renderer destruction and provider return without retaining the renderer"
+  ],
+  "compositionInterval": {
+    "completedCommands": 127,
+    "drawableSize": [
+      1920,
+      1080
+    ],
+    "droppedRequests": 226,
+    "failedDrawableRequests": 0,
+    "mainQueueProbe": {
+      "count": 303,
+      "maximumMilliseconds": 1.1817916529253125,
+      "meanMilliseconds": 0.04118825589451115
+    },
+    "maximumDrawableWaitMilliseconds": 254.05779166612774,
+    "maximumGPUExecutionMilliseconds": 386.15462504094467,
+    "meanEncodeSubmissionMilliseconds": 1.3064041630758976,
+    "seconds": 6.06439770833822,
+    "submittedCommands": 126
+  },
+  "elapsedSeconds": 7.253886208345648,
+  "gpu": "Apple M2",
+  "hardwareVerification": false,
+  "limitations": "Local graphics session may use a virtual display. Measures command submissions and main-queue response, not optical refresh or hardware compatibility. No long-show, throughput, decoder/audio or GPU-utilization claim. The gate fixture injects an acquisition wait; it is separate from the real Composition interval.",
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "requestedDrawableSize": [
+    1920,
+    1080
+  ],
+  "schemaVersion": 1,
+  "source": "Original Composition demo: five procedural layers, two logical routes combined in one editor-style view, isolated/projective group, cubic masks, materials and color FX; no decoder or network.",
+  "startupMainQueueProbe": {
+    "count": 8,
+    "maximumMilliseconds": 325.6139582954347,
+    "meanMilliseconds": 45.61582810129039
+  },
+  "timestampUTC": "2026-11-27T05:34:16Z",
+  "warmupSeconds": 0.19192783336620778,
+  "windowsShown": true
+}

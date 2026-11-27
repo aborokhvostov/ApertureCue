@@ -254,3 +254,20 @@ record source, fixture resolution/codec/count/duration and limitations separatel
 The original Media demo includes four PNG frames, H.264 MOV and an unassigned
 volume-zero stereo WAV. No hardware camera/audio/projector compatibility,
 audible sync, optical refresh, long-show, 4K/60 or reference-equivalence claim.
+
+
+## Alpha 17
+
+[Alpha 17](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.17) was published on 27 November 2026 Europe/Moscow from
+`73ae54729394530745dcdec92de17e627d506bfd`. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45946371538) passed 171 XCTest
+on each macOS and Linux plus macOS release build, native bundle, ZIP and artifact.
+
+The Apple Silicon app targets macOS 13+, uses ad hoc signing and is unnotarized.
+The 44-entry ZIP is 2,593,398 bytes and hashes to
+`850557aa09d9a5bfde554eb7418575b0ea5069234ee259d9484b6019cd34fabf`. CRC, paths, signature, executable mode and
+byte identity of the app and original demo files passed after fresh extraction.
+Seven focused modes passed from that archive. The visible extracted app
+reopened the saved Show Control fixture and showed Disarmed and Outputs off.
+
+[Distribution identity](stage-4/distribution.json) · [Release metadata](stage-4/release.json) ·
+[Stage results and measurements](../stage-4-completion.md)

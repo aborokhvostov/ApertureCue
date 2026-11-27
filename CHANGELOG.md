@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0-alpha.17 — Show control
+## 0.1.0-alpha.17 — Show control, 2026-11-27
 
 - Add Conductor banks with independently running automation cells, row exclusivity and explicit parameter priority. Generate and combine show-time signals in a bounded graph.
 - Add scene easing, bounded timeline jumps and Undoable retiming of recorded key ranges. Apply instant scene markers in order when a delayed tick crosses several.

@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "Conductor Launch starts 1 active row, then two independently",
+    "Stop row leaves the other row active; Stop all clears both; master stays zero",
+    "Timeline starts and pauses exactly at 3.500 seconds with a saved Jump and Pause",
+    "Schedule Add stores its chosen scene and explicit zone; Arm/Disarm status changes",
+    "Save removes the dirty marker and schema 14 JSON contains the scheduled event"
+  ],
+  "fixtureOnly": true,
+  "hardwareVerification": false,
+  "build": "diagnostic, unoptimized",
+  "binarySHA256": "ff0fff30fd3d370756563b760131ab6138dfa69a1e55c4e1191b1a37a96abb07",
+  "localDate": "2026-11-27",
+  "timezone": "Europe/Moscow"
+}

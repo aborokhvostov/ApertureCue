@@ -1,0 +1,6 @@
+{
+  "testMethods": 171,
+  "failedAssertions": 0,
+  "runner": "standalone assertion harness, using shared XCTest test bodies",
+  "platform": "macOS 26.6.2 arm64"
+}
