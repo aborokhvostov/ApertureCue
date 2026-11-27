@@ -450,6 +450,13 @@ public enum ProjectStore {
         }
         try validateFeedback(project.surfaces,outputs:project.outputs)
         try FixtureSampler.validate(fixtures:project.fixtures)
+        if project.version < 16, project.fixtures.contains(where: { !(1...32767).contains($0.universe) }) {
+            throw ProjectError.invalid("Legacy fixture universes must be between 1 and 32767")
+        }
+        let lightingOutputs = Set(project.fixtures.compactMap(\.outputID))
+        guard lightingOutputs.isSubset(of: outputIDs), lightingOutputs.count <= 7 else {
+            throw ProjectError.invalid("Fixtures must reference existing outputs, with up to seven distinct routed outputs")
+        }
         var totalCueSurfaces = 0
         for cue in project.cues {
             totalCueSurfaces += cue.surfaces.count

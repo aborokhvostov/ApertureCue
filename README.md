@@ -24,6 +24,12 @@ service. Lighting adds targeted Art-Net discovery and IPv4 sACN multicast with
 optional synchronization. Open `Demo/ControlMapping.aperturecue.json` and
 choose **Show → Control mappings…**. [Stage 5 scope](docs/stage-5-completion.md)
 
+Stage 6 adds structured fixture patches, 8/16-bit channel definitions,
+route-specific video sampling, CSV/JSON/SVG layouts, a universe monitor, DMX
+recording, scan capture imports and optional lighting adapters. Open
+`Demo/LightEngine.aperturecue.json` and choose **Light → DMX monitor…** to preview
+the procedural RGBW matrix and animated position channels. [Stage 6 scope](docs/stage-6-completion.md)
+
 [Download the Apple Silicon development build (alpha 18)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.18). It includes the original Control Mapping, Show Control, Media and Composition projects and uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-18).
 
 Alpha 18 completes the declared Stage 5 software checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45952678380) passed 183 XCTest on each macOS and Linux. The optimized app passed 20 modes, with seven focused modes repeated from the ZIP. Physical controllers and lighting nodes have separate verification gates.
@@ -95,6 +101,10 @@ dist/ApertureCue.app/Contents/MacOS/ApertureCue --control-mapping-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --midi-control-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --osc-query-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-transport-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --light-engine-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --dmx-sequence-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --led-scan-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-adapter-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --editor-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --conductor-test

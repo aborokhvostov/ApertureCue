@@ -54,7 +54,13 @@ final class TimelineTests:XCTestCase {
         XCTAssertThrowsError(try FixtureSampler.sample(fixtures:p.fixtures) { _ in calls += 1; return RGBColor(1,1,1) })
         XCTAssertEqual(calls,0)
         p.fixtures[1].address=4; try ProjectStore.validate(p)
-        p.fixtures[1].universe=0; XCTAssertThrowsError(try ProjectStore.validate(p))
+        p.fixtures[1].universe = 0
+        try ProjectStore.validate(p)
+        p.version = 15
+        XCTAssertThrowsError(try ProjectStore.validate(p))
+        p.version = Project.currentVersion
+        p.fixtures[1].universe = 64000
+        XCTAssertThrowsError(try ProjectStore.validate(p))
     }
     func testDormantTimelineTargetRetainedByCueCanBeSaved() throws {
         let surface=Surface(name:"Dormant target")

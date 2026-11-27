@@ -40,7 +40,7 @@ import MappingCore
             guard let self, self.waitingForTermination else { return }
             self.waitingForTermination = false; sender.reply(toApplicationShouldTerminate:true)
         }
-        editor.lighting.stop(completion:finish)
+        editor.lighting.stopDocument(completion:finish)
         DispatchQueue.main.asyncAfter(deadline:.now()+1) { finish() }
         return .terminateLater
     }
@@ -71,7 +71,14 @@ import MappingCore
         show.addItem(item("OSC / MIDI Tracks and Clock…", #selector(EditorController.openShowControlTools), ""))
         show.addItem(item("Control mappings…", #selector(EditorController.configureControl), ""))
         show.addItem(item("Lighting network…", #selector(EditorController.showLightingNetwork), ""))
-        for (title, submenu) in [("ApertureCue",app),("File",file),("Edit",edit),("Show",show)] {
+        let light = NSMenu()
+        light.addItem(item("Fixture patch…", #selector(EditorController.configureLighting), ""))
+        light.addItem(item("DMX monitor…", #selector(EditorController.showDMXMonitor), ""))
+        light.addItem(item("Network output…", #selector(EditorController.showLightingNetwork), ""))
+        light.addItem(item("Record / replay…", #selector(EditorController.showDMXSequence), ""))
+        light.addItem(item("Import LED scan…", #selector(EditorController.showLEDScanImport), ""))
+        light.addItem(item("USB-DMX / SPI…", #selector(EditorController.showLightingAdapters), ""))
+        for (title, submenu) in [("ApertureCue",app),("File",file),("Edit",edit),("Show",show),("Light",light)] {
             let i = NSMenuItem(); i.title = title; i.submenu = submenu; menu.addItem(i)
         }
         NSApp.mainMenu = menu
@@ -135,6 +142,7 @@ import MappingCore
     let controlMapping = ControlMappingSession()
     var lighting: LightingController!
     var lightingView: MTKView!
+    var fixtureEditorWindow: FixtureEditorWindow?
     var feedback:FeedbackComposition?
     var lastLighting: Double = 0
     var effectiveSurfaces: [Surface] {
@@ -424,6 +432,8 @@ import MappingCore
         cuePicker.removeAllItems(); cuePicker.addItems(withTitles:project.cues.map(\.name))
         window?.title = "\(project.name)\(dirty ? " •" : "") — ApertureCue 0.1"
         window?.isDocumentEdited = dirty; refreshInspector(); timelineWindow?.refresh(); cueWindow?.refresh(); montageWindow?.refresh(); conductorWindow?.refresh(); showScheduleWindow?.refresh(); refreshShowControls(); refreshControlMappings()
+        lighting?.fixtures = project.fixtures
+        fixtureEditorWindow?.refresh()
     }
     func updateRender() {
         updateActiveMedia()
@@ -597,7 +607,7 @@ import MappingCore
         stopAutomationRecording(reason:"New project")
         guard confirmDiscard() else { return }; resetShowControlSessions(); resetControlMappings(); resetAutomationRecording(); closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil; recoveryBaseline=nil; sourceWindow?.close();sourceWindow=nil;media.reset();workMessage=""
         history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false; documentGeneration = UUID();feedback?.reset()
-        lighting?.stop(); selectedID = project.surfaces.first?.id; dirty = false; showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; reconcile(); refresh()
+        lighting?.stopDocument(); selectedID = project.surfaces.first?.id; dirty = false; showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; reconcile(); refresh()
     }
     @objc func openDialog() {
         let p = NSOpenPanel(); p.allowedContentTypes = [.json]; p.allowsMultipleSelection = false
@@ -627,7 +637,7 @@ import MappingCore
             } else if recovery.state != .missing {recoveryMessage=recovery.diagnostic}
             guard baseline == (try ProjectStore.captureRecoveryBaseline(for:url)) else {throw ProjectError.invalid("saved project changed during opening; retry")}
             resetShowControlSessions();resetControlMappings();resetAutomationRecording();media.reset();sourceWindow?.close();sourceWindow=nil
-            closeOutputs(); lighting?.stop(); showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false; documentGeneration = UUID();feedback?.reset(); project = loaded; projectURL = url; recoveryBaseline=baseline; dirty = false; selectedID = loaded.surfaces.first?.id
+            closeOutputs(); lighting?.stopDocument(); showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false; documentGeneration = UUID();feedback?.reset(); project = loaded; projectURL = url; recoveryBaseline=baseline; dirty = false; selectedID = loaded.surfaces.first?.id
             dirty=recovered;workMessage=recoveryMessage
             reconcile(); refresh()
         } catch { showError(error) }
@@ -800,10 +810,12 @@ import MappingCore
         for target in allCompositionRenderers {target.materialTime=showRuntime.time}
         advanceFeedback();updateFeedbackTextures()
         if !project.timeline.isEmpty || !project.montages.isEmpty || !project.materials.isEmpty || conductorRuntime.affectsRender { updateRender() }; montageWindow?.updatePlayhead()
+        lighting?.blackout = blackout
+        lighting?.updateIncoming(at: now)
         if lighting?.isSampling == true, now-lastLighting >= 1.0/30 {
-            lighting?.fixtures = project.fixtures
             lighting?.renderer.blackout = blackout
-            lighting?.update(surfaces:effectiveSurfaces); lastLighting = now
+            lighting?.update(surfaces: effectiveSurfaces, outputs: project.outputs)
+            lastLighting = now
         }
         let playhead = showRuntime.time
         seekSlider.maxValue = max(project.timelineSettings.duration,playhead); seekSlider.doubleValue = playhead

@@ -19,6 +19,8 @@ AppKit editor и Metal compositor: PNG/AVFoundation video, quad/triangle/ellipse
 
 ## Текущий этап
 
+**Этап 6 · Light engine — schema 16 на приёмке.** В редакторе светового патча доступны собственные приборы, 8/16-битные каналы, выбор видеовыхода и импорт схемы. Добавлены DMX-монитор, запись и воспроизведение, импорт серий вспышек и модуль буферизованного USB-DMX/SPI. [Объём программной проверки](stage-6-completion.md).
+
 **Этап 5 · Control protocols — программная приёмка завершена, alpha 18 опубликована.** Schema 15 сохраняет OSC и MIDI назначения к UUID поверхностей и сцен. Добавлены Learn, обратная связь и переподключение MIDI, OSCQuery на loopback, проверка известного Art-Net-узла и sACN IPv4 multicast/sync. [Критерии и границы этапа](stage-5-completion.md).
 
 - Локально прошли 183 метода standalone harness. Оптимизированное приложение прошло 20 режимов, включая 5 проверок назначений, 5 CoreMIDI, 6 OSCQuery и 4 транспорта света.

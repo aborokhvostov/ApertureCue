@@ -282,15 +282,7 @@ extension EditorController {
     }
 
     private func controlValue(surface: Surface, parameter: String) -> Double {
-        switch parameter {
-        case "opacity": return surface.opacity
-        case "brightness": return surface.brightness
-        case "gamma": return surface.gamma
-        case "red": return surface.color[0]
-        case "green": return surface.color[1]
-        case "blue": return surface.color[2]
-        default: return 0
-        }
+        TimelineEngine.parameterValue(parameter, on: surface) ?? 0
     }
 
     private var queryTimeLimit: Double {

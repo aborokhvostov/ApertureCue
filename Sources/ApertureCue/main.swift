@@ -9,6 +9,10 @@ if CommandLine.arguments.contains("--midi-control-test") {exit(MIDIControlAdapte
 if CommandLine.arguments.contains("--osc-query-client-test") {exit(OSCQuerySelfTest.runClient(arguments:CommandLine.arguments))}
 if CommandLine.arguments.contains("--osc-query-test") {exit(OSCQuerySelfTest.run())}
 if CommandLine.arguments.contains("--lighting-transport-test") {exit(LightingTransportSelfTest.run())}
+if CommandLine.arguments.contains("--light-engine-test") {exit(LightEngineSelfTest.run())}
+if CommandLine.arguments.contains("--dmx-sequence-test") {exit(DMXSequenceSelfTest.run())}
+if CommandLine.arguments.contains("--led-scan-test") {exit(LEDScanSelfTest.run())}
+if CommandLine.arguments.contains("--lighting-adapter-test") {exit(LightingAdapterSelfTest.run())}
 if CommandLine.arguments.contains("--conductor-test") {exit(ConductorSelfTest.run())}
 if CommandLine.arguments.contains("--show-schedule-test") {exit(ShowScheduleEditorSelfTest.run())}
 if CommandLine.arguments.contains("--show-clock-fixture") {exit(ShowControlSelfTest.clockFixture(arguments:CommandLine.arguments))}
@@ -40,10 +44,16 @@ if CommandLine.arguments.contains("--montage-test") {
 if CommandLine.arguments.contains("--editor-test") {
     exit(EditorSelfTest.run())
 }
-if let command = CommandLine.arguments.dropFirst().first, ["--generate-show-demo", "--generate-control-demo"].contains(command) {
+if let command = CommandLine.arguments.dropFirst().first,
+   ["--generate-show-demo", "--generate-control-demo", "--generate-light-demo"].contains(command) {
     guard CommandLine.arguments.count == 3 else { fputs("Provide a new project path\n", stderr); exit(1) }
     let destination = URL(fileURLWithPath: CommandLine.arguments[2])
-    let model = command == "--generate-show-demo" ? ConductorSelfTest.fixture() : ControlMappingSelfTest.fixture()
+    let model: Project
+    switch command {
+    case "--generate-show-demo": model = ConductorSelfTest.fixture()
+    case "--generate-control-demo": model = ControlMappingSelfTest.fixture()
+    default: model = LightEngineSelfTest.fixture()
+    }
     do {
         try ProjectStore.validate(model)
         let encoder = JSONEncoder()

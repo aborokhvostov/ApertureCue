@@ -232,7 +232,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 15
+    public static let currentVersion = 16
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]
@@ -316,13 +316,21 @@ public struct Project: Codable, Equatable, Sendable {
                 montages.append(try MediaMontage(from: entries.superDecoder(), legacy: version < 14))
             }
         }
+        var fixtures: [Fixture] = []
+        if c.contains(.fixtures), try !c.decodeNil(forKey: .fixtures) {
+            var entries = try c.nestedUnkeyedContainer(forKey: .fixtures)
+            while !entries.isAtEnd {
+                guard fixtures.count < 4096 else { throw ProjectError.invalid("too many fixtures") }
+                fixtures.append(try Fixture(from: entries.superDecoder(), legacy: version < 16))
+            }
+        }
         self.init(version: version,
                   name: try c.decodeIfPresent(String.self, forKey:.name) ?? "Untitled",
                   assets:assets,
                   surfaces: surfaces,
                   outputs: outputs,
                   cues: cues,
-                  fixtures: try c.decodeIfPresent([Fixture].self, forKey:.fixtures) ?? [],
+                  fixtures: fixtures,
                   timeline: try c.decodeIfPresent([AutomationTrack].self, forKey:.timeline) ?? [],
                   groups: groups,
                   timelineSettings:try Self.decodeTimelineSettings(c, version: version),

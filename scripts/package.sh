@@ -9,7 +9,7 @@ ditto --norsrc --noextattr dist/ApertureCue.app "$task_release/ApertureCue.app"
 mkdir -p "$task_release/Demo"
 # Ship only the original demos and their media. Working copies and recovery
 # sidecars can exist beside them after running the editor.
-for task_demo in Demo Composition ControlMapping Groups Montage Recording SelectiveCues Shapes ShowControl Strokes Timeline; do
+for task_demo in Demo Composition ControlMapping Groups LightEngine Montage Recording SelectiveCues Shapes ShowControl Strokes Timeline; do
   cp "examples/Demo/$task_demo.aperturecue.json" "$task_release/Demo/"
 done
 cp examples/Demo/calibration.png examples/Demo/motion.mov "$task_release/Demo/"
@@ -36,6 +36,8 @@ Conductor to launch its two rows independently. Timeline contains a bounded Jump
 and a Pause marker. Schedule and OSC/MIDI dispatch are session controls.
 Demo/ControlMapping.aperturecue.json shows saved OSC and MIDI assignments.
 Open Show > Control mappings to start a session service and inspect addresses.
+Demo/LightEngine.aperturecue.json has a routed RGBW matrix and a virtual
+moving light. Open Light > Fixture patch and Light > DMX monitor, then press Play.
 Media/Media.aperturecue.json demonstrates frozen image sequences, independent
 source transport and reverse ping-pong. Open Sources in the Media library.
 Its original stereo tone asset is unassigned and volume 0. Assign it to a

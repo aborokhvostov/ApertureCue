@@ -72,36 +72,5 @@ extension EditorController {
     }
 
     func configureAutomation() { showTimelineWindow() }
-
-    func configureLighting() {
-        let a = NSAlert(); a.messageText = "LED mapping · output composition"
-        a.informativeText = "Sample normalized output coordinates at up to 30 Hz. A fixture is a line of pixels. Simulation requires no hardware. Universe numbers are sent unchanged on the wire."
-        let count = ActionField("30",action:{_ in}), universe = ActionField("1",action:{_ in}), address = ActionField("1",action:{_ in})
-        let start = ActionField("0.1, 0.5",action:{_ in}), end = ActionField("0.9, 0.5",action:{_ in})
-        let order = ActionPopUp(items:["RGB","GRB","RGBW"],action:{_ in})
-        let info = label("\(project.fixtures.count) fixtures · \(lighting.isSending ? "SENDING" : "network stopped")",size:11,bold:true)
-        let v = stack([info,label("Pixel count / universe / start address"),stack([count,universe,address],vertical:false),label("Start x,y / end x,y"),stack([start,end],vertical:false),order])
-        v.frame = NSRect(x:0,y:0,width:430,height:230); for field in [count,universe,address] { field.widthAnchor.constraint(equalToConstant:130).isActive = true }; start.widthAnchor.constraint(equalToConstant:200).isActive = true; end.widthAnchor.constraint(equalToConstant:200).isActive = true
-        a.accessoryView = v
-        a.addButton(withTitle:"Add fixture + simulate"); a.addButton(withTitle:"Network settings…"); a.addButton(withTitle:"Stop output"); a.addButton(withTitle:"Clear fixtures"); a.addButton(withTitle:"Cancel")
-        let response = a.runModal()
-        do {
-            if response == .alertFirstButtonReturn {
-                guard let n = Int(count.stringValue), (1...170).contains(n),let u = Int(universe.stringValue),let addr = Int(address.stringValue) else { throw SystemFailure(message:"Enter valid pixel count (1…170), universe and address") }
-                func point(_ text:String) throws -> Point2 {
-                    let parts = text.split(separator:",").map { $0.trimmingCharacters(in:.whitespaces) }
-                    guard parts.count == 2,let x = Double(parts[0]),let y = Double(parts[1]),x.isFinite,y.isFinite,(0...1).contains(x),(0...1).contains(y) else { throw SystemFailure(message:"Coordinates must be normalized x,y in 0…1") }; return Point2(x,y)
-                }
-                let p0 = try point(start.stringValue), p1 = try point(end.stringValue)
-                let points = (0..<n).map { Point2.interpolate(p0,p1,t:n == 1 ? 0 : Double($0)/Double(n-1)) }
-                let fixture = Fixture(name:"Strip \(project.fixtures.count+1)",universe:u,address:addr,points:points,channelOrder:order.titleOfSelectedItem ?? "RGB")
-                var candidate = project; candidate.fixtures.append(fixture); try ProjectStore.validate(candidate)
-                mutate("Add fixture") { $0 = candidate }; lighting.isSampling = true; lighting.showSimulator()
-            } else if response == .alertSecondButtonReturn {
-                lighting.showNetworkSettings()
-            } else if response == .alertThirdButtonReturn { lighting.stop() }
-            else if response.rawValue == NSApplication.ModalResponse.alertFirstButtonReturn.rawValue+3 { lighting.stop(); mutate("Clear fixtures") { $0.fixtures = [] } }
-        } catch { showError(error) }
-    }
 }
 #endif

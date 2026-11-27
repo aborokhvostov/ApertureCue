@@ -208,6 +208,17 @@ public enum TimelineEngine {
         default:throw ProjectError.invalid("unknown timeline parameter")
         }
     }
+    public static func parameterValue(_ parameter: String, on surface: Surface) -> Double? {
+        switch parameter {
+        case "opacity": return surface.opacity
+        case "brightness": return surface.brightness
+        case "gamma": return surface.gamma
+        case "red": return surface.color.first
+        case "green": return surface.color.dropFirst().first
+        case "blue": return surface.color.dropFirst(2).first
+        default: return nil
+        }
+    }
     /// Evaluate against the caller's current transport time. No state accumulates across seeks/loops.
     /// Tracks for surfaces absent from a cue's current snapshot are dormant until that ID returns.
     public static func apply(tracks:[AutomationTrack],time:Double,surfaces:[Surface]) throws -> [Surface] {

@@ -1,0 +1,627 @@
+{
+  "assets" : [
+
+  ],
+  "conductor" : {
+    "banks" : [
+
+    ],
+    "bindings" : [
+
+    ],
+    "signals" : [
+
+    ]
+  },
+  "controlMap" : {
+    "bindings" : [
+
+    ]
+  },
+  "cues" : [
+
+  ],
+  "fixtures" : [
+    {
+      "address" : 1,
+      "channelOrder" : "RGBW",
+      "id" : "D798EDE2-875A-41F9-B336-80747814211E",
+      "name" : "Serpentine wall",
+      "outputID" : "BAB724C8-80C2-46A2-B3F2-E29769114BFF",
+      "points" : [
+        {
+          "x" : 0.1,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.2142857142857143,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.32857142857142857,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.44285714285714284,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.5571428571428572,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.6714285714285715,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.7857142857142857,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.9,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.9,
+          "y" : 0.5
+        },
+        {
+          "x" : 0.7857142857142857,
+          "y" : 0.5
+        },
+        {
+          "x" : 0.6714285714285715,
+          "y" : 0.5
+        },
+        {
+          "x" : 0.5571428571428572,
+          "y" : 0.5
+        },
+        {
+          "x" : 0.44285714285714284,
+          "y" : 0.5
+        },
+        {
+          "x" : 0.32857142857142857,
+          "y" : 0.5
+        },
+        {
+          "x" : 0.2142857142857143,
+          "y" : 0.5
+        },
+        {
+          "x" : 0.1,
+          "y" : 0.5
+        },
+        {
+          "x" : 0.1,
+          "y" : 0.8
+        },
+        {
+          "x" : 0.2142857142857143,
+          "y" : 0.8
+        },
+        {
+          "x" : 0.32857142857142857,
+          "y" : 0.8
+        },
+        {
+          "x" : 0.44285714285714284,
+          "y" : 0.8
+        },
+        {
+          "x" : 0.5571428571428572,
+          "y" : 0.8
+        },
+        {
+          "x" : 0.6714285714285715,
+          "y" : 0.8
+        },
+        {
+          "x" : 0.7857142857142857,
+          "y" : 0.8
+        },
+        {
+          "x" : 0.9,
+          "y" : 0.8
+        }
+      ],
+      "sampling" : {
+        "height" : 0.1,
+        "width" : 0.075
+      },
+      "skippedPixels" : [
+        4,
+        14
+      ],
+      "universe" : 1
+    },
+    {
+      "address" : 17,
+      "channelOrder" : "RGB",
+      "definition" : {
+        "channels" : [
+          {
+            "encoding" : "eightBit",
+            "name" : "Red",
+            "source" : "red",
+            "value" : 0
+          },
+          {
+            "encoding" : "eightBit",
+            "name" : "Green",
+            "source" : "green",
+            "value" : 0
+          },
+          {
+            "encoding" : "eightBit",
+            "name" : "Blue",
+            "source" : "blue",
+            "value" : 0
+          },
+          {
+            "drive" : {
+              "parameter" : "opacity",
+              "surfaceID" : "2199ED53-1C8C-4552-9D7E-BDC2CFCDF43D"
+            },
+            "encoding" : "coarseFine",
+            "name" : "Pan",
+            "source" : "pan",
+            "value" : 0.5
+          },
+          {
+            "encoding" : "fineCoarse",
+            "name" : "Tilt",
+            "source" : "tilt",
+            "value" : 0.25
+          },
+          {
+            "encoding" : "eightBit",
+            "name" : "Dimmer",
+            "source" : "dimmer",
+            "value" : 0.65
+          },
+          {
+            "encoding" : "eightBit",
+            "name" : "Reserved",
+            "source" : "reserved",
+            "value" : 0
+          }
+        ]
+      },
+      "id" : "80725179-7E5C-4345-A6AF-C59B5793AD4F",
+      "name" : "Virtual moving light",
+      "outputID" : "8DDEF523-80A8-40E7-A54F-6319EE95BC6F",
+      "points" : [
+        {
+          "x" : 0.6,
+          "y" : 0.5
+        }
+      ],
+      "universe" : 2
+    }
+  ],
+  "geometryLockedSurfaceIDs" : [
+
+  ],
+  "globalMasks" : [
+
+  ],
+  "groups" : [
+
+  ],
+  "materials" : [
+
+  ],
+  "montages" : [
+
+  ],
+  "name" : "ApertureCue Light Engine",
+  "outputs" : [
+    {
+      "edgeBlend" : {
+        "blackLevel" : 0,
+        "bottom" : 0,
+        "gamma" : 1,
+        "left" : 0,
+        "power" : 1,
+        "right" : 0,
+        "top" : 0
+      },
+      "height" : 1080,
+      "id" : "BAB724C8-80C2-46A2-B3F2-E29769114BFF",
+      "name" : "Wall",
+      "screenIndex" : 0,
+      "width" : 1920
+    },
+    {
+      "edgeBlend" : {
+        "blackLevel" : 0,
+        "bottom" : 0,
+        "gamma" : 1,
+        "left" : 0,
+        "power" : 1,
+        "right" : 0,
+        "top" : 0
+      },
+      "height" : 1080,
+      "id" : "8DDEF523-80A8-40E7-A54F-6319EE95BC6F",
+      "name" : "Accent",
+      "screenIndex" : 0,
+      "width" : 1920
+    }
+  ],
+  "showControlTracks" : [
+
+  ],
+  "showSchedule" : {
+    "entries" : [
+
+    ]
+  },
+  "surfaces" : [
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "gradient",
+      "group" : "",
+      "id" : "051F99B1-9E2E-4CAB-8562-F76707173BD7",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "Wall gradient",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "outputID" : "BAB724C8-80C2-46A2-B3F2-E29769114BFF",
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    },
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        0.2,
+        0.85,
+        0.2
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "solid",
+      "group" : "",
+      "id" : "2199ED53-1C8C-4552-9D7E-BDC2CFCDF43D",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "Accent signal",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "outputID" : "8DDEF523-80A8-40E7-A54F-6319EE95BC6F",
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    }
+  ],
+  "timeline" : [
+    {
+      "enabled" : true,
+      "id" : "845CF3E7-162F-4FDA-A357-D61AADDCD8AD",
+      "keyframes" : [
+        {
+          "control1" : {
+            "x" : 0.3333333333333333,
+            "y" : 0.3333333333333333
+          },
+          "control2" : {
+            "x" : 0.6666666666666666,
+            "y" : 0.6666666666666666
+          },
+          "interpolation" : "linear",
+          "time" : 0,
+          "value" : 0.25
+        },
+        {
+          "control1" : {
+            "x" : 0.3333333333333333,
+            "y" : 0.3333333333333333
+          },
+          "control2" : {
+            "x" : 0.6666666666666666,
+            "y" : 0.6666666666666666
+          },
+          "interpolation" : "linear",
+          "time" : 4,
+          "value" : 0.75
+        },
+        {
+          "control1" : {
+            "x" : 0.3333333333333333,
+            "y" : 0.3333333333333333
+          },
+          "control2" : {
+            "x" : 0.6666666666666666,
+            "y" : 0.6666666666666666
+          },
+          "interpolation" : "linear",
+          "time" : 8,
+          "value" : 0.25
+        }
+      ],
+      "name" : "Accent and pan",
+      "parameter" : "opacity",
+      "surfaceID" : "2199ED53-1C8C-4552-9D7E-BDC2CFCDF43D"
+    }
+  ],
+  "timelineSettings" : {
+    "duration" : 8,
+    "loopEnabled" : true,
+    "loopEnd" : 8,
+    "loopStart" : 0,
+    "markers" : [
+
+    ],
+    "stopAtEnd" : true
+  },
+  "version" : 16
+}

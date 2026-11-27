@@ -7,7 +7,19 @@ import MappingCore
 @MainActor final class LightingController {
     enum WireProtocol: String, Hashable, Sendable { case artnet = "Art-Net", sacn = "sACN" }
 
-    var fixtures: [Fixture] = []
+    private static let maximumLiveUniverses = 128
+    var fixtures: [Fixture] = [] {
+        didSet {
+            guard fixtures != oldValue else { return }
+            patchGeneration &+= 1
+            patch = nil
+            if source == .composition {
+                pending = nil
+                wake?.cancel()
+                wake = nil
+            }
+        }
+    }
     var isSampling = false
     var isSending = false
     private(set) var lastUniverses: [Int: [UInt8]] = [:]
@@ -42,6 +54,12 @@ import MappingCore
     private let cid = UUID()
     private var destinations: [Destination: SequenceState] = [:]
     private var stream: Stream?
+    private enum FrameSource { case composition, sequence, networkInput }
+    private var source = FrameSource.composition
+    private var previewBeforeAlternate = false
+    private var lastSampleAt: Double?
+    private var patchGeneration: UInt64 = 0
+    private var patch: FixturePatchPlan?
     private var samplerBusy = false
     private var senderBusy = false
     private var generation: UInt64 = 0
@@ -52,53 +70,212 @@ import MappingCore
     private let queue = DispatchQueue(label: "org.aperturecue.lighting", qos: .userInitiated)
     private let discoveryQueue = DispatchQueue(label: "org.aperturecue.lighting.discovery", qos: .utility)
     private let multicastInterface: in_addr?
-    private var simulator: NSWindow?
-    private var swatches: FixturePreview?
+    private var monitorWindow: LightingMonitorWindow?
+    let monitorInput = LightingMonitorInput()
+    let lightingAdapterPreview = LightingAdapterPreviewController()
+    private(set) lazy var sequenceSession = DMXSequenceSession(
+        ensureSampling: { [weak self] in
+            guard let self, self.source == .composition, !self.fixtures.isEmpty else {
+                throw SystemFailure(message: "Add a fixture and select composition sampling before recording.")
+            }
+            self.isSampling = true
+        },
+        canOutput: { [weak self] in self?.isSending == true && self?.source == .composition },
+        beginOutput: { [weak self] universes in try self?.beginAlternate(.sequence, universes: universes) },
+        outputFrame: { [weak self] frame, discontinuity in
+            guard let self, self.isSending, self.source == .sequence else {
+                throw SystemFailure(message: "Sequence output is no longer armed.")
+            }
+            if discontinuity { self.supersedeUnsentFrame() }
+            self.acceptFrame(frame)
+        },
+        endOutput: { [weak self] in self?.endAlternate(.sequence) }
+    )
     private var networkWindow: LightingNetworkWindow?
     var renderer: MetalRenderer!
+    private var sourceFrame: [Int: [UInt8]] = [:]
+    var blackout = false {
+        didSet {
+            guard blackout != oldValue, !sourceFrame.isEmpty else { return }
+            if blackout && source == .composition {
+                sequenceSession.capture(sourceFrame.mapValues { Self.zeros($0.count) })
+            }
+            if blackout || source != .composition { acceptFrame(sourceFrame) }
+        }
+    }
 
     init(loopbackMulticast: Bool = false) {
         multicastInterface = loopbackMulticast ? in_addr(s_addr: inet_addr("127.0.0.1")) : nil
     }
 
-    func update(surfaces: [Surface]) {
-        guard isSampling, !samplerBusy else { return }
-        if fixtures.isEmpty {
-            if !lastUniverses.isEmpty { publishUniverseFrame([:]) }
+    func update(surfaces: [Surface], outputs: [OutputConfig] = []) {
+        guard isSampling, source == .composition else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        if let lastSampleAt, now - lastSampleAt >= 1, !lastUniverses.isEmpty {
+            sequenceSession.capture([:], at: now)
+            acceptFrame([:])
+        }
+        guard !samplerBusy else { return }
+        guard !fixtures.isEmpty else {
+            if !lastUniverses.isEmpty { acceptFrame([:]) }
             return
         }
+        let sampledFixtures = fixtures
+        let plan: FixturePatchPlan
+        do {
+            if let patch { plan = patch }
+            else {
+                try validateLivePatch()
+                if isSending { try validateUniverses(Set(fixtures.map(\.universe)), for: wireProtocol) }
+                plan = try FixtureSampler.makePlan(fixtures: sampledFixtures)
+                patch = plan
+            }
+        } catch {
+            stop()
+            errorDescription = error.localizedDescription
+            networkWindow?.updateStatus()
+            monitorWindow?.update()
+            return
+        }
+        let outputIDs = Array(Set(sampledFixtures.map(\.outputID))).sorted {
+            ($0?.uuidString ?? "") < ($1?.uuidString ?? "")
+        }
+        let routes = outputIDs.map { id -> MetalRenderer.SnapshotRoute in
+            guard let id else {
+                return MetalRenderer.SnapshotRoute(outputID: renderer.outputID, edgeBlend: renderer.edgeBlend)
+            }
+            return MetalRenderer.SnapshotRoute(outputID: id, edgeBlend: outputs.first { $0.id == id }?.edgeBlend ?? .init())
+        }
+        let areaRoutes = Set(sampledFixtures.filter { $0.sampling != nil }.map(\.outputID))
+        let overrides = Self.fixtureOverrides(fixtures: sampledFixtures, surfaces: surfaces)
+        let requestGeneration = generation
+        let requestPatch = patchGeneration
         samplerBusy = true
         renderer.surfaces = surfaces
-        let requestGeneration = generation
-        let sampledFixtures = fixtures
-        renderer.snapshotAsync(width: 320, height: 180) { [weak self] image in
+        renderer.snapshotBatchAsync(width: 320, height: 180, routes: routes) { [weak self] images in
             guard let self else { return }
             self.samplerBusy = false
-            guard self.isSampling, self.generation == requestGeneration,
-                  let image, let data = image.bitmapData else { return }
+            guard self.isSampling, self.source == .composition, self.generation == requestGeneration,
+                  self.patchGeneration == requestPatch, let images else { return }
+            var rasters: [UUID?: LightingRaster] = [:]
+            for (id, image) in zip(outputIDs, images) {
+                guard let raster = LightingRaster(image, withArea: areaRoutes.contains(id)) else { return }
+                rasters[id] = raster
+            }
             do {
-                let universes = try FixtureSampler.sample(fixtures: sampledFixtures) { point in
-                    let x = max(0, min(image.pixelsWide - 1, Int(point.x * Double(image.pixelsWide))))
-                    let y = max(0, min(image.pixelsHigh - 1, Int(point.y * Double(image.pixelsHigh))))
-                    let i = y * image.bytesPerRow + x * 4
-                    return RGBColor(Double(data[i]) / 255, Double(data[i + 1]) / 255, Double(data[i + 2]) / 255)
+                let levels = try plan.sample(overrides: overrides) { fixture, point in
+                    rasters[fixture.outputID]?.color(at: point, area: fixture.sampling) ?? MappingCore.RGBColor(0, 0, 0)
                 }
-                self.publishUniverseFrame(universes)
+                self.publishUniverseFrame(levels)
             } catch {
                 self.stop()
                 self.errorDescription = error.localizedDescription
                 self.networkWindow?.updateStatus()
+                self.monitorWindow?.update()
             }
         }
     }
 
+    static func fixtureOverrides(fixtures: [Fixture], surfaces: [Surface]) -> [UUID: [String: Double]] {
+        let drives = fixtures.flatMap { ($0.definition?.channels ?? []).compactMap(\.drive) }
+        guard !drives.isEmpty else { return [:] }
+        let byID = Dictionary(surfaces.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var result: [UUID: [String: Double]] = [:]
+        for fixture in fixtures {
+            for channel in fixture.definition?.channels ?? [] {
+                guard let drive = channel.drive, let surface = byID[drive.surfaceID],
+                      let range = try? TimelineEngine.parameterRange(drive.parameter),
+                      let value = TimelineEngine.parameterValue(drive.parameter, on: surface) else { continue }
+                let unit = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+                result[fixture.id, default: [:]][channel.name] = min(1, max(0, unit))
+            }
+        }
+        return result
+    }
+
+    private static func zeros(_ count: Int) -> [UInt8] { Array(repeating: 0, count: count) }
+
+    private func validateLivePatch() throws {
+        guard Set(fixtures.map(\.universe)).count <= Self.maximumLiveUniverses else {
+            throw SystemFailure(message: "Live lighting supports up to \(Self.maximumLiveUniverses) patched universes.")
+        }
+    }
+
+    private func validateUniverses(_ universes: Set<Int>, for mode: WireProtocol) throws {
+        let range = mode == .sacn ? 1...63999 : 0...32767
+        guard universes.allSatisfy(range.contains) else {
+            throw SystemFailure(message: "\(mode.rawValue) requires universes \(range.lowerBound)…\(range.upperBound).")
+        }
+    }
+
     func publishUniverseFrame(_ universes: [Int: [UInt8]]) {
-        guard isSampling else { return }
+        guard isSampling, source == .composition else { return }
+        lastSampleAt = ProcessInfo.processInfo.systemUptime
+        // Blackout also zeros manual/position slots and removes any prior nonzero frame.
+        sequenceSession.capture(blackout ? universes.mapValues { Self.zeros($0.count) } : universes)
+        acceptFrame(universes)
+    }
+
+    private func acceptFrame(_ input: [Int: [UInt8]]) {
+        sourceFrame = input
+        let universes = blackout ? input.mapValues { Self.zeros($0.count) } : input
         lastUniverses = universes
-        swatches?.universes = universes
+        if source == .composition { lightingAdapterPreview.publish(universes) }
+        monitorWindow?.update()
         guard isSending else { return }
         pending = universes
         flush()
+    }
+
+    private func supersedeUnsentFrame() {
+        pending = nil
+        wake?.cancel()
+        wake = nil
+        retryAfter = 0
+        generation &+= 1
+    }
+
+    private func beginAlternate(_ incoming: FrameSource, universes: Set<Int>) throws {
+        guard source == .composition, isSending else { throw SystemFailure(message: "Arm network output first.") }
+        try validateUniverses(universes, for: wireProtocol)
+        previewBeforeAlternate = isSampling
+        supersedeUnsentFrame()
+        lightingAdapterPreview.stop()
+        source = incoming
+    }
+
+    private func endAlternate(_ expectedSource: FrameSource) {
+        guard source == expectedSource else { return }
+        let keepPreview = previewBeforeAlternate
+        stop()
+        isSampling = keepPreview
+        monitorWindow?.update()
+    }
+
+    var isRoutingIncoming: Bool { source == .networkInput }
+    var canRouteIncoming: Bool { source == .composition && isSending }
+
+    func routeIncoming() throws {
+        guard let universe = monitorInput.listenUniverse else { throw SystemFailure(message: "Start the DMX receiver first.") }
+        try beginAlternate(.networkInput, universes: [universe])
+        updateIncoming(at: ProcessInfo.processInfo.systemUptime)
+    }
+
+    func stopRoutingIncoming() { endAlternate(.networkInput) }
+
+    func updateIncoming(at now: Double) {
+        if source == .networkInput {
+            let frame = monitorInput.snapshot(at: now).frame
+            let levels = frame.map { [$0.universe: $0.channels] } ?? [:]
+            if levels != sourceFrame || !levels.isEmpty { acceptFrame(levels) }
+        }
+        monitorWindow?.update(at: now)
+    }
+
+    func stopDocument(completion: (@MainActor @Sendable () -> Void)? = nil) {
+        monitorInput.stop()
+        sequenceSession.reset()
+        stop(completion: completion)
     }
 
     func startNetworkOutput(mode: WireProtocol, address: String, multicast: Bool,
@@ -111,9 +288,8 @@ import MappingCore
             throw SystemFailure(message: "Only sACN supports multicast and synchronization here")
         }
         if !multicast { _ = try LightingUDP.unicastAddress(address) }
-        if mode == .sacn, fixtures.contains(where: { $0.universe == 0 }) {
-            throw SystemFailure(message: "sACN universes start at 1")
-        }
+        try validateLivePatch()
+        try validateUniverses(Set(fixtures.map(\.universe)), for: mode)
         stop()
         self.wireProtocol = mode
         self.destination = address
@@ -123,6 +299,7 @@ import MappingCore
         self.errorDescription = ""
         isSampling = true
         isSending = true
+        sequenceSession.refreshNetworkState()
         networkWindow?.updateStatus()
     }
 
@@ -132,8 +309,15 @@ import MappingCore
 
     func stop(completion: (@MainActor @Sendable () -> Void)? = nil) {
         generation &+= 1
+        source = .composition
         isSampling = false
         isSending = false
+        lastSampleAt = nil
+        sequenceSession.networkOutputWasStopped()
+        if sequenceSession.isRecording {
+            sequenceSession.capture([:])
+            sequenceSession.finishCapture()
+        }
         errorDescription = ""
         pending = nil
         wake?.cancel()
@@ -161,9 +345,19 @@ import MappingCore
             }
         }
         lastUniverses = [:]
-        swatches?.universes = [:]
+        sourceFrame = [:]
+        monitorWindow?.update()
         networkWindow?.updateStatus()
-        if let completion { queue.async { DispatchQueue.main.async { completion() } } }
+        if let completion {
+            let drain = DispatchGroup()
+            drain.enter()
+            lightingAdapterPreview.stop { drain.leave() }
+            drain.enter()
+            queue.async { drain.leave() }
+            drain.notify(queue: .main) { completion() }
+        } else {
+            lightingAdapterPreview.stop()
+        }
     }
 
     private var selectedTarget: LightingWireTarget {
@@ -329,29 +523,11 @@ import MappingCore
     }
 
     func showSimulator() {
-        if let simulator { simulator.makeKeyAndOrderFront(nil); return }
-        let w = NSWindow(contentRect:NSRect(x:100,y:100,width:760,height:300),styleMask:[.titled,.closable,.resizable],backing:.buffered,defer:false)
-        w.title = "ApertureCue · LED simulator · No hardware verification"; w.isReleasedWhenClosed = false
-        let preview = FixturePreview(); fill(preview,in:w.contentView!); preview.universes = lastUniverses
-        simulator = w; swatches = preview; w.center(); w.makeKeyAndOrderFront(nil)
-    }
-}
-
-final class FixturePreview:NSView {
-    var universes:[Int:[UInt8]] = [:] { didSet { needsDisplay = true } }
-    override var isFlipped:Bool { true }
-    override func draw(_ dirtyRect:NSRect) {
-        NSColor.black.setFill(); bounds.fill()
-        var y:CGFloat = 12
-        for universe in universes.keys.sorted() {
-            ("Universe \(universe) · raw RGB channel triplets" as NSString).draw(at:NSPoint(x:12,y:y),withAttributes:[.foregroundColor:NSColor.white,.font:NSFont.systemFont(ofSize:12)])
-            y += 24; let channels = universes[universe]!
-            for i in stride(from:0,to:min(channels.count,180),by:3) {
-                let cell = i/3, x = CGFloat(cell%30)*24+12, row = CGFloat(cell/30)*24
-                let c = NSColor(calibratedRed:Double(channels[i])/255,green:Double(channels[i+1])/255,blue:Double(channels[i+2])/255,alpha:1)
-                c.setFill(); NSBezierPath(roundedRect:NSRect(x:x,y:y+row,width:20,height:20),xRadius:3,yRadius:3).fill()
-            }; y += 58
-        }
+        let monitor = monitorWindow ?? LightingMonitorWindow(lighting: self)
+        monitorWindow = monitor
+        monitor.showWindow(nil)
+        monitor.window?.makeKeyAndOrderFront(nil)
+        monitor.update()
     }
 }
 #endif

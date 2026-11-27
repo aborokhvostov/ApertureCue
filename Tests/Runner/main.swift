@@ -185,4 +185,21 @@ runCase("OSCQueryTests.testStructureChangeDiffOmitsLiveValues", OSCQueryTests.se
 runCase("LightingTransportTests.testTargetedArtPollGoldenBytesAndLegacyLength", LightingTransportTests.self) { try $0.testTargetedArtPollGoldenBytesAndLegacyLength() }
 runCase("LightingTransportTests.testArtPollReplyBindingsPortsAndBounds", LightingTransportTests.self) { try $0.testArtPollReplyBindingsPortsAndBounds() }
 runCase("LightingTransportTests.testSACNSyncVectorAndIPv4Destination", LightingTransportTests.self) { try $0.testSACNSyncVectorAndIPv4Destination() }
+
+runCase("FixturePatchTests.testChannelEncodingBoundariesAndColorRoles", FixturePatchTests.self) { try $0.testChannelEncodingBoundariesAndColorRoles() }
+runCase("FixturePatchTests.testAutomationOverridesAndOutputSamplingContract", FixturePatchTests.self) { try $0.testAutomationOverridesAndOutputSamplingContract() }
+runCase("FixturePatchTests.testPatchRejectionAndLegacyPortableFixture", FixturePatchTests.self) { try $0.testPatchRejectionAndLegacyPortableFixture() }
+runCase("FixturePatchTests.testSerpentineLayoutReservesSkippedDMXSlots", FixturePatchTests.self) { try $0.testSerpentineLayoutReservesSkippedDMXSlots() }
+runCase("FixturePatchTests.testCSVAtomicImportAndPhysicalRows", FixturePatchTests.self) { try $0.testCSVAtomicImportAndPhysicalRows() }
+runCase("FixturePatchTests.testJSONAtomicImportDiagnosticsAndRoundTrip", FixturePatchTests.self) { try $0.testJSONAtomicImportDiagnosticsAndRoundTrip() }
+runCase("FixturePatchTests.testSVGPositionsUseExistingSafeParser", FixturePatchTests.self) { try $0.testSVGPositionsUseExistingSafeParser() }
+runCase("DMXSequenceTests.testCanonicalBinaryAndAtomicFileReplacement", DMXSequenceTests.self) { try $0.testCanonicalBinaryAndAtomicFileReplacement() }
+runCase("DMXSequenceTests.testMalformedFramesAndBudgets", DMXSequenceTests.self) { try $0.testMalformedFramesAndBudgets() }
+runCase("DMXSequenceTests.testCaptureCoalescesGapsWithoutLosingExplicitClear", DMXSequenceTests.self) { try $0.testCaptureCoalescesGapsWithoutLosingExplicitClear() }
+runCase("DMXSequenceTests.testReplayUsesMonotonicTimeAndRejectsOldSeekGeneration", DMXSequenceTests.self) { try $0.testReplayUsesMonotonicTimeAndRejectsOldSeekGeneration() }
+runCase("LEDScannerTests.testRastersDecodeAmbientCompensatedInSlotOrder", LEDScannerTests.self) { try $0.testRastersDecodeAmbientCompensatedInSlotOrder() }
+runCase("LEDScannerTests.testAmbiguousMissingAndRepeatedPositionsPreserveSlots", LEDScannerTests.self) { try $0.testAmbiguousMissingAndRepeatedPositionsPreserveSlots() }
+runCase("LEDScannerTests.testScannerValidationAndProjectPatchLimit", LEDScannerTests.self) { try $0.testScannerValidationAndProjectPatchLimit() }
+runCase("LightingAdapterTests.testBufferedUSBProMatchesGoldenBytes", LightingAdapterTests.self) { try $0.testBufferedUSBProMatchesGoldenBytes() }
+runCase("LightingAdapterTests.testSPIRGBExportKeepsChannelOrderAndBounds", LightingAdapterTests.self) { try $0.testSPIRGBExportKeepsChannelOrderAndBounds() }
 exit(finishTests())

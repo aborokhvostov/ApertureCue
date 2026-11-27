@@ -9,7 +9,7 @@ import MappingCore
 /// No packet is addressed to a fixture or external network interface.
 @MainActor
 enum LightingSelfTest {
-    private final class Receiver {
+    final class Receiver {
         let descriptor: Int32
         private(set) var lastPeerPort: UInt16 = 0
         init(port: UInt16) throws {

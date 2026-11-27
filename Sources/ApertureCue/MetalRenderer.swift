@@ -263,40 +263,69 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
 
     func render(width: Int, height: Int) -> NSBitmapImageRep? { snapshot(width: width, height: height) }
 
-    /// Lighting sampling uses a single bounded readback. Excess requests are
-    /// dropped immediately, and neither the UI nor the render queue waits.
+    struct SnapshotRoute {
+        let outputID: UUID?
+        let edgeBlend: EdgeBlendSettings
+    }
+
     func snapshotAsync(width: Int, height: Int, completion: @escaping (NSBitmapImageRep?) -> Void) {
+        let route = SnapshotRoute(outputID: outputID, edgeBlend: edgeBlend)
+        snapshotBatchAsync(width: width, height: height, routes: [route]) { completion($0?.first) }
+    }
+
+    /// Encode all light routes against one composition state and submit one bounded readback job.
+    /// A busy GPU causes the whole request to be skipped without accumulating frames.
+    func snapshotBatchAsync(width: Int, height: Int, routes: [SnapshotRoute],
+                            completion: @escaping ([NSBitmapImageRep]?) -> Void) {
         precondition(Thread.isMainThread)
-        guard !asyncSnapshotPending, width > 0, height > 0, width <= 8192, height <= 8192 else { completion(nil); return }
+        guard !asyncSnapshotPending, (1...8).contains(routes.count),
+              (1...8192).contains(width), (1...8192).contains(height),
+              routes.count == 1 || width * height * routes.count <= 1_048_576,
+              let buffer = queue.makeCommandBuffer() else { completion(nil); return }
         let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: width, height: height, mipmapped: false)
         descriptor.storageMode = .shared
         descriptor.usage = [.renderTarget, .shaderRead]
-        guard let texture = device.makeTexture(descriptor: descriptor), let buffer = queue.makeCommandBuffer() else { completion(nil); return }
-        let pass = MTLRenderPassDescriptor()
-        pass.colorAttachments[0].texture = texture
-        pass.colorAttachments[0].loadAction = .clear
-        pass.colorAttachments[0].storeAction = .store
-        pass.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1)
+        var textures: [MTLTexture] = []
+        for _ in routes {
+            guard let texture = device.makeTexture(descriptor: descriptor) else { completion(nil); return }
+            textures.append(texture)
+        }
         asyncSnapshotPending = true
-        let videoFrames = encode(descriptor: pass, buffer: buffer)
+        let previousRoute = outputID
+        let previousBlend = edgeBlend
+        let videoFrames = zip(routes, textures).map { route, texture in
+            outputID = route.outputID
+            edgeBlend = route.edgeBlend
+            let pass = MTLRenderPassDescriptor()
+            pass.colorAttachments[0].texture = texture
+            pass.colorAttachments[0].loadAction = .clear
+            pass.colorAttachments[0].storeAction = .store
+            pass.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1)
+            return encode(descriptor: pass, buffer: buffer)
+        }
+        outputID = previousRoute
+        edgeBlend = previousBlend
         let worker = snapshotQueue
+        let readbackTextures = textures
         buffer.addCompletedHandler { [weak self] command in
             withExtendedLifetime(videoFrames) {}
             worker.async {
-                var bitmap: NSBitmapImageRep?
-                if command.status == .completed,
-                   let image = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
-                       bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                       colorSpaceName: .deviceRGB, bytesPerRow: width * 4, bitsPerPixel: 32),
-                   let data = image.bitmapData {
-                    texture.getBytes(data, bytesPerRow: width * 4, from: MTLRegionMake2D(0, 0, width, height), mipmapLevel: 0)
-                    for pixel in 0..<(width * height) {
-                        let offset = pixel * 4
-                        let blue = data[offset]; data[offset] = data[offset + 2]; data[offset + 2] = blue
+                var images: [NSBitmapImageRep] = []
+                if command.status == .completed {
+                    for texture in readbackTextures {
+                        guard let image = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
+                            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                            colorSpaceName: .deviceRGB, bytesPerRow: width * 4, bitsPerPixel: 32),
+                            let data = image.bitmapData else { break }
+                        texture.getBytes(data, bytesPerRow: width * 4, from: MTLRegionMake2D(0, 0, width, height), mipmapLevel: 0)
+                        for pixel in 0..<(width * height) {
+                            let offset = pixel * 4
+                            let blue = data[offset]; data[offset] = data[offset + 2]; data[offset + 2] = blue
+                        }
+                        images.append(image)
                     }
-                    bitmap = image
                 }
-                let result = bitmap
+                let result = images.count == routes.count ? images : nil
                 DispatchQueue.main.async {
                     self?.asyncSnapshotPending = false
                     if command.status == .error { self?.errorDescription = command.error?.localizedDescription ?? "Async readback failed" }

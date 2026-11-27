@@ -1,10 +1,10 @@
 # Руководство пользователя ApertureCue 0.1
 
-Это ранняя настольная сборка для macOS 13+. Руководство описывает alpha 18 и формат проекта schema 15. [Скачать alpha 18](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.18) · [Состояние проекта](status.md).
+Это ранняя настольная сборка для macOS 13+. Руководство описывает alpha 19 и формат проекта schema 16. [Список сборок](https://github.com/aborokhvostov/ApertureCue/releases) · [Состояние проекта](status.md).
 
 ## Запуск и демонстрационный проект
 
-Распакуйте весь ZIP для Apple Silicon, откройте **ApertureCue.app** и выберите **File → Open**. Для OSC и MIDI откройте `Demo/ControlMapping.aperturecue.json`, для Conductor — `Demo/ShowControl.aperturecue.json`, для медиа — `Media/Media.aperturecue.json`. Папки с проектами и их медиа храните вместе. Сборка подписана ad hoc, без нотариального заверения Apple. [Список сборок](https://github.com/aborokhvostov/ApertureCue/releases)
+Распакуйте весь ZIP для Apple Silicon, откройте **ApertureCue.app** и выберите **File → Open**. Для света откройте `Demo/LightEngine.aperturecue.json`, для OSC и MIDI — `Demo/ControlMapping.aperturecue.json`, для Conductor — `Demo/ShowControl.aperturecue.json`, для медиа — `Media/Media.aperturecue.json`. Папки с проектами и их медиа храните вместе. Сборка подписана ad hoc, без нотариального заверения Apple.
 
 Из корня исходников выполните `./scripts/build.sh`, затем `open dist/ApertureCue.app`. Приложение стартует с двумя процедурными поверхностями и двумя сохранёнными вариантами геометрии. Для собственного демонстрационного изображения и видео выполните:
 
@@ -326,19 +326,18 @@ Interpolation относится к сегменту **после** выбран
 
 Для фейдера используйте значение от `0` до `1`. Кнопка OSC без аргументов срабатывает при каждом сообщении. Кнопка с аргументом срабатывает при подъёме до `0.5` и снова готова после значения `0.25` или меньше. Список доступных целей и границы поддержки описаны в [спецификации назначений](control-mapping-spec.md).
 
-## LED mapping и симулятор
+## Свет и DMX
 
-**LED…** добавляет линейную fixture по количеству pixels, universe, начальному DMX address и двум нормализованным точкам композиции. Выберите RGB, GRB или RGBW. **Add fixture + simulate** сохраняет layout в проекте и открывает симулятор, не включая отправку в сеть. Адреса каналов начинаются с 1; universe передаётся на провод без автоматического смещения. Fixture не переносится через границу 512 и не перекрывает занятые каналы. Поэтому для RGB при address 1 доступно до 170 pixels, для RGBW — до 128.
+1. Откройте `Demo/LightEngine.aperturecue.json`, затем **Light → Fixture patch…** или **LED…**. В демо есть RGBW-матрица на выходе **Wall** и виртуальный поворотный прибор на выходе **Accent**. Нажмите **Play**, откройте **Light → DMX monitor…**, выберите universe 2 и slot 20. Это старший байт Pan, который меняется вместе с автоматизацией.
+2. Нажмите **Add fixture…**, укажите universe, начальный DMX-адрес и координаты. Выберите **Line** или **Matrix**. **Serpentine** меняет порядок каждого второго ряда, а **Skipped positions** оставляет пропущенные адреса занятыми и нулевыми. **Sample from** выбирает видеовыход, **Box average** усредняет участок. Каждый прибор занимает непрерывный диапазон в пределах 512 слотов.
+3. Выберите прибор и откройте **Channels…**. Отредактируйте порядок, роль и кодирование 8 или 16 бит. Для Pan, Tilt, Dimmer или Constant выберите ручное значение либо параметр поверхности, которым управляет Timeline или Conductor. Нажмите **Save channels**, затем сохраните проект. CSV, JSON и SVG импортируются через панель патча. [Форматы и правила](light-engine-spec.md)
+4. Для записи откройте **Light → Record / replay…**. Начните **Record live**, запустите шоу, остановите запись и сохраните `.acdmx`. Откройте файл и используйте **Play preview** и ползунок позиции. Для отправки сначала явно включите сеть, затем выберите **Play to armed output**. [DMX-последовательности](dmx-sequence-spec.md)
 
-Sampling берётся из полной output composition, уменьшенной до 320×180, nearest pixel, с частотой не выше 30 Hz. При занятости GPU/sender кадры пропускаются вместо накопления очереди. Это не фильтрация по площади fixture и не физическая калибровка LED. Симулятор показывает первые raw RGB channel triplets universes; он не декодирует обратно произвольный GRB/RGBW профиль в реальные цвета приборов.
+В **Light → Network output…** выберите Art-Net unicast, sACN unicast или sACN multicast. Для unicast укажите IPv4 получателя. **Sync universe** задаёт отдельный universe синхронизации для sACN, `0` её отключает. **Check Art-Net node** проверяет известный IPv4 и диапазон Port-Address. Сам вывод включается кнопкой **Start network output** и останавливается кнопкой **Stop network output**.
 
-Откройте **Show → Lighting network…** или **Network settings…** из LED-панели. Выберите **Art-Net unicast**, **sACN unicast** или **sACN multicast** и задайте максимальную частоту. Для unicast укажите IPv4 получателя. Аргумент **Sync universe** в режимах sACN задаёт отдельный universe синхронизации, `0` отключает её. Для проверки известного Art-Net узла введите его IPv4, диапазон Port-Address и нажмите **Check Art-Net node**. Ответ покажет объявленные порты и частоту. Сам вывод включается через **Start network output**.
+В мониторе можно отдельно запустить **Receive** для одного Art-Net или sACN universe на диагностическом порту `127.0.0.1`. **Route to armed output** выбирает этот вход источником для уже включённого отправителя. При потере данных в течение секунды активный universe гасится и завершается. При **Blackout** обнуляются все каналы, включая Pan/Tilt. [Сетевой транспорт](lighting-transport-spec.md)
 
-Art-Net использует порт 6454, sACN — 5568. По умолчанию unicast направляется на `127.0.0.1`. При смене назначения или протокола прежние потоки завершаются. **Stop network output** передаёт нулевые ArtDmx или нулевой sACN data packet и три сообщения Stream Terminated. **Clear fixtures** останавливает вывод и удаляет layout. Адрес, режим и частота вывода действуют в текущем сеансе. [Сетевой транспорт](lighting-transport-spec.md).
-
-Quit ставит media на паузу, останавливает controls и дожидается очереди lighting Stop с ограничением около одной секунды. Это попытка корректного завершения локальной отправки, а не подтверждение, что UDP packet получен реальным node.
-
-В этой версии сетевой транспорт проверен на локальных получателях. Поведение при blackout и завершении потока на физических узлах и прохождение multicast по сети проверяются отдельно. Полный редактор приборов, 16-битные каналы, moving lights, USB-DMX и recorder остаются отдельными этапами. OEM registration для Art-Net открыта.
+**Light → Import LED scan…** умеет сгенерировать исходный пример, затем импортировать координаты из серий вспышек. При частичном импорте пропущенные светодиоды сохраняют адреса. **Light → USB-DMX / SPI…** показывает и экспортирует байты. Буферизованный USB-DMX включается отдельно для выбранного `/dev/cu.*`. Проверка SPI в этой сборке охватывает формирование RGB-данных. [LED-скан](led-scanner-spec.md) · [Адаптеры](lighting-adapter-spec.md)
 
 ## Protocol credits
 
@@ -348,7 +347,7 @@ Art-Net™ Designed by and Copyright Artistic Licence.
 
 ## Сохранение, история и экспорт
 
-**File → Save** (`⌘S`) и **Save As** (`⌘⇧S`) записывают `.aperturecue.json`, **Open** (`⌘O`) открывает его. Текущий формат, schema 15, сохраняет MIDI/OSC назначения по постоянным идентификаторам поверхностей и сцен. При открытии старого проекта он мигрирует, а **Save As…** позволяет сохранить исходный файл для alpha 17 и более ранних версий. Пути к обычным медиа на диске относительные.
+**File → Save** (`⌘S`) и **Save As** (`⌘⇧S`) записывают `.aperturecue.json`, **Open** (`⌘O`) открывает его. Schema 16 сохраняет световой патч, пользовательские каналы и адреса выборки. Старые проекты мигрируют при открытии. **Save As…** позволяет сохранить исходник для alpha 18 и более ранних версий. Пути к обычным медиа на диске относительные.
 
 File → **Collect portable project…** создаёт переносимую копию в новой, ещё не существующей папке. Внутри находятся `project.aperturecue.json`, обычные ресурсы `media/<asset UUID>.<extension>` и отдельные UUID-папки с точными frozen manifests кадров. Такое именование разделяет одноимённые источники. Приложение копирует обычные image/video/audio files и только перечисленные sequence frames, проверяет созданный проект и относительные ссылки, затем публикует готовую папку одним переименованием. Missing media, неподходящий source или ошибка копирования отменяют операцию; исходный проект и выбранная папка назначения не перезаписываются.
 
@@ -380,6 +379,10 @@ dist/ApertureCue.app/Contents/MacOS/ApertureCue --control-mapping-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --midi-control-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --osc-query-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-transport-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --light-engine-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --dmx-sequence-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --led-scan-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-adapter-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --benchmark
 ```
