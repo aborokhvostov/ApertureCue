@@ -173,4 +173,16 @@ runCase("MontageTests.testSignedRateCrossfadeAndIndependentAudioLane", MontageTe
 runCase("MontageTests.testExplicitCrossfadeRejectsTripleOrMismatchedOverlap", MontageTests.self) { try $0.testExplicitCrossfadeRejectsTripleOrMismatchedOverlap() }
 runCase("MontageTests.testSchemaFourteenMontageOptionsRoundTripAndLegacyIsolation", MontageTests.self) { try $0.testSchemaFourteenMontageOptionsRoundTripAndLegacyIsolation() }
 runCase("ConductorTests.testEventsAndMarkersUseOneBudgetAndDoNotReplayAfterSeek", ConductorTests.self) { try $0.testEventsAndMarkersUseOneBudgetAndDoNotReplayAfterSeek() }
+runCase("ControlMappingTests.testStableUUIDRoutesAndSchemaIsolation", ControlMappingTests.self) { try $0.testStableUUIDRoutesAndSchemaIsolation() }
+runCase("ControlMappingTests.testHeldKeysAndFeedbackBounds", ControlMappingTests.self) { try $0.testHeldKeysAndFeedbackBounds() }
+runCase("ControlMappingTests.testOSCBlobGoldenPacketAndCorpusBounds", ControlMappingTests.self) { try $0.testOSCBlobGoldenPacketAndCorpusBounds() }
+runCase("MIDIControlCodecTests.testRunningStatusRealtimeAndSystemCancellation", MIDIControlCodecTests.self) { $0.testRunningStatusRealtimeAndSystemCancellation() }
+runCase("MIDIControlCodecTests.testFourteenBitControlStateIsPerChannelAndResettable", MIDIControlCodecTests.self) { $0.testFourteenBitControlStateIsPerChannelAndResettable() }
+runCase("MIDIControlCodecTests.testBoundsAndFeedbackEncoding", MIDIControlCodecTests.self) { try $0.testBoundsAndFeedbackEncoding() }
+runCase("OSCQueryTests.testNamespaceAndAttributeResponses", OSCQueryTests.self) { try $0.testNamespaceAndAttributeResponses() }
+runCase("OSCQueryTests.testMethodPathTypeAndBudgetValidation", OSCQueryTests.self) { try $0.testMethodPathTypeAndBudgetValidation() }
+runCase("OSCQueryTests.testStructureChangeDiffOmitsLiveValues", OSCQueryTests.self) { try $0.testStructureChangeDiffOmitsLiveValues() }
+runCase("LightingTransportTests.testTargetedArtPollGoldenBytesAndLegacyLength", LightingTransportTests.self) { try $0.testTargetedArtPollGoldenBytesAndLegacyLength() }
+runCase("LightingTransportTests.testArtPollReplyBindingsPortsAndBounds", LightingTransportTests.self) { try $0.testArtPollReplyBindingsPortsAndBounds() }
+runCase("LightingTransportTests.testSACNSyncVectorAndIPv4Destination", LightingTransportTests.self) { try $0.testSACNSyncVectorAndIPv4Destination() }
 exit(finishTests())

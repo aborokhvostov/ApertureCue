@@ -9,7 +9,7 @@ public enum ProtocolError: Error, LocalizedError, Equatable {
 }
 
 public enum OSCArgument: Equatable, Sendable {
-    case int(Int32), float(Float), string(String), bool(Bool)
+    case int(Int32), float(Float), string(String), bool(Bool), blob(Data)
 }
 public struct OSCMessage: Equatable, Sendable {
     public var address: String
@@ -30,7 +30,14 @@ public enum OSCCodec {
                 tags += "f"; arguments += be32(f.bitPattern)
             case .string(let s): tags += "s"; arguments += try string(s)
             case .bool(let b): tags += b ? "T" : "F"
+            case let .blob(data):
+                guard data.count <= 32768 else { throw ProtocolError.malformed("OSC blob exceeds byte limit") }
+                tags += "b"
+                arguments += be32(UInt32(data.count))
+                arguments += data
+                arguments += [UInt8](repeating: 0, count: (4 - data.count % 4) % 4)
             }
+            guard bytes.count + arguments.count <= 65504 else { throw ProtocolError.malformed("OSC packet exceeds UDP size") }
         }
         bytes += try string(tags); bytes += arguments
         guard bytes.count <= 65504 else { throw ProtocolError.malformed("OSC packet exceeds UDP size") }
@@ -41,6 +48,7 @@ public enum OSCCodec {
         var result=Array("#bundle\0".utf8)+[0,0,0,0,0,0,0,1]
         for message in messages {
             let bytes=try encode(message)
+            guard result.count + 4 + bytes.count <= 65504 else { throw ProtocolError.malformed("OSC bundle exceeds UDP size") }
             result += be32(UInt32(bytes.count)); result += bytes
         }
         guard result.count <= 65504 else { throw ProtocolError.malformed("OSC bundle exceeds UDP size") }
@@ -48,10 +56,12 @@ public enum OSCCodec {
     }
     public static func decode(_ data: Data) throws -> [OSCMessage] {
         guard !data.isEmpty, data.count <= 65504, data.count % 4 == 0 else { throw ProtocolError.malformed("OSC size or alignment") }
-        var count=0
-        return try packet(Array(data),depth:0,count:&count)
+        var count = 0, elements = 0
+        return try packet(Array(data), depth: 0, count: &count, elements: &elements)
     }
-    private static func packet(_ bytes:[UInt8],depth:Int,count:inout Int) throws -> [OSCMessage] {
+    private static func packet(_ bytes:[UInt8],depth:Int,count:inout Int,elements:inout Int) throws -> [OSCMessage] {
+        elements += 1
+        guard elements <= 513 else { throw ProtocolError.malformed("OSC bundle element limit") }
         guard depth <= 8 else { throw ProtocolError.malformed("OSC bundle nesting limit") }
         var cursor=0
         if bytes.starts(with:Array("#bundle\0".utf8)) {
@@ -61,7 +71,7 @@ public enum OSCCodec {
             while cursor < bytes.count {
                 let length=Int(try read32(bytes,&cursor))
                 guard length > 0, length % 4 == 0, length <= bytes.count-cursor else { throw ProtocolError.malformed("OSC bundle element length") }
-                result += try packet(Array(bytes[cursor..<cursor+length]),depth:depth+1,count:&count)
+                result += try packet(Array(bytes[cursor..<cursor+length]),depth:depth+1,count:&count,elements:&elements)
                 cursor += length
             }
             return result
@@ -81,6 +91,18 @@ public enum OSCCodec {
                 guard f.isFinite else { throw ProtocolError.malformed("non-finite OSC float") }
                 arguments.append(.float(f))
             case "s": arguments.append(.string(try readString(bytes,&cursor)))
+            case "b":
+                let size = Int(try read32(bytes, &cursor))
+                guard size <= 32768, size <= bytes.count - cursor else {
+                    throw ProtocolError.malformed("OSC blob length")
+                }
+                let end = cursor + size
+                let padded = end + (4 - size % 4) % 4
+                guard padded <= bytes.count, bytes[end..<padded].allSatisfy({ $0 == 0 }) else {
+                    throw ProtocolError.malformed("OSC blob padding")
+                }
+                arguments.append(.blob(Data(bytes[cursor..<end])))
+                cursor = padded
             case "T": arguments.append(.bool(true))
             case "F": arguments.append(.bool(false))
             default: throw ProtocolError.unsupported("OSC type tag \(tag)")

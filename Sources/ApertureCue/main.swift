@@ -4,6 +4,11 @@ import AppKit
 import MappingCore
 
 MainActor.assumeIsolated {
+if CommandLine.arguments.contains("--control-mapping-test") {exit(ControlMappingSelfTest.run())}
+if CommandLine.arguments.contains("--midi-control-test") {exit(MIDIControlAdapterSelfTest.run())}
+if CommandLine.arguments.contains("--osc-query-client-test") {exit(OSCQuerySelfTest.runClient(arguments:CommandLine.arguments))}
+if CommandLine.arguments.contains("--osc-query-test") {exit(OSCQuerySelfTest.run())}
+if CommandLine.arguments.contains("--lighting-transport-test") {exit(LightingTransportSelfTest.run())}
 if CommandLine.arguments.contains("--conductor-test") {exit(ConductorSelfTest.run())}
 if CommandLine.arguments.contains("--show-schedule-test") {exit(ShowScheduleEditorSelfTest.run())}
 if CommandLine.arguments.contains("--show-clock-fixture") {exit(ShowControlSelfTest.clockFixture(arguments:CommandLine.arguments))}
@@ -35,16 +40,16 @@ if CommandLine.arguments.contains("--montage-test") {
 if CommandLine.arguments.contains("--editor-test") {
     exit(EditorSelfTest.run())
 }
-if CommandLine.arguments.dropFirst().first == "--generate-show-demo" {
+if let command = CommandLine.arguments.dropFirst().first, ["--generate-show-demo", "--generate-control-demo"].contains(command) {
     guard CommandLine.arguments.count == 3 else { fputs("Provide a new project path\n", stderr); exit(1) }
     let destination = URL(fileURLWithPath: CommandLine.arguments[2])
-    let model = ConductorSelfTest.fixture()
+    let model = command == "--generate-show-demo" ? ConductorSelfTest.fixture() : ControlMappingSelfTest.fixture()
     do {
         try ProjectStore.validate(model)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try encoder.encode(model).write(to: destination, options: [.withoutOverwriting])
-        print("Created original Show Control demo")
+        print("Created original " + model.name + " demo")
     } catch { fputs("\(error.localizedDescription)\n", stderr); exit(1) }
 } else if CommandLine.arguments.contains("--generate-media-demo") {
     do {

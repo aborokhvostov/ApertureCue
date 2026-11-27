@@ -12,6 +12,16 @@ import MappingCore
     private var activeNotes = Set<UInt16>()
 
     var midiSource: MIDIEndpointRef { source }
+    private(set) var oscHost = "127.0.0.1"
+
+    func setOSCHost(_ host: String) throws {
+        var address = in_addr()
+        guard inet_pton(AF_INET, host, &address) == 1, address.s_addr != 0,
+              address.s_addr != UInt32.max, (1...223).contains(UInt32(bigEndian: address.s_addr) >> 24) else {
+            throw SystemFailure(message: "Enter one literal unicast IPv4 destination for OSC")
+        }
+        oscHost = host
+    }
 
     func prepareMIDI() throws {
         guard source == 0 else { return }
@@ -72,7 +82,7 @@ import MappingCore
         var address = sockaddr_in()
         address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
         address.sin_family = sa_family_t(AF_INET)
-        address.sin_addr.s_addr = inet_addr("127.0.0.1")
+        address.sin_addr.s_addr = inet_addr(oscHost)
         address.sin_port = port.bigEndian
         let size = data.withUnsafeBytes { bytes in
             withUnsafePointer(to: &address) {

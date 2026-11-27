@@ -15,6 +15,7 @@ import MappingCore
         listener = nil
         clock.disarm()
         output.stop()
+        try? output.setOSCHost("127.0.0.1")
         outputsArmed = false
         outputStatus = "Outputs off"
         window?.close()
@@ -32,16 +33,17 @@ extension EditorController {
 
     func refreshShowControls() { showControlSession.window?.refresh() }
 
-    func setShowControlOutputArmed(_ enabled: Bool) throws {
+    func setShowControlOutputArmed(_ enabled: Bool, oscHost: String = "127.0.0.1") throws {
         let session = showControlSession
         if enabled {
             guard !showRuntime.isPlaying else { throw ProjectError.invalid("pause the show before arming outputs") }
+            try session.output.setOSCHost(oscHost)
             try session.output.prepareMIDI()
         } else {
             session.output.stop()
         }
         session.outputsArmed = enabled
-        session.outputStatus = enabled ? "Armed · OSC localhost and virtual MIDI source" : "Outputs off"
+        session.outputStatus = enabled ? "Armed · OSC \(session.output.oscHost) and virtual MIDI source" : "Outputs off"
         session.window?.refreshStatus()
     }
 

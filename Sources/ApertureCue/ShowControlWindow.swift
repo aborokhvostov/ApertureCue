@@ -32,6 +32,7 @@ import MappingCore
     private let saveEvent = ActionButton("Save event", action: {})
     private let deleteEvent = ActionButton("Delete event", action: {})
 
+    private let outputHost = ActionField("127.0.0.1", action: { _ in })
     private let outputButton = ActionButton("Arm outputs", action: {})
     private let clockButton = ActionButton("Arm external clock", action: {})
     private let outputStatus = label("")
@@ -63,8 +64,9 @@ import MappingCore
         for field in [eventTime, oscPort, midiChannel, midiNumber, midiValue, clockPort] { width(field, 70) }
         for field in [trackName, oscValue, oscAddress] { width(field, 226) }
         width(sourceField, 170)
+        width(outputHost, 140)
         for picker in [trackPicker, eventPicker] { width(picker, 400) }
-        let oscDestination = stack([label("Local UDP port"), oscPort, label("Address"), oscAddress], vertical: false)
+        let oscDestination = stack([label("UDP destination port"), oscPort, label("Address"), oscAddress], vertical: false)
         let oscArgument = stack([label("Argument"), oscType, oscValue], vertical: false)
         oscRows.orientation = .vertical
         oscRows.alignment = .leading
@@ -87,7 +89,8 @@ import MappingCore
             stack([saveEvent, deleteEvent], vertical: false),
             NSBox(),
             label("Output and external clock for this session", bold: true),
-            stack([outputButton, outputStatus], vertical: false),
+            stack([label("OSC destination IPv4"), outputHost, outputButton], vertical: false),
+            outputStatus,
             stack([label("Clock source"), sourceField, label("UDP port"), clockPort], vertical: false),
             stack([clockButton, clockStatus], vertical: false),
             feedback
@@ -130,7 +133,10 @@ import MappingCore
         saveEvent.actionBlock = { [weak self] in self?.updateEvent() }
         deleteEvent.actionBlock = { [weak self] in self?.removeEvent() }
         outputButton.actionBlock = { [weak self] in
-            self?.perform { editor in try editor.setShowControlOutputArmed(!editor.showControlSession.outputsArmed) }
+            self?.perform { [weak self] editor in
+                let host = self?.outputHost.stringValue.trimmingCharacters(in: .whitespacesAndNewlines) ?? "127.0.0.1"
+                try editor.setShowControlOutputArmed(!editor.showControlSession.outputsArmed, oscHost: host)
+            }
         }
         clockButton.actionBlock = { [weak self] in
             self?.perform { editor in
@@ -170,6 +176,7 @@ import MappingCore
     func refreshStatus() {
         guard let session = editor?.showControlSession else { return }
         let armed = session.listener != nil
+        outputHost.isEnabled = !session.outputsArmed
         outputButton.title = session.outputsArmed ? "Disarm outputs" : "Arm outputs"
         outputStatus.stringValue = session.outputStatus
         clockButton.title = armed ? "Disarm external clock" : "Arm external clock"

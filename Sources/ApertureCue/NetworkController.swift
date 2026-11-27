@@ -1,25 +1,31 @@
 #if os(macOS)
 import Foundation
 import Darwin
-import CoreMIDI
 import MappingCore
 
 enum ControlCommand: Equatable {
     case play, pause, seek(Double), blackout(Bool), cue(Int), opacity(Int, Double)
     case externalClock(ExternalShowClockPacket, Double)
+    case rawOSC(OSCMessage)
     static func from(_ message:OSCMessage) -> ControlCommand? {
-        func number() -> Double? {
-            switch message.arguments.first { case .int(let n): return Double(n); case .float(let n): return Double(n); case .bool(let b): return b ? 1 : 0; default: return nil }
-        }
+        let argument = ControlInputValue(arguments: message.arguments)
+        let scalar: Double?
+        if case let .normalized(value)? = argument { scalar = value } else { scalar = nil }
         switch message.address {
-        case "/aperturecue/play": return .play
-        case "/aperturecue/pause": return .pause
-        case "/aperturecue/seek": return number().map { .seek(max(0,$0)) }
-        case "/aperturecue/blackout": return number().map { .blackout($0 != 0) }
-        case "/aperturecue/cue": if let n = number(), n >= 0, n < 4096 { return .cue(Int(n)) }; return nil
+        case "/aperturecue/play": return argument == .pulse ? .play : nil
+        case "/aperturecue/pause": return argument == .pulse ? .pause : nil
+        case "/aperturecue/seek": return scalar.map { .seek(max(0, $0)) }
+        case "/aperturecue/blackout": return scalar.map { .blackout($0 != 0) }
+        case "/aperturecue/cue":
+            guard let value = scalar, value >= 0, value < 4096, value.rounded() == value else { return nil }
+            return .cue(Int(value))
         default:
-            let parts = message.address.split(separator:"/")
-            if parts.count == 4, parts[0] == "aperturecue", parts[1] == "surface", parts[3] == "opacity", let i = Int(parts[2]), i >= 0, i < 4096, let n = number() { return .opacity(i,max(0,min(1,n))) }
+            guard ControlInput.isConcreteOSCPath(message.address) else { return nil }
+            let parts = message.address.split(separator: "/")
+            if parts.count == 4, parts[0] == "aperturecue", parts[1] == "surface", parts[3] == "opacity",
+               let index = Int(parts[2]), (0..<4096).contains(index), let scalar {
+                return .opacity(index, max(0, min(1, scalar)))
+            }
             return nil
         }
     }
@@ -30,82 +36,194 @@ struct SystemFailure: LocalizedError {
     var errorDescription:String? { message }
 }
 
-/// The main thread receives at most one pending batch, with a strict command cap.
-private final class ControlMailbox {
+struct OSCInputStats: Equatable {
+    var datagrams = 0
+    var rejected = 0
+    var limited = 0
+    var droppedCommands = 0
+}
+
+/// The main thread receives at most one scheduled batch. A canceled socket
+/// generation cannot deliver any of its queued commands to a new session.
+private final class ControlMailbox: @unchecked Sendable {
     private let lock = NSLock()
-    private var pending:[ControlCommand] = []
+    private var pending: [ControlCommand] = []
     private var scheduled = false
-    private let callback:(ControlCommand)->Void
-    init(_ callback:@escaping (ControlCommand)->Void) { self.callback = callback }
-    func enqueue(_ commands:[ControlCommand]) {
+    private var counts = OSCInputStats()
+    private let callback: (ControlCommand) -> Void
+
+    init(_ callback: @escaping (ControlCommand) -> Void) { self.callback = callback }
+
+    func countDatagram(rejected: Bool = false, limited: Bool = false) {
+        lock.lock()
+        counts.datagrams += 1
+        if rejected { counts.rejected += 1 }
+        if limited { counts.limited += 1 }
+        lock.unlock()
+    }
+
+    var stats: OSCInputStats {
+        lock.lock()
+        defer { lock.unlock() }
+        return counts
+    }
+
+    func enqueue(_ commands: [ControlCommand]) {
         guard !commands.isEmpty else { return }
-        lock.lock(); pending.append(contentsOf:commands.suffix(256))
-        if pending.count > 256 { pending.removeFirst(pending.count-256) }
-        let needsSchedule = !scheduled; scheduled = true; lock.unlock()
-        if needsSchedule { DispatchQueue.main.async { [self] in
-            lock.lock(); let batch = pending; pending.removeAll(keepingCapacity:true); scheduled = false; lock.unlock()
-            batch.forEach(callback)
-        } }
+        lock.lock()
+        let overflow = max(0, pending.count + commands.count - 256)
+        counts.droppedCommands += overflow
+        pending.removeFirst(min(pending.count, overflow))
+        pending.append(contentsOf: commands.suffix(256))
+        let needsSchedule = !scheduled
+        scheduled = true
+        lock.unlock()
+        if needsSchedule {
+            DispatchQueue.main.async { [self] in
+                lock.lock()
+                let batch = pending
+                pending.removeAll(keepingCapacity: true)
+                scheduled = false
+                lock.unlock()
+                batch.forEach(callback)
+            }
+        }
     }
 }
 
-/// UDP input is opt-in and bound to loopback. Parsing runs on a dedicated queue.
+private final class OSCReceiveBudget: @unchecked Sendable {
+    // Owned by the serial socket queue.
+    private var tokens = 128.0
+    private var sampledAt = ProcessInfo.processInfo.systemUptime
+
+    func admit(at time: Double) -> Bool {
+        tokens = min(128, tokens + max(0, time - sampledAt) * 512)
+        sampledAt = time
+        guard tokens >= 1 else { return false }
+        tokens -= 1
+        return true
+    }
+}
+
 @MainActor final class NetworkController {
-    private var source:DispatchSourceRead?
+    private var source: DispatchSourceRead?
     private var generation: UUID?
-    private let handler:(ControlCommand)->Void
+    private var mailbox: ControlMailbox?
+    private let handler: (ControlCommand) -> Void
     private let clockOnly: Bool
-    var isRunning:Bool { source != nil }
+    private let rawOSC: Bool
+    var isRunning: Bool { source != nil }
+    var stats: OSCInputStats { mailbox?.stats ?? OSCInputStats() }
     private(set) var boundPort: UInt16?
-    init(clockOnly: Bool = false, handler:@escaping (ControlCommand)->Void) {
+
+    init(clockOnly: Bool = false, rawOSC: Bool = false, handler: @escaping (ControlCommand) -> Void) {
         self.clockOnly = clockOnly
+        self.rawOSC = rawOSC
         self.handler = handler
     }
-    func start(port:UInt16) throws {
-        stop()
-        let fd = socket(AF_INET,SOCK_DGRAM,0)
-        guard fd >= 0 else { throw SystemFailure(message:"Cannot open OSC socket: \(String(cString:strerror(errno)))") }
-        var address = sockaddr_in(); address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size); address.sin_family = sa_family_t(AF_INET)
-        address.sin_port = port.bigEndian; address.sin_addr.s_addr = inet_addr("127.0.0.1")
-        let bound = withUnsafePointer(to:&address) { $0.withMemoryRebound(to:sockaddr.self,capacity:1) { Darwin.bind(fd,$0,socklen_t(MemoryLayout<sockaddr_in>.size)) } }
-        guard bound == 0 else { let e = errno; close(fd); throw SystemFailure(message:"Cannot bind OSC localhost:\(port): \(String(cString:strerror(e)))") }
+
+    func start(port: UInt16, address host: String = "127.0.0.1", peer: String? = nil) throws {
+        guard !isRunning else { throw SystemFailure(message: "Stop the current OSC input before restarting it") }
+        var hostIP = in_addr()
+        var peerIP = in_addr()
+        guard inet_pton(AF_INET, host, &hostIP) == 1, hostIP.s_addr != 0,
+              hostIP.s_addr != UInt32.max, (UInt32(bigEndian: hostIP.s_addr) >> 24) < 224 else {
+            throw SystemFailure(message: "Choose one literal local IPv4 bind address")
+        }
+        if let peer {
+            guard inet_pton(AF_INET, peer, &peerIP) == 1, peerIP.s_addr != 0,
+                  peerIP.s_addr != UInt32.max, (UInt32(bigEndian: peerIP.s_addr) >> 24) < 224 else {
+                throw SystemFailure(message: "Choose one literal unicast IPv4 sender")
+            }
+        } else if host != "127.0.0.1" {
+            throw SystemFailure(message: "An OSC listener beyond loopback requires one explicit sender IPv4 address")
+        }
+        if clockOnly && (host != "127.0.0.1" || peer != nil) {
+            throw SystemFailure(message: "External clock accepts localhost")
+        }
+
+        let fd = socket(AF_INET, SOCK_DGRAM, 0)
+        guard fd >= 0 else { throw SystemFailure(message: "Cannot open OSC socket: " + String(cString: strerror(errno))) }
+        var address = sockaddr_in()
+        address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_port = port.bigEndian
+        address.sin_addr = hostIP
+        let bound = withUnsafePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                Darwin.bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        }
+        guard bound == 0 else {
+            let message = String(cString: strerror(errno))
+            close(fd)
+            throw SystemFailure(message: "Cannot bind OSC \(host):\(port): " + message)
+        }
         var addressLength = socklen_t(MemoryLayout<sockaddr_in>.size)
         let named = withUnsafeMutablePointer(to: &address) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { getsockname(fd, $0, &addressLength) }
         }
-        guard named == 0 else { close(fd); throw SystemFailure(message: "Cannot read bound OSC port") }
-        guard fcntl(fd, F_SETFL, O_NONBLOCK) == 0 else {
+        guard named == 0, fcntl(fd, F_SETFL, O_NONBLOCK) == 0 else {
             close(fd)
             throw SystemFailure(message: "Cannot configure non-blocking OSC input")
         }
         boundPort = UInt16(bigEndian: address.sin_port)
-        let reader = DispatchSource.makeReadSource(fileDescriptor:fd,queue:DispatchQueue(label:"org.aperturecue.osc"))
+        let reader = DispatchSource.makeReadSource(fileDescriptor: fd, queue: DispatchQueue(label: "org.aperturecue.osc"))
         let token = UUID()
         generation = token
         let mailbox = ControlMailbox { [weak self] command in
             guard let self, self.generation == token else { return }
             self.handler(command)
         }
-        let clockOnly = self.clockOnly
+        self.mailbox = mailbox
+        let budget = OSCReceiveBudget()
+        let shouldReadClock = clockOnly
+        let shouldReadRaw = rawOSC
+        let sender = peer == nil ? nil : peerIP.s_addr
         reader.setEventHandler {
-            var buffer = [UInt8](repeating:0,count:65536)
-            // Bound work per callback so a flood cannot monopolize the dispatch queue.
+            var buffer = [UInt8](repeating: 0, count: 65536)
             for _ in 0..<64 {
-                let size = recv(fd,&buffer,buffer.count,0)
-                if size <= 0 { break }
+                var origin = sockaddr_in()
+                var originLength = socklen_t(MemoryLayout<sockaddr_in>.size)
+                let size = withUnsafeMutablePointer(to: &origin) {
+                    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                        recvfrom(fd, &buffer, buffer.count, 0, $0, &originLength)
+                    }
+                }
+                if size < 0 { break }
+                guard origin.sin_family == sa_family_t(AF_INET), sender == nil || sender == origin.sin_addr.s_addr else {
+                    mailbox.countDatagram(rejected: true)
+                    continue
+                }
                 let timestamp = ProcessInfo.processInfo.systemUptime
-                guard let messages = try? OSCCodec.decode(Data(buffer.prefix(size))) else { continue }
+                guard budget.admit(at: timestamp) else {
+                    mailbox.countDatagram(limited: true)
+                    continue
+                }
+                guard let messages = try? OSCCodec.decode(Data(buffer.prefix(size))) else {
+                    mailbox.countDatagram(rejected: true)
+                    continue
+                }
+                mailbox.countDatagram()
                 let commands = messages.compactMap { message -> ControlCommand? in
-                    if clockOnly {
+                    if shouldReadClock {
                         return ExternalShowClockPacket(message: message).map { .externalClock($0, timestamp) }
+                    }
+                    if shouldReadRaw {
+                        guard ControlInput.isConcreteOSCPath(message.address),
+                              ControlInputValue(arguments: message.arguments) != nil else { return nil }
+                        return .rawOSC(message)
                     }
                     return ControlCommand.from(message)
                 }
                 mailbox.enqueue(commands)
             }
         }
-        reader.setCancelHandler { close(fd) }; source = reader; reader.resume()
+        reader.setCancelHandler { close(fd) }
+        source = reader
+        reader.resume()
     }
+
     func stop() {
         generation = nil
         boundPort = nil
@@ -114,72 +232,19 @@ private final class ControlMailbox {
     }
 }
 
-/// Stateful MIDI 1.0 channel-message parser; real-time bytes do not disturb running status.
-final class MIDIParser {
-    private let lock = NSLock()
-    private var status:UInt8 = 0, bytes:[UInt8] = [], inSysEx = false
-    func feed(_ data:[UInt8]) -> [ControlCommand] {
-        lock.lock(); defer { lock.unlock() }
-        var result:[ControlCommand] = []
-        for byte in data {
-            if byte >= 0xF8 { continue }
-            if byte == 0xF0 { inSysEx = true; status = 0; bytes = []; continue }
-            if byte == 0xF7 { inSysEx = false; continue }
-            if inSysEx { continue }
-            if byte & 0x80 != 0 { status = byte < 0xF0 ? byte : 0; bytes = []; continue }
-            guard status != 0 else { continue }; bytes.append(byte)
-            let command = status & 0xF0
-            let size = (command == 0xC0 || command == 0xD0) ? 1 : 2
-            guard bytes.count == size else { continue }
-            if command == 0x90, bytes[1] > 0 {
-                switch bytes[0] { case 60: result.append(.play); case 61: result.append(.pause); case 62: result.append(.blackout(true)); case 63: result.append(.blackout(false)); case 36...59: result.append(.cue(Int(bytes[0]-36))); default: break }
-            } else if command == 0xB0, bytes[0] == 1 { result.append(.opacity(0,Double(bytes[1])/127)) }
-            bytes = []
+func legacyMIDICommand(_ event: MIDIControlEvent) -> ControlCommand? {
+    switch event {
+    case let .note(_, note, _, true):
+        switch note {
+        case 60: return .play
+        case 61: return .pause
+        case 62: return .blackout(true)
+        case 63: return .blackout(false)
+        case 36...59: return .cue(note - 36)
+        default: return nil
         }
-        return result
-    }
-}
-
-@MainActor final class MIDIController {
-    private var client:MIDIClientRef = 0, port:MIDIPortRef = 0
-    private let handler:(ControlCommand)->Void
-    private var sourceContexts:[UnsafeMutableRawPointer] = []
-    init(handler:@escaping (ControlCommand)->Void) { self.handler = handler }
-    func start() throws {
-        stop()
-        var status = MIDIClientCreateWithBlock("ApertureCue" as CFString,&client,nil)
-        guard status == noErr else { throw SystemFailure(message:"MIDI client error \(status)") }
-        let mailbox = ControlMailbox(handler)
-        // CoreMIDI invokes the callback on its own serialized receive thread.
-        status = MIDIInputPortCreateWithBlock(client,"Control" as CFString,&port) { list,context in
-            guard let context else { return }
-            let parser = Unmanaged<MIDIParser>.fromOpaque(context).takeUnretainedValue()
-            let offset = MemoryLayout<MIDIPacketList>.offset(of:\.packet)!
-            var p = UnsafeRawPointer(list).advanced(by:offset).assumingMemoryBound(to:MIDIPacket.self)
-            var commands:[ControlCommand] = []
-            for _ in 0..<list.pointee.numPackets {
-                let count = min(256,Int(p.pointee.length))
-                let data = withUnsafeBytes(of:p.pointee.data) { Array($0.prefix(count)) }
-                commands += parser.feed(data); p = UnsafePointer(MIDIPacketNext(p))
-            }
-            mailbox.enqueue(commands)
-        }
-        guard status == noErr else { stop(); throw SystemFailure(message:"MIDI input error \(status)") }
-        for index in 0..<MIDIGetNumberOfSources() {
-            let endpoint = MIDIGetSource(index)
-            var endpointName: Unmanaged<CFString>?
-            if MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &endpointName) == noErr,
-               let endpointName, (endpointName.takeRetainedValue() as String) == ShowControlOutput.midiSourceName {
-                continue
-            }
-            let context = Unmanaged.passRetained(MIDIParser()).toOpaque()
-            if MIDIPortConnectSource(port,endpoint,context) == noErr { sourceContexts.append(context) }
-            else { Unmanaged<MIDIParser>.fromOpaque(context).release() }
-        }
-    }
-    func stop() {
-        if port != 0 { MIDIPortDispose(port); port = 0 }; if client != 0 { MIDIClientDispose(client); client = 0 }
-        sourceContexts.forEach { Unmanaged<MIDIParser>.fromOpaque($0).release() }; sourceContexts.removeAll()
+    case let .controlChange(_, 1, value): return .opacity(0, Double(value) / 127)
+    default: return nil
     }
 }
 
@@ -199,8 +264,8 @@ final class MIDIParser {
             let until = Date().addingTimeInterval(3)
             while received.count < 3, Date() < until { RunLoop.current.run(until:Date().addingTimeInterval(0.01)) }
             guard received == [.play,.seek(1.25),.opacity(2,0.5)] else { throw SystemFailure(message:"OSC UDP commands differ: \(received)") }
-            let parser = MIDIParser()
-            guard parser.feed([0x90,60,100,61,0,61,100,0xF8,0xB0,1,127]) == [.play,.pause,.opacity(0,1)] else { throw SystemFailure(message:"MIDI running status parser differs") }
+            var parser = MIDIControlCodec()
+            guard parser.feed([0x90,60,100,61,0,61,100,0xF8,0xB0,1,127]).compactMap(legacyMIDICommand) == [.play,.pause,.opacity(0,1)] else { throw SystemFailure(message:"MIDI running status parser differs") }
             print("PASS OSC immediate-bundle UDP localhost loopback and MIDI parser. No lighting/MIDI hardware verified.")
             return 0
         } catch { fputs("FAIL \(error.localizedDescription)\n",stderr); return 1 }

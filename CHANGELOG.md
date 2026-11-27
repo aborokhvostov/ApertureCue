@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-alpha.18 — Control protocols
+
+- Add saved UUID-based MIDI and OSC mappings, Learn, explicitly selected feedback, and a session control panel. Schema 15 migrates earlier projects with no new mappings.
+- Add scoped IPv4 OSC send/receive, bounded blob packets and OSCQuery HTTP/WebSocket with opt-in local discovery.
+- Add targeted Art-Net discovery diagnostics, bounded lighting updates, IPv4 sACN multicast and optional synchronization.
+
 ## 0.1.0-alpha.17 — Show control, 2026-11-27
 
 - Add Conductor banks with independently running automation cells, row exclusivity and explicit parameter priority. Generate and combine show-time signals in a bounded graph.

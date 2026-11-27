@@ -19,6 +19,8 @@ AppKit editor и Metal compositor: PNG/AVFoundation video, quad/triangle/ellipse
 
 ## Текущий этап
 
+**Этап 5 · Control protocols — проверяется schema 15.** Сохранённые MIDI/OSC назначения, OSCQuery, сетевое окно света и ограниченные очереди готовы к интеграционной проверке. [Программные критерии](stage-5-completion.md).
+
 **Этап 4 · Show control — программная приёмка завершена, alpha 17 опубликована.** Schema 14 сохраняет Conductor, осцилляторы, переходы, ограниченные Jump, расписание/ICS, OSC/MIDI события и расширенный монтаж. Внешний OSC-таймкод работает после включения на текущий сеанс. [Отчёт и границы этапа](stage-4-completion.md).
 
 - 171 standalone core метода, 0 failed assertions. Оптимизированное приложение прошло все 16 режимов, включая 91 editor, 5 Conductor, 5 schedule, 5 OSC/MIDI/clock и 29 montage.

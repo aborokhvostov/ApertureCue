@@ -34,8 +34,7 @@ import MappingCore
         editor.resetShowControlSessions()
         editor.media.reset()
         editor.montagePool.reset()
-        editor.network?.stop()
-        editor.midi?.stop()
+        editor.resetControlMappings()
         waitingForTermination = true
         let finish: @MainActor @Sendable () -> Void = { [weak self] in
             guard let self, self.waitingForTermination else { return }
@@ -70,6 +69,8 @@ import MappingCore
         show.addItem(item("Conductor…", #selector(EditorController.showConductor), ""))
         show.addItem(item("Schedule…", #selector(EditorController.openShowSchedule), ""))
         show.addItem(item("OSC / MIDI Tracks and Clock…", #selector(EditorController.openShowControlTools), ""))
+        show.addItem(item("Control mappings…", #selector(EditorController.configureControl), ""))
+        show.addItem(item("Lighting network…", #selector(EditorController.showLightingNetwork), ""))
         for (title, submenu) in [("ApertureCue",app),("File",file),("Edit",edit),("Show",show)] {
             let i = NSMenuItem(); i.title = title; i.submenu = submenu; menu.addItem(i)
         }
@@ -130,7 +131,8 @@ import MappingCore
     var cueBefore: Project?
     var lastRecovery: Double = 0
     var network: NetworkController?
-    var midi: MIDIController?
+    var midi: MIDIControlAdapter?
+    let controlMapping = ControlMappingSession()
     var lighting: LightingController!
     var lightingView: MTKView!
     var feedback:FeedbackComposition?
@@ -168,8 +170,9 @@ import MappingCore
         feedback=FeedbackComposition(media:media)
         feedback?.onUpdate = { [weak self] in self?.updateFeedbackTextures() }
         makeUI(); bindOverlay(); reconcile(); refresh(); startTick()
-        network = NetworkController { [weak self] command in self?.remote(command) }
-        midi = MIDIController { [weak self] command in self?.remote(command) }
+        network = NetworkController(rawOSC: true) { [weak self] command in self?.remote(command) }
+        midi = MIDIControlAdapter { [weak self] event in self?.receiveMappedMIDI(event) }
+        midi?.onEndpointsChanged = { [weak self] in self?.controlEndpointsChanged() }
         lighting = LightingController(); lightingView = MTKView(frame:.zero,device:device)
         lighting.renderer = MetalRenderer(view:lightingView,media:media); lightingView.isPaused = true
         updateCompositionConfiguration()
@@ -420,7 +423,7 @@ import MappingCore
         if let i = selectedIndex { layerTable.selectRowIndexes(IndexSet(integer:i),byExtendingSelection:false) }
         cuePicker.removeAllItems(); cuePicker.addItems(withTitles:project.cues.map(\.name))
         window?.title = "\(project.name)\(dirty ? " •" : "") — ApertureCue 0.1"
-        window?.isDocumentEdited = dirty; refreshInspector(); timelineWindow?.refresh(); cueWindow?.refresh(); montageWindow?.refresh(); conductorWindow?.refresh(); showScheduleWindow?.refresh(); refreshShowControls()
+        window?.isDocumentEdited = dirty; refreshInspector(); timelineWindow?.refresh(); cueWindow?.refresh(); montageWindow?.refresh(); conductorWindow?.refresh(); showScheduleWindow?.refresh(); refreshShowControls(); refreshControlMappings()
     }
     func updateRender() {
         updateActiveMedia()
@@ -592,7 +595,7 @@ import MappingCore
     }
     @objc func newProject() {
         stopAutomationRecording(reason:"New project")
-        guard confirmDiscard() else { return }; resetShowControlSessions(); resetAutomationRecording(); closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil; recoveryBaseline=nil; sourceWindow?.close();sourceWindow=nil;media.reset();workMessage=""
+        guard confirmDiscard() else { return }; resetShowControlSessions(); resetControlMappings(); resetAutomationRecording(); closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil; recoveryBaseline=nil; sourceWindow?.close();sourceWindow=nil;media.reset();workMessage=""
         history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false; documentGeneration = UUID();feedback?.reset()
         lighting?.stop(); selectedID = project.surfaces.first?.id; dirty = false; showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; reconcile(); refresh()
     }
@@ -623,7 +626,7 @@ import MappingCore
                 }
             } else if recovery.state != .missing {recoveryMessage=recovery.diagnostic}
             guard baseline == (try ProjectStore.captureRecoveryBaseline(for:url)) else {throw ProjectError.invalid("saved project changed during opening; retry")}
-            resetShowControlSessions();resetAutomationRecording();media.reset();sourceWindow?.close();sourceWindow=nil
+            resetShowControlSessions();resetControlMappings();resetAutomationRecording();media.reset();sourceWindow?.close();sourceWindow=nil
             closeOutputs(); lighting?.stop(); showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false; documentGeneration = UUID();feedback?.reset(); project = loaded; projectURL = url; recoveryBaseline=baseline; dirty = false; selectedID = loaded.surfaces.first?.id
             dirty=recovered;workMessage=recoveryMessage
             reconcile(); refresh()
@@ -711,6 +714,7 @@ import MappingCore
             p.timeline.removeAll { $0.surfaceID == id }
             let targets = Set((p.surfaces + p.cues.filter { $0.scope == .full }.flatMap(\.surfaces)).map(\.id))
             p.conductor.pruneTargets(targets)
+            p.controlMap.prune(surfaceIDs: targets, cueIDs: Set(p.cues.map(\.id)))
             selectedID = p.surfaces.last?.id
         }
     }
@@ -773,6 +777,7 @@ import MappingCore
     func tick() {
         let now = ProcessInfo.processInfo.systemUptime
         conductorHostTime = now
+        flushControlMappings(at: now)
         applyExternalShowClock(at: now)
         advanceShow(at: now)
         pollShowSchedule(at: Date())
@@ -807,6 +812,7 @@ import MappingCore
         playButton.title = showRuntime.isPlaying ? "Ⅱ Pause" : "▶ Play"
         let error = (montagePool.diagnostics.values.first ?? media.errorMessages.values.first ?? (feedback?.errorDescription.isEmpty == false ? feedback?.errorDescription : nil)).map { " · \($0)" } ?? ""
         status.stringValue = "\(renderer.statistics) · \(project.surfaces.count) surfaces · \(outputWindows.count) output windows\(blackout ? " · BLACKOUT" : "")\(error)\(renderer.errorDescription.isEmpty ? "" : " · Last render error: " + renderer.errorDescription)\(renderError.isEmpty ? "" : " · " + renderError)\(editError.isEmpty ? "" : " · " + editError)\(workMessage.isEmpty ? "" : " · " + workMessage)\(outputMessage.isEmpty ? "" : " · " + outputMessage)\(timelineEventWarning.isEmpty ? "" : " · " + timelineEventWarning)\(cueMessage.isEmpty ? "" : " · " + cueMessage)\(isRecordingAutomation ? " · REC INPUT" : "")"
+        pollControlMappingOutputs(at: now)
         if dirty,now-lastRecovery>10,let url=projectURL {
             do {try ProjectStore.saveRecovery(project,for:url,baseline:recoveryBaseline)}
             catch {workMessage="Recovery not updated: "+error.localizedDescription}
@@ -819,22 +825,6 @@ import MappingCore
         guard p.runModal() == .OK,let url = p.url else { return }
         if let frame = compositionExportFrame(), let data = frame.representation(using:.png,properties:[:]) {
             do { try data.write(to:url,options:.atomic) } catch { showError(error) }
-        }
-    }
-    func configureControl() {
-        let a = NSAlert(); a.messageText = "Remote control · localhost"; a.informativeText = "OSC UDP 9000: /aperturecue/play, /pause, /seek float seconds, /blackout int, /cue int (0-based), /surface/<index>/opacity float. MIDI: notes 60/61 play/pause, 62 blackout, notes 36…59 scenes, CC1 first surface opacity. Network starts only on request; no fixture output is enabled automatically."
-        a.addButton(withTitle:"Start OSC + MIDI"); a.addButton(withTitle:"Stop control"); a.addButton(withTitle:"Cancel")
-        switch a.runModal() { case .alertFirstButtonReturn: do { try network?.start(port:9000); try midi?.start() } catch { showError(error) }; case .alertSecondButtonReturn: network?.stop(); midi?.stop(); default: break }
-    }
-    func remote(_ command:ControlCommand) {
-        switch command {
-        case .play: playShow()
-        case .pause: pauseShow()
-        case .seek(let time): seekShow(to:time)
-        case .blackout(let value): blackout = value; updateRender()
-        case .cue(let index): goCue(index:index, interactive:false)
-        case .externalClock: break
-        case .opacity(let index,let value): if project.surfaces.indices.contains(index) { mutate("Remote opacity") { $0.surfaces[index].opacity = max(0,min(1,value)) } }
         }
     }
     func showError(_ error:Error) { let a = NSAlert(error:error); a.runModal() }

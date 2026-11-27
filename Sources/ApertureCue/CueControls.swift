@@ -48,6 +48,7 @@ extension EditorController {
         let targets=Set((candidate.surfaces+candidate.cues.filter {$0.scope == .full}.flatMap(\.surfaces)).map(\.id))
         candidate.timeline.removeAll {!targets.contains($0.surfaceID)}
         candidate.conductor.pruneTargets(targets)
+        candidate.controlMap.prune(surfaceIDs: targets, cueIDs: Set(candidate.cues.map(\.id)))
         try ProjectStore.validate(candidate)
         mutate("Delete scene") {$0=candidate}
     }

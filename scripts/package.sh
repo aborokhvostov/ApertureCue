@@ -9,7 +9,7 @@ ditto --norsrc --noextattr dist/ApertureCue.app "$task_release/ApertureCue.app"
 mkdir -p "$task_release/Demo"
 # Ship only the original demos and their media. Working copies and recovery
 # sidecars can exist beside them after running the editor.
-for task_demo in Demo Composition Groups Montage Recording SelectiveCues Shapes ShowControl Strokes Timeline; do
+for task_demo in Demo Composition ControlMapping Groups Montage Recording SelectiveCues Shapes ShowControl Strokes Timeline; do
   cp "examples/Demo/$task_demo.aperturecue.json" "$task_release/Demo/"
 done
 cp examples/Demo/calibration.png examples/Demo/motion.mov "$task_release/Demo/"
@@ -17,7 +17,9 @@ mkdir -p "$task_release/Examples/Materials" "$task_release/Examples/SVG"
 cp examples/Materials/OriginalGradient.fs examples/Materials/OriginalTint.fs "$task_release/Examples/Materials/"
 cp examples/SVG/geometry.svg "$task_release/Examples/SVG/"
 mkdir -p "$task_release/Media/Frames"
-cp examples/Media/Media.aperturecue.json examples/Media/original-time-colors.mov examples/Media/original-stereo-tones.wav "$task_release/Media/"
+cp examples/Demo/ControlMapping.aperturecue.json shows saved OSC and MIDI bindings. Open
+Show > Control mappings to start a session service and inspect the addresses.
+Media/Media.aperturecue.json examples/Media/original-time-colors.mov examples/Media/original-stereo-tones.wav "$task_release/Media/"
 for task_frame in frame1 frame2 frame10 frame11; do
   cp "examples/Media/Frames/$task_frame.png" "$task_release/Media/Frames/"
 done

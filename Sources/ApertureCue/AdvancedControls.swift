@@ -79,13 +79,11 @@ extension EditorController {
         let count = ActionField("30",action:{_ in}), universe = ActionField("1",action:{_ in}), address = ActionField("1",action:{_ in})
         let start = ActionField("0.1, 0.5",action:{_ in}), end = ActionField("0.9, 0.5",action:{_ in})
         let order = ActionPopUp(items:["RGB","GRB","RGBW"],action:{_ in})
-        let wire = ActionPopUp(items:["Art-Net","sACN"],selected:lighting.wireProtocol == .artnet ? 0 : 1,action:{_ in})
-        let destination = ActionField(lighting.destination,action:{_ in})
         let info = label("\(project.fixtures.count) fixtures · \(lighting.isSending ? "SENDING" : "network stopped")",size:11,bold:true)
-        let v = stack([info,label("Pixel count / universe / start address"),stack([count,universe,address],vertical:false),label("Start x,y / end x,y"),stack([start,end],vertical:false),order,label("Explicit IPv4 destination"),stack([wire,destination],vertical:false)])
-        v.frame = NSRect(x:0,y:0,width:430,height:230); for field in [count,universe,address] { field.widthAnchor.constraint(equalToConstant:130).isActive = true }; start.widthAnchor.constraint(equalToConstant:200).isActive = true; end.widthAnchor.constraint(equalToConstant:200).isActive = true; destination.widthAnchor.constraint(equalToConstant:270).isActive = true
+        let v = stack([info,label("Pixel count / universe / start address"),stack([count,universe,address],vertical:false),label("Start x,y / end x,y"),stack([start,end],vertical:false),order])
+        v.frame = NSRect(x:0,y:0,width:430,height:230); for field in [count,universe,address] { field.widthAnchor.constraint(equalToConstant:130).isActive = true }; start.widthAnchor.constraint(equalToConstant:200).isActive = true; end.widthAnchor.constraint(equalToConstant:200).isActive = true
         a.accessoryView = v
-        a.addButton(withTitle:"Add fixture + simulate"); a.addButton(withTitle:"Start network output"); a.addButton(withTitle:"Stop output"); a.addButton(withTitle:"Clear fixtures"); a.addButton(withTitle:"Cancel")
+        a.addButton(withTitle:"Add fixture + simulate"); a.addButton(withTitle:"Network settings…"); a.addButton(withTitle:"Stop output"); a.addButton(withTitle:"Clear fixtures"); a.addButton(withTitle:"Cancel")
         let response = a.runModal()
         do {
             if response == .alertFirstButtonReturn {
@@ -100,11 +98,7 @@ extension EditorController {
                 var candidate = project; candidate.fixtures.append(fixture); try ProjectStore.validate(candidate)
                 mutate("Add fixture") { $0 = candidate }; lighting.isSampling = true; lighting.showSimulator()
             } else if response == .alertSecondButtonReturn {
-                let candidate = destination.stringValue.trimmingCharacters(in:.whitespaces)
-                var target = in_addr(); guard inet_pton(AF_INET,candidate,&target) == 1 else { throw SystemFailure(message:"Enter a numeric IPv4 destination") }
-                lighting.stop(); lighting.destination = candidate
-                lighting.wireProtocol = wire.indexOfSelectedItem == 0 ? .artnet : .sacn
-                lighting.isSampling = true; lighting.isSending = true; lighting.showSimulator()
+                lighting.showNetworkSettings()
             } else if response == .alertThirdButtonReturn { lighting.stop() }
             else if response.rawValue == NSApplication.ModalResponse.alertFirstButtonReturn.rawValue+3 { lighting.stop(); mutate("Clear fixtures") { $0.fixtures = [] } }
         } catch { showError(error) }

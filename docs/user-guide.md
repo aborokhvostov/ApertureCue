@@ -315,17 +315,30 @@ Interpolation относится к сегменту **после** выбран
 
 Запись использует обычные keys и сохраняет текущую позицию и playback при правке keys и Undo/Redo. Pause, Seek, loop и end выполняют собственные transport-действия. Arm и режим записи действуют до закрытия проекта.
 
+## OSC, MIDI и OSCQuery
+
+Откройте `Demo/ControlMapping.aperturecue.json`, затем **Show → Control mappings…** или **Control…** внизу редактора. Демо содержит четыре готовых назначения. При открытии проекта OSC, OSCQuery и MIDI выключены.
+
+1. Для локальной пробы нажмите **Start OSC** и отправьте из OSC-клиента на `127.0.0.1:9000` значение Float от `0` до `1` по адресу `/controller/left`. Меняется прозрачность назначенной поверхности. Сообщение без аргументов на `/controller/go` вызывает сцену, а на `/controller/toggle` переключает Play/Pause.
+2. Нажмите **Start Query**. На этом Mac откройте `http://127.0.0.1:9002/` в браузере или подключите OSCQuery-клиент. Дерево показывает адреса, типы, диапазоны и текущие значения. Для обнаружения в совместимом приложении на этом Mac включите **Local discovery**. Команды по-прежнему отправляются на UDP-порт OSC.
+3. Для MIDI выберите источник, при необходимости отдельный выход **Feedback**, затем нажмите **Connect MIDI**. В демо есть 14-битное назначение CC 1 + CC 33 на канале 1. Опция feedback отправляет значение на выбранный выход. Для собственного устройства задайте назначение через **Add mapping…** или через **Learn next input**, движение регулятора и **Map learned input…**. Захваченный Learn-сигнал не выполняет действие.
+4. Сохраните назначения через **File → Save**. При следующем открытии проекта подключения включаются из этой же панели. Если OSC-контроллер на другом компьютере, укажите локальный IPv4 интерфейса ApertureCue и точный IPv4 отправителя. OSCQuery доступен с этого Mac.
+
+Для фейдера используйте значение от `0` до `1`. Кнопка OSC без аргументов срабатывает при каждом сообщении. Кнопка с аргументом срабатывает при подъёме до `0.5` и снова готова после значения `0.25` или меньше. Список доступных целей и границы поддержки описаны в [спецификации назначений](control-mapping-spec.md).
+
 ## LED mapping и симулятор
 
 **LED…** добавляет линейную fixture по количеству pixels, universe, начальному DMX address и двум нормализованным точкам композиции. Выберите RGB, GRB или RGBW. **Add fixture + simulate** сохраняет layout в проекте и открывает симулятор, не включая отправку в сеть. Адреса каналов начинаются с 1; universe передаётся на провод без автоматического смещения. Fixture не переносится через границу 512 и не перекрывает занятые каналы. Поэтому для RGB при address 1 доступно до 170 pixels, для RGBW — до 128.
 
 Sampling берётся из полной output composition, уменьшенной до 320×180, nearest pixel, с частотой не выше 30 Hz. При занятости GPU/sender кадры пропускаются вместо накопления очереди. Это не фильтрация по площади fixture и не физическая калибровка LED. Симулятор показывает первые raw RGB channel triplets universes; он не декодирует обратно произвольный GRB/RGBW профиль в реальные цвета приборов.
 
-Для отправки задайте числовой IPv4 destination, выберите Art-Net или sACN и нажмите **Start network output**. Порты: Art-Net source/destination 6454, sACN destination 5568. По умолчанию target `127.0.0.1`; отправка включается только явно. При смене target/protocol сначала завершается прежний output, затем применяются новые проверенные settings. **Stop output** останавливает sampling и передаёт нулевые ArtDmx levels либо обычный zero-valued sACN data packet, за которым следуют три packets с Stream Terminated. Это разные действия: receiver игнорирует channel values в terminated packet. **Clear fixtures** сначала останавливает output, затем удаляет layout. Runtime target/protocol не являются сохранёнными полями проекта.
+Откройте **Show → Lighting network…** или **Network settings…** из LED-панели. Выберите **Art-Net unicast**, **sACN unicast** или **sACN multicast** и задайте максимальную частоту. Для unicast укажите IPv4 получателя. Аргумент **Sync universe** в режимах sACN задаёт отдельный universe синхронизации, `0` отключает её. Для проверки известного Art-Net узла введите его IPv4, диапазон Port-Address и нажмите **Check Art-Net node**. Ответ покажет объявленные порты и частоту. Сам вывод включается через **Start network output**.
+
+Art-Net использует порт 6454, sACN — 5568. По умолчанию unicast направляется на `127.0.0.1`. При смене назначения или протокола прежние потоки завершаются. **Stop network output** передаёт нулевые ArtDmx или нулевой sACN data packet и три сообщения Stream Terminated. **Clear fixtures** останавливает вывод и удаляет layout. Адрес, режим и частота вывода действуют в текущем сеансе. [Сетевой транспорт](lighting-transport-spec.md).
 
 Quit ставит media на паузу, останавливает controls и дожидается очереди lighting Stop с ограничением около одной секунды. Это попытка корректного завершения локальной отправки, а не подтверждение, что UDP packet получен реальным node.
 
-Этот этап поддерживает простые strips и UDP data packets. Полный fixture-definition editor, 16-bit channels, moving lights, protocol discovery/sync, USB-DMX и recorder ещё не закончены. Физическое поведение реального node при blackout/termination требует отдельной проверки. Симулятор и localhost loopback не дают аппаратной совместимости или полной protocol conformance; OEM registration для Art-Net остаётся незавершённой.
+В этой версии сетевой транспорт проверен на локальных получателях. Поведение при blackout и завершении потока на физических узлах и прохождение multicast по сети проверяются отдельно. Полный редактор приборов, 16-битные каналы, moving lights, USB-DMX и recorder остаются отдельными этапами. OEM registration для Art-Net открыта.
 
 ## Protocol credits
 
@@ -335,7 +348,7 @@ Art-Net™ Designed by and Copyright Artistic Licence.
 
 ## Сохранение, история и экспорт
 
-**File → Save** (`⌘S`) и **Save As** (`⌘⇧S`) записывают `.aperturecue.json`, **Open** (`⌘O`) открывает его. Текущий формат — schema 12: он сохраняет Bézier/source warps, mesh link, projective/isolation groups, дополнительные masks, FX, material library и assignments, feedback и output edge blend. Старые проекты мигрируют; alpha 14 и более ранние сборки новые файлы не открывают. Перед первым Save используйте **Save As…**, чтобы оставить исходник для старой версии. Маршруты из проектов v0–v9 сохраняются, дисплеи для fullscreen выбираются заново. Пути к обычным медиа на диске относительные.
+**File → Save** (`⌘S`) и **Save As** (`⌘⇧S`) записывают `.aperturecue.json`, **Open** (`⌘O`) открывает его. Текущий формат, schema 15, сохраняет MIDI/OSC назначения по постоянным идентификаторам поверхностей и сцен. При открытии старого проекта он мигрирует, а **Save As…** позволяет сохранить исходный файл для alpha 17 и более ранних версий. Пути к обычным медиа на диске относительные.
 
 File → **Collect portable project…** создаёт переносимую копию в новой, ещё не существующей папке. Внутри находятся `project.aperturecue.json`, обычные ресурсы `media/<asset UUID>.<extension>` и отдельные UUID-папки с точными frozen manifests кадров. Такое именование разделяет одноимённые источники. Приложение копирует обычные image/video/audio files и только перечисленные sequence frames, проверяет созданный проект и относительные ссылки, затем публикует готовую папку одним переименованием. Missing media, неподходящий source или ошибка копирования отменяют операцию; исходный проект и выбранная папка назначения не перезаписываются.
 
@@ -363,6 +376,10 @@ dist/ApertureCue.app/Contents/MacOS/ApertureCue --audio-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --durability-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --media-soak-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --protocol-loopback
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --control-mapping-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --midi-control-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --osc-query-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-transport-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --benchmark
 ```

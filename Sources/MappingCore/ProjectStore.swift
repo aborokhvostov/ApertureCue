@@ -174,6 +174,7 @@ public enum ProjectStore {
             portable.timelineSettings = try portable.timelineSettings.withoutShowControlExtensions()
             for index in portable.cues.indices { portable.cues[index].curve = .linear }
         }
+        if portable.version < 15 { portable.controlMap = ControlMap() }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
@@ -469,6 +470,9 @@ public enum ProjectStore {
             try project.conductor.validate(surfaces: automationSurfaces)
             try project.showSchedule.validate(cueIDs: cueIDs)
             try ShowControlTrack.validate(project.showControlTracks, duration: settings.duration)
+        }
+        if project.version >= 15 {
+            try project.controlMap.validate(surfaceIDs: Set(automationSurfaces.map(\.id)), cueIDs: cueIDs)
         }
     }
 

@@ -232,7 +232,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 14
+    public static let currentVersion = 15
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]
@@ -246,6 +246,7 @@ public struct Project: Codable, Equatable, Sendable {
     public var conductor = Conductor()
     public var showSchedule = ShowSchedule()
     public var showControlTracks: [ShowControlTrack] = []
+    public var controlMap = ControlMap()
     public var groups: [SurfaceGroup]
     public var materials:[MaterialDefinition] = []
     public var globalMasks:[CompositionMask] = []
@@ -275,7 +276,7 @@ public struct Project: Codable, Equatable, Sendable {
             Cue(name:"Aligned", surfaces:cueSurfaces, duration:2)
         ])
     }
-    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups,timelineSettings,montages,geometryLockedSurfaceIDs,materials,globalMasks,conductor,showSchedule,showControlTracks }
+    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups,timelineSettings,montages,geometryLockedSurfaceIDs,materials,globalMasks,conductor,showSchedule,showControlTracks,controlMap }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy:CodingKeys.self)
         let version=try c.decodeIfPresent(Int.self,forKey:.version) ?? 0
@@ -336,6 +337,7 @@ public struct Project: Codable, Equatable, Sendable {
             showSchedule = try c.decodeIfPresent(ShowSchedule.self, forKey: .showSchedule) ?? ShowSchedule()
             showControlTracks = try c.decodeIfPresent([ShowControlTrack].self, forKey: .showControlTracks) ?? []
         }
+        if version >= 15 { controlMap = try c.decodeIfPresent(ControlMap.self, forKey: .controlMap) ?? ControlMap() }
     }
 
     private static func decodeTimelineSettings(_ container: KeyedDecodingContainer<CodingKeys>, version: Int) throws -> TimelineSettings? {
@@ -362,6 +364,7 @@ public struct Project: Codable, Equatable, Sendable {
             try c.encode(showSchedule, forKey: .showSchedule)
             try c.encode(showControlTracks, forKey: .showControlTracks)
         }
+        if version >= 15 { try c.encode(controlMap, forKey: .controlMap) }
         if version >= 8 {
             try c.encode(geometryLockedSurfaceIDs.map(\.uuidString).sorted(), forKey: .geometryLockedSurfaceIDs)
         }

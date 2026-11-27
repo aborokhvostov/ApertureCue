@@ -18,6 +18,12 @@ signed-rate video/PCM montage with adjacent crossfades. The original
 `Demo/ShowControl.aperturecue.json` shows standalone automation cells and master
 markers. [Stage 4 behavior and verification](docs/stage-4-completion.md)
 
+Stage 5 adds saved OSC and MIDI mappings tied to persistent surface and scene
+IDs, input Learn, selected-device feedback and reconnect, and a local OSCQuery
+service. Lighting adds targeted Art-Net discovery and IPv4 sACN multicast with
+optional synchronization. Open `Demo/ControlMapping.aperturecue.json` and
+choose **Show → Control mappings…**. [Stage 5 scope](docs/stage-5-completion.md)
+
 [Download the Apple Silicon development build (alpha 17)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.17). It includes the original Show Control, Media and Composition projects and uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-17).
 
 Alpha 17 completes the declared Stage 4 software checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45946371538) passed 171 XCTest on each macOS and Linux. The scoped visible workflow and seven extracted-app modes also passed.
@@ -83,6 +89,10 @@ dist/ApertureCue.app/Contents/MacOS/ApertureCue --composition-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --live-composition-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --live-editor-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --protocol-loopback
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --control-mapping-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --midi-control-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --osc-query-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-transport-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --editor-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --conductor-test
@@ -95,6 +105,12 @@ dist/ApertureCue.app/Contents/MacOS/ApertureCue --benchmark
 The GPU tests require a logged-in macOS graphics session. `--media-playback-test` checks per-source transports/modes, exact seek generations/PTS/colors, frozen image frames/cache bounds and camera simulator loss/replacement. `--media-soak-test` adds a 120-second four-source H.264 interval, separately reporting missing pulls, PTS age and clock drift; it is not show-length or physical AV synchronization evidence. `--audio-test` uses the actual PCM reader/engine in silent offline mode, without starting hardware audio. `--durability-test` uses an original isolated temporary project and SIGKILL of its own guarded writer, verifying recovery and stale/corrupt preservation. Reports are under `artifacts/local/media-playback/`, `audio-test/` and `durability/`. `--live-editor-test` exercises the visible editor with its production timer, material clock, static overlay retention, native Input/Output actions and auto-resize; its report is `artifacts/local/live-editor/report.json`. `--live-composition-test` shows an original 1920×1080 composition and records a bounded main-queue probe plus drawable-wait/cancellation/recovery fixtures in `artifacts/local/live-composition/report.json`; it does not measure optical refresh or certify throughput. `--composition-test` writes `artifacts/local/composition-test.json` with production material/FX, isolated groups, scoped masks, warped source coordinates, edge ramps and delayed feedback checks; CPU cache accounting and GPU lifetime bounds are tested separately from physical hardware. `--editor-test` checks production document methods/native hidden controls and writes `artifacts/local/editor-test/report.json`. `--montage-test` checks generated H.264 temporal/rotation/low-FPS/variable-frame fixtures through production readers, true PTS coverage, gap composition, bounded decoder concurrency and ordinary-source isolation, writing `artifacts/local/montage-test.json`. `--self-test` exercises the production Metal shader and AVFoundation path and writes `artifacts/local/self-test.json`, original test media and image results. `--protocol-loopback` checks real localhost OSC delivery and MIDI parsing. `--lighting-test` exercises production GPU composition → fixture sampling → UDP ports 6454/5568 → packet decode and writes `artifacts/local/lighting-test.json`; it does not certify physical nodes. `--benchmark` presents real visible drawables and writes `artifacts/local/live-benchmark.json`. The self-test's separate offscreen readback benchmark is not live presentation FPS.
 
 Local core, production-render/media, OSC/MIDI and lighting loopback checks have passed during development; native bundle launch and an initial visible GUI rendering inspection have also been performed. The short benchmark uses procedural sources and does not establish video throughput or show-length stability. See the dated [status report](docs/status.md) and [stored verification reports](docs/verification) for exact revision, counts, environment, scope and outstanding manual workflow checks.
+
+The four Stage 5 modes cover persistent mappings, actual CoreMIDI virtual
+endpoints, a separate OSCQuery HTTP/WebSocket and local DNS-SD client, and
+controlled Art-Net and sACN UDP receivers. They write reports under
+`artifacts/local/`. The sACN multicast check receives on the Mac's loopback
+interface and checks the destination group from the received packet metadata.
 
 The GitHub Actions workflow defines macOS build/core-test/package jobs and a Linux Swift 6 core-test job. The exact revision must pass actual remote jobs before a release is called verified. Windows desktop support and Windows CI are pending; the Linux job does not build a desktop UI. Physical projectors, multiple external displays and lighting devices have separate verification requirements.
 
