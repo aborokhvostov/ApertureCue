@@ -7,6 +7,12 @@ import MetalKit
 import QuartzCore
 import MappingCore
 
+struct MediaFrameBlend {
+    let texture: MTLTexture
+    let uv: MediaUVTransform
+    let weight: Float
+}
+
 /// Immutable references retained together through all consuming GPU commands.
 struct MediaFrameResource {
     let texture:MTLTexture
@@ -14,6 +20,7 @@ struct MediaFrameResource {
     var buffers:[CVPixelBuffer]=[]
     var uv:MediaUVTransform = .identity
     var owners:[AnyObject]=[]
+    var blend: MediaFrameBlend?
 }
 struct MediaFrameResources:@unchecked Sendable {
     let textures:[UUID:MTLTexture]
@@ -21,6 +28,7 @@ struct MediaFrameResources:@unchecked Sendable {
     let buffers:[CVPixelBuffer]
     let uv:[UUID:MediaUVTransform]
     var owners:[AnyObject]=[]
+    var blends: [UUID: MediaFrameBlend] = [:]
     static let empty=MediaFrameResources(textures:[:],retained:[],buffers:[],uv:[:])
 }
 protocol MediaCameraSource:AnyObject {
@@ -253,9 +261,16 @@ final class MediaPool {
         var buffers:[CVPixelBuffer]=[]
         var uv:[UUID:MediaUVTransform]=[:]
         var owners:[AnyObject]=[]
+        var blends: [UUID: MediaFrameBlend] = [:]
         for id in ids {
             if entries[id] == nil,let frame=virtualSources?.frameResource(for:id) {
-                textures[id]=frame.texture;retained += frame.wrappers;buffers += frame.buffers;uv[id]=frame.uv;owners += frame.owners;continue
+                textures[id] = frame.texture
+                retained += frame.wrappers
+                buffers += frame.buffers
+                uv[id] = frame.uv
+                owners += frame.owners
+                blends[id] = frame.blend
+                continue
             }
             if let texture = texture(for: id) {
                 textures[id] = texture
@@ -268,7 +283,7 @@ final class MediaPool {
                 }
             }
         }
-        return MediaFrameResources(textures:textures,retained:retained,buffers:buffers,uv:uv,owners:owners)
+        return MediaFrameResources(textures:textures,retained:retained,buffers:buffers,uv:uv,owners:owners,blends:blends)
     }
 
     /// Explicit relink can restore a file at the same path as a failed entry.

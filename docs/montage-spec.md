@@ -1,6 +1,52 @@
 # Source montage specification
 
-**Implemented alpha 9 subset, schema 7.** Independently authored assignable image/video montages have passed local core/reader/Metal/editor checks, native GUI, fresh archive execution and actual macOS/Linux XCTest CI. [Evidence](verification/montage-workflow.md). This is the hard-cut subset below; reverse/crossfade/audio and full reference parity remain open.
+Schema 14 adds source crossfades, reverse video and a separate audio lane to
+the assignable montage source. The earlier schema 7 hard-cut workflow remains
+available. [Alpha 9 evidence](verification/montage-workflow.md).
+
+## Schema 14 montage
+
+- Picture clips accept image and video files. Audio files use the lower audio
+  lane and can play during any picture interval. A forward video clip can
+  enable its first audio track with **Play movie audio**. Existing videos keep
+  their silent montage behavior.
+- **Incoming crossfade s** sets the full overlap with the preceding clip on
+  the same lane. For a picture clip ending at 4 s, place the next one at 3 s and
+  enter 1 s. Enter 0 for a hard cut. The editor rejects nested overlaps, a third
+  simultaneous clip on one lane, and overlaps without a matching fade. Deleting
+  the outgoing clip also clears its successor's fade in the same Undo command.
+- A fade starts at the incoming clip's Start and ends at the outgoing clip's
+  End. A seek directly sets both source times and their weights. Picture
+  interpolation uses premultiplied RGBA with a linear weight in the existing
+  texture color space. Both samples go through their own orientation transforms
+  before common surface geometry, material, color FX and compositing. A missing
+  leg contributes transparent or opaque black according to the montage gap
+  setting. The mixed source is shared by the editor, outputs and light sampler.
+- **Rate** accepts 0.25…4 for forward video/audio, and −4…−0.25 for reverse
+  video. Reverse starts just below Out and moves toward In. **Loop trim** wraps
+  within those bounds. Reverse clips must keep the movie-audio option off.
+  Each active movie leg has its own PTS interval and lease; a crossfade can
+  consume two of the eight visual reader slots. Admitted sources use montage
+  UUID order and outgoing-before-incoming order within a montage.
+- Audio clips use the associated file's saved routing and volume, multiplied
+  by the lane's linear gain. The existing PCM adapter supplies pause, seek,
+  resampling, varispeed, output device selection and loss diagnostics. A clip
+  schedules PCM through the earlier of its source Out and clip End. There are
+  eight montage voice slots under the shared eight-PCM-adapter limit, including
+  ordinary routed sources. An unassigned montage releases its adapters.
+- An audio-only montage can be assigned to a surface. It plays audio while its
+  visual contribution follows Black/Skip. Montage audio activates with a current
+  surface assignment regardless of visibility, as with ordinary file audio.
+  Gain updates arrive at editor tick cadence and the audio engine ramps each
+  change. Device startup and decoder warmup can leave a newly active voice
+  temporarily silent. No sample-accurate mixed-device or audible AV-sync
+  measurement is claimed.
+- Schema 7…13 projects keep their original hard cuts and silent video clips. The
+  formerly undefined crossfade and audio fields are ignored. Legacy negative
+  rates or audio-only montage references reject. Save/New/Open, Undo/Redo and
+  Collect use the original source media ownership and keep stable clip IDs.
+
+## Historical alpha 9 specification
 
 The official reference describes assignable montage sources with video/image arrangement, trims, speed/loop, reverse/crossfade and gap policies: [R19 track types](https://docs.madmapper.com/madmapper/6/10.-timelines/track-types-and-inspectors), [R20 clips](https://docs.madmapper.com/madmapper/6/10.-timelines/clips). Exact interval, decoder, conflict and latency policies below are independent design decisions.
 
@@ -24,7 +70,7 @@ The first montage video path should be silent. Existing ordinary `MediaPool.play
 
 Use generated media with distinguishable temporal frames. Test exact starts/ends, trims/rate/loop/gaps, paused and rapid seeks, stale completions, source relink, one file simultaneously ordinary plus two montage positions, source clock/seek-generation isolation, markers/Cue/scalar priority, real output/light frames, Save/Open/Collect/Undo and malformed UUID/range/overlap/budget rejection. Record actual frame PTS/tolerances, delayed-frame behavior and unmeasured metrics. Native GUI and fresh archive/CI remain separate gates; no external-device compatibility follows from these tests.
 
-## Current implementation policy
+## Alpha 9 implementation policy
 
 Schema 7 requires typed montage definitions; v0...v6 discard this formerly undefined extension and upgrade on save. Source/clip IDs are unique across their namespaces. Limits are 64 montage definitions, 1024 clips per montage and 4096 clips total; video rate is 0.25...4. Overlaps, cameras and nested montage sources reject before document mutation. Definitions stay outside surface Cue snapshots, while a Cue can recall a montage UUID through its source field. Deleting a montage clears current and stored Cue references in one history command.
 

@@ -207,7 +207,7 @@ import MappingCore
         e.saveTo(savedURL)
         try expect(!e.dirty && (try ProjectStore.load(from:savedURL))==e.project && e.recoveryBaseline != nil,"Source settings Save did not retain an exact saved revision")
         let json=try required(JSONSerialization.jsonObject(with:Data(contentsOf:savedURL)) as? [String:Any],"Saved source document is not JSON")
-        try expect(json["version"] as? Int==13,"New source settings were not saved in schema 13")
+        try expect(json["version"] as? Int==Project.currentVersion,"New source settings were not saved in the current schema")
         let saved=e.project;e.dirty=false;e.openProject(savedURL)
         try expect(e.project==saved && e.project.assets[0].playback==playback && e.project.assets[0].audioRouting==route,"Open lost source modes/audio routing or sequence state")
         pass("schema-13 Save/Open and portable collection retain source settings, audio matrix, UUIDs and folder manifests")

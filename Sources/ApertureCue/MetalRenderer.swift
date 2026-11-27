@@ -24,6 +24,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         var triangleA: SIMD4<Float>; var triangleB: SIMD4<Float>; var triangleC: SIMD4<Float>
         var effectKeyColor:SIMD4<Float>;var effectKeyStyle:SIMD4<Float>;var effectStyle:SIMD4<Float>
         var frame:SIMD4<Float>;var inputGrid:SIMD4<Float>
+        var blendX: SIMD4<Float>; var blendY: SIMD4<Float>
     }
 
     let device: MTLDevice
@@ -310,7 +311,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         encodeComposition(descriptor:descriptor,buffer:buffer)
     }
 
-    func draw(surface: Surface, encoder: MTLRenderCommandEncoder, textures: [UUID: MTLTexture],mediaUV:[UUID:MediaUVTransform]) throws {
+    func draw(surface: Surface, encoder: MTLRenderCommandEncoder, resources: MediaFrameResources) throws {
         guard surface.input.count == 4, surface.output.count == 4 else { return }
         let unit = [Point2(0, 0), Point2(1, 0), Point2(1, 1), Point2(0, 1)]
         let columns = surface.meshColumns
@@ -321,12 +322,18 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         func row(_ values: [Double], _ offset: Int) -> SIMD4<Float> {
             SIMD4(Float(values[offset]), Float(values[offset + 1]), Float(values[offset + 2]), 0)
         }
-        let texture=surface.feedbackOutputID.map { feedbackTextures[$0] ?? blackFallback } ?? surface.mediaID.flatMap { textures[$0] }
-        let vertices=try preparedVertices(surface,width:Int(encodingSize.x),height:Int(encodingSize.y),sourceWidth:texture.map {max($0.width,$0.height)} ?? Int(max(encodingSize.x,encodingSize.y)),sourceHeight:texture.map {max($0.width,$0.height)} ?? Int(max(encodingSize.x,encodingSize.y)))
+        let texture = surface.feedbackOutputID.map { feedbackTextures[$0] ?? blackFallback }
+            ?? surface.mediaID.flatMap { resources.textures[$0] }
+        let blend = surface.feedbackOutputID == nil ? surface.mediaID.flatMap { resources.blends[$0] } : nil
+        let sourceSide = texture.map { lhs in
+            max(lhs.width, lhs.height, blend?.texture.width ?? 0, blend?.texture.height ?? 0)
+        } ?? Int(max(encodingSize.x, encodingSize.y))
+        let vertices = try preparedVertices(surface, width: Int(encodingSize.x), height: Int(encodingSize.y),
+                                            sourceWidth: sourceSide, sourceHeight: sourceSide)
         encodingVertexCount+=vertices.count
         guard encodingVertexCount<=3145728 else {throw ProjectError.invalid("composition exceeds one million triangles")}
         try encodingLeases?.reserve(vertices.count*MemoryLayout<Vertex>.stride)
-        let mediaTransform=surface.mediaID.flatMap {mediaUV[$0]} ?? .identity
+        let mediaTransform=surface.mediaID.flatMap {resources.uv[$0]} ?? .identity
         let generators = ["checker": Float(1), "gradient": Float(2), "solid": Float(3), "grid": Float(4)]
         let generator = texture != nil ? Float(0) : (generators[surface.generator] ?? 1)
         let tint = surface.color.count >= 3 ? surface.color : [1, 1, 1]
@@ -338,7 +345,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             let p = planes[index]
             return SIMD4(Float(p.x),Float(p.y),Float(p.z),0)
         }
-        let inputGrid=try preparedInputGrid(surface,width:Int(encodingSize.x),height:Int(encodingSize.y),sourceSide:texture.map {max($0.width,$0.height)} ?? Int(max(encodingSize.x,encodingSize.y)))
+        let inputGrid=try preparedInputGrid(surface,width:Int(encodingSize.x),height:Int(encodingSize.y),sourceSide:sourceSide)
         var uniforms = Uniforms(
             sourceX: row(source, 0), sourceY: row(source, 3), sourceW: row(source, 6),
             localX: row(local, 0), localY: row(local, 3), localW: row(local, 6),
@@ -353,7 +360,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             effectKeyColor:SIMD4(Float(surface.effects.keyColor[0]),Float(surface.effects.keyColor[1]),Float(surface.effects.keyColor[2]),0),
             effectKeyStyle:SIMD4(surface.effects.keyMode == .none ? 0 : (surface.effects.keyMode == .chroma ? 1 : 2),Float(surface.effects.threshold),Float(surface.effects.softness),Float(surface.effects.spill)),
             effectStyle:SIMD4(Float(surface.effects.saturation),surface.effects.inverted ? 1 : 0,Float(surface.effects.posterizeLevels),0),
-            frame:SIMD4(encodingSize.x,encodingSize.y,Float(surface.masks.filter(\.enabled).count),0),inputGrid:SIMD4(Float(inputGrid.columns),Float(inputGrid.rows),inputGrid.columns>0 ? 1 : 0,0))
+            frame:SIMD4(encodingSize.x,encodingSize.y,Float(surface.masks.filter(\.enabled).count),0),inputGrid:SIMD4(Float(inputGrid.columns),Float(inputGrid.rows),inputGrid.columns>0 ? 1 : 0,0),
+            blendX: blend?.uv.x ?? .zero, blendY: blend?.uv.y ?? .zero)
+        uniforms.blendX.w = blend?.weight ?? 0
         var selectedPipelines=pipelines
         var parameters=Array(repeating:SIMD4<Float>.zero,count:16)
         if let id=surface.materialID {
@@ -389,6 +398,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         encoder.setFragmentBytes(parameters,length:parameters.count*MemoryLayout<SIMD4<Float>>.stride,index:5)
         try bindMasks(surface.masks,encoder:encoder,worldInverse:.identity)
         encoder.setFragmentTexture(texture ?? fallback, index: 0)
+        encoder.setFragmentTexture(blend?.texture ?? fallback, index: 1)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: vertices.count)
     }
 
@@ -429,6 +439,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         float4 mediaX;float4 mediaY;
         float4 triangleA; float4 triangleB; float4 triangleC;
         float4 effectKeyColor;float4 effectKeyStyle;float4 effectStyle;float4 frame;float4 inputGrid;
+        float4 blendX; float4 blendY;
     };
     vertex Raster mappingVertex(const device Vertex* vertices [[buffer(0)]], uint id [[vertex_id]]) {
         Raster out;
@@ -444,9 +455,19 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     \(Effects.metalFunction)
     \(MaterialProgram.metalFunctions)
     \(maskShaderFunctions)
-    float4 sampleMaterial(texture2d<float> image,float4 mx,float4 my,float kind,float2 uv) {
+    float4 sampleMaterial(texture2d<float> image, texture2d<float> nextImage, constant Uniforms& u, float2 uv) {
         constexpr sampler s(coord::normalized,address::clamp_to_edge,filter::linear);
-        if (kind < 0.5) {float3 p=float3(uv,1.0);return image.sample(s,float2(dot(mx.xyz,p),dot(my.xyz,p)));}
+        float kind = u.misc.x;
+        if (kind < 0.5) {
+            float3 p = float3(uv, 1.0);
+            float4 first = image.sample(s, float2(dot(u.mediaX.xyz, p), dot(u.mediaY.xyz, p)));
+            float weight = u.blendX.w;
+            if (weight <= 0.0) return first;
+            float4 second = nextImage.sample(s, float2(dot(u.blendX.xyz, p), dot(u.blendY.xyz, p)));
+            float alpha = mix(first.a, second.a, weight);
+            float3 premultiplied = mix(first.rgb * first.a, second.rgb * second.a, weight);
+            return alpha > 0.0 ? float4(premultiplied / alpha, alpha) : float4(0.0);
+        }
         if (kind < 2.5 && kind > 1.5) return float4(uv.x,uv.y,1.0-uv.x,1.0);
         if (kind > 2.5 && kind < 3.5) return float4(1.0);
         float2 cell=floor(uv*float2(12.0,8.0));float check=fmod(cell.x+cell.y,2.0);
@@ -459,7 +480,9 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
         if (uv.x<0.055 && uv.y>0.945) rgb=float3(1,1,0.03);
         return float4(rgb,1.0);
     }
-    float4 sampleMaterialISF(texture2d<float> image,float4 mx,float4 my,float kind,float2 uv) {return sampleMaterial(image,mx,my,kind,float2(uv.x,1.0-uv.y));}
+    float4 sampleMaterialISF(texture2d<float> image, texture2d<float> nextImage, constant Uniforms& u, float2 uv) {
+        return sampleMaterial(image, nextImage, u, float2(uv.x, 1.0 - uv.y));
+    }
     float2 sourceGridDelta(float2 uv,float4 grid,const device float2* points) {
         if(grid.z<0.5)return float2(0.0);
         int columns=int(grid.x),rows=int(grid.y);float2 scaled=clamp(uv,0.0,1.0)*float2(columns,rows);
@@ -470,7 +493,8 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
     fragment float4 mappingFragment(Raster in [[stage_in]], constant Uniforms& u [[buffer(0)]],
                                     constant float2* mask [[buffer(1)]], const device StrokeSegment* segments [[buffer(2)]],
                                     const device MaskHeader* masks [[buffer(3)]],const device float2* maskPoints [[buffer(4)]],
-                                    constant float4* materialParams [[buffer(5)]],const device float2* inputGrid [[buffer(6)]],texture2d<float> image [[texture(0)]]) {
+                                    constant float4* materialParams [[buffer(5)]],const device float2* inputGrid [[buffer(6)]],
+                                    texture2d<float> image [[texture(0)]], texture2d<float> nextImage [[texture(1)]]) {
         float2 screen=in.position.xy/u.frame.xy;
         float2 local = u.misc.z > 0.5 ? in.local : project(screen, u.localX, u.localY, u.localW);
         // Shape is defined in local surface space, independent of source UV crop.
@@ -532,24 +556,7 @@ final class MetalRenderer: NSObject, MTKViewDelegate {
             if (maskAlpha <= 0.0) discard_fragment();
         }
         maskAlpha *= scopeMaskAlpha(uv,screen,masks,maskPoints,int(u.frame.z));
-        constexpr sampler sampleFilter(coord::normalized, address::clamp_to_edge, filter::linear);
-        float4 color;
-        int kind = int(u.misc.x);
-        if (kind == 0) { float3 p=float3(uv,1.0);color = image.sample(sampleFilter,float2(dot(u.mediaX.xyz,p),dot(u.mediaY.xyz,p))); }
-        else if (kind == 2) { color = float4(uv.x, uv.y, 1.0 - uv.x, 1.0); }
-        else if (kind == 3) { color = float4(1.0); }
-        else {
-            float2 cell = floor(uv * float2(12.0, 8.0));
-            float check = fmod(cell.x + cell.y, 2.0);
-            float3 rgb = mix(float3(0.035, 0.045, 0.065), float3(0.82, 0.9, 0.97), check);
-            float2 grid = fract(uv * float2(12.0, 8.0));
-            if (kind == 4) rgb = (grid.x < 0.025 || grid.y < 0.025) ? float3(0.1, 0.85, 0.75) : float3(0.015);
-            if (uv.x < 0.055 && uv.y < 0.055) rgb = float3(1, 0.05, 0.03);
-            if (uv.x > 0.945 && uv.y < 0.055) rgb = float3(0.05, 1, 0.03);
-            if (uv.x > 0.945 && uv.y > 0.945) rgb = float3(0.03, 0.15, 1);
-            if (uv.x < 0.055 && uv.y > 0.945) rgb = float3(1, 1, 0.03);
-            color = float4(rgb, 1.0);
-        }
+        float4 color = sampleMaterial(image, nextImage, u, uv);
         /*MATERIAL_EVALUATION*/
         if (!all(isfinite(color))) color=float4(0.0);
         color=apertureEffects(clamp(color,0.0,1.0),u.effectKeyColor,u.effectKeyStyle,u.effectStyle);

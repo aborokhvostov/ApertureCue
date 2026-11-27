@@ -18,7 +18,7 @@ import MappingCore
         var report:[String:Any]=[
             "schemaVersion":1,"timestampUTC":ISO8601DateFormatter().string(from:Date()),
             "platform":ProcessInfo.processInfo.operatingSystemVersionString,"hardwareVerification":false,
-            "scope":"Generated local H.264 files, production AVAssetReader/MediaPool/MontagePool and offscreen Metal. No external display/projector, audible audio, hardware throughput or long playback soak is verified."
+            "scope":"Generated H.264 and WAV files, production MontagePool and offscreen Metal/PCM. No external output, audible audio, hardware throughput or long playback soak is verified."
         ]
         do {
             try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
@@ -266,6 +266,54 @@ import MappingCore
             try expect(media.seekGeneration(for:rotationAsset.id)==rotationGeneration,"Rotation readback sought the ordinary movie")
             checks.append("ordinary AVPlayer and independent montage paths display identical upright rotation quadrants")
 
+            let outgoing = MontageClip(assetID: asset.id, duration: 1, sourceOut: 1)
+            let incoming = MontageClip(assetID: asset.id, start: 0.5, duration: 1, sourceIn: 2, sourceOut: 3,
+                                       rate: -1, crossfadeIn: 0.5)
+            let transition = MediaMontage(name: "Reverse crossfade", duration: 2, clips: [outgoing, incoming])
+            try configure([transition])
+            var crossfadePixels: [[Int]] = []
+            try settle(0.5, [transition.id: 3.0.nextDown])
+            try expect(pump(8) {
+                update(0.5, [transition.id])
+                return pool.presentationTime(forClip: outgoing.id) != nil
+            }, "Outgoing source did not become ready at the fade boundary")
+            let startPixel = pixel(try frame([surface(transition.id)]))
+            try expect(near(startPixel, [230, 20, 20, 255]), "Fade start replaced the outgoing clip before its interval ended")
+            crossfadePixels.append(startPixel)
+
+            serial &+= 1
+            try expect(pump(12) {
+                update(0.75, [transition.id])
+                return pool.frameResource(for: transition.id)?.buffers.count == 2
+            }, "Both source frames were not retained in the crossfade")
+            let mixResource = media.frameResources(for: [transition.id])
+            let midPixel = pixel(try frame([surface(transition.id)]))
+            let routedMid = pixel(try frame([surface(transition.id)], outputID: UUID()))
+            try expect(mixResource.blends[transition.id]?.weight == 0.5 && mixResource.retained.count == 2,
+                       "The composition did not acquire both retained source textures with the scheduled weight")
+            try expect(near(midPixel, [125, 20, 125, 255], tolerance: 9) && midPixel == routedMid,
+                       "Midpoint crossfade differed from the expected RGB or routed output: \(midPixel)")
+            let forwardPTS = pool.presentationTime(forClip: outgoing.id) ?? -1
+            let reversePTS = pool.presentationTime(forClip: incoming.id) ?? -1
+            try expect(forwardPTS >= 0.71 && forwardPTS <= 0.75 && reversePTS >= 2.71 && reversePTS <= 2.75,
+                       "Crossfade used source frames outside the requested 30fps PTS intervals")
+            crossfadePixels.append(midPixel)
+
+            try settle(1, [transition.id: 2.5])
+            let endPixel = pixel(try frame([surface(transition.id)]))
+            try expect(near(endPixel, [20, 20, 230, 255]) &&
+                       pool.frameResource(for: transition.id)?.blend == nil &&
+                       pool.activeVideoDecoderCount == 1 && pool.presentationTime(forClip: outgoing.id) == nil,
+                       "Crossfade end retained the outgoing decoder or incorrect pixels")
+            crossfadePixels.append(endPixel)
+            report["crossfade"] = ["timeSeconds": [0.5, 0.75, 1], "frameRGBA": crossfadePixels,
+                                   "midpointForwardPTS": forwardPTS, "midpointReversePTS": reversePTS]
+            try expect(media.seekGeneration(for: asset.id) == ordinaryGeneration,
+                       "Crossfade changed ordinary same-file transport")
+            checks.append("reverse half-open Out trim and two retained clip frames yield the same blend in editor and routed Metal output")
+            report["audioCrossfade"] = try checkAudioCrossfade(device: device, media: media, directory: generated, pump: pump)
+            checks.append("independent audio-lane clips render offline PCM with correct midpoint gains and release voices at cut, unassign and reset")
+
             try configure([first]);try settle(0.25,[first.id:0.25])
             let replacement=generated.appendingPathComponent("replacement.mov")
             try makeMovie(at:replacement,fps:30,phase:1)
@@ -301,6 +349,61 @@ import MappingCore
             if let text=String(data:data,encoding:.utf8) {print(text)}
         } catch {print("Montage report write failed: \(error.localizedDescription)");return 1}
         return report["result"] as? String == "passed" ? 0 : 1
+    }
+
+    private static func checkAudioCrossfade(device: MTLDevice, media: MediaPool, directory: URL,
+                                           pump: (Double, () -> Bool) -> Bool) throws -> [String: Any] {
+        let url = directory.appendingPathComponent("montage-audio-stereo.wav")
+        try MediaAudioSelfTest.writeWave(to: url, sampleRate: 48_000, seconds: 2)
+        let audio = MediaAsset(name: "Original WAV", path: url.path, kind: "audio", volume: 1)
+        let first = MontageClip(assetID: audio.id, duration: 1)
+        let second = MontageClip(assetID: audio.id, start: 0.5, duration: 1, crossfadeIn: 0.5)
+        let montage = MediaMontage(duration: 2, gapMode: .skip, clips: [first, second])
+        var adapters: [MediaAudioPlayer] = []
+        let pool = MontagePool(device: device, media: media) {
+            let player = MediaAudioPlayer(offline: true)
+            adapters.append(player)
+            return player
+        }
+        defer { pool.reset() }
+        try pool.reconcile(montages: [montage], assets: [audio], baseURL: directory)
+        guard pump(12, {
+            pool.update(time: 0.75, playing: true, used: [montage.id], serial: 1, baseURL: directory)
+            return adapters.count == 2 && adapters.allSatisfy { $0.ready && $0.metrics.decodedChunks >= 1 }
+        }) else { throw Failure(message: "Montage audio did not prefetch PCM: " + String(describing: pool.diagnostics)) }
+        let output = try adapters.map { adapter -> [Double] in
+            _ = try adapter.renderOffline(1024) // Allow the mixer gain ramp to settle.
+            let buffer = try adapter.renderOffline(4096)
+            guard let samples = buffer.floatChannelData else { throw Failure(message: "Expected stereo Float32 PCM") }
+            let count = Int(buffer.frameLength)
+            return (0..<2).map { channel in
+                (256..<count).reduce(0.0) { $0 + Double(samples[channel][$1]) } / Double(count - 256)
+            }
+        }
+        let expected = [[-0.15, 0.05], [0.1, -0.2]]
+        guard output.indices.allSatisfy({ index in
+            zip(output[index], expected[index]).allSatisfy { abs($0 - $1) < 0.003 }
+        }), pool.samples[montage.id]?.isGap == true else {
+            throw Failure(message: "Montage audio mix or independent visual gap differed from oracle: \(output)")
+        }
+        pool.update(time: 1, playing: false, used: [montage.id], serial: 2, baseURL: directory)
+        guard pool.activeAudioVoiceCount == 1, !adapters[0].ready, adapters[1].ready else {
+            throw Failure(message: "A clip ending inside the montage retained its PCM adapter")
+        }
+        let paused = try adapters[1].renderOffline(1024)
+        guard let channel = paused.floatChannelData, (512..<Int(paused.frameLength)).allSatisfy({ abs(channel[0][$0]) < 0.00001 }) else {
+            throw Failure(message: "Montage pause retained non-silent PCM")
+        }
+        pool.update(time: 1, playing: false, used: [], serial: 2, baseURL: directory)
+        guard pool.activeAudioVoiceCount == 0, !adapters[1].ready else {
+            throw Failure(message: "Unassign retained montage audio")
+        }
+        pool.reset()
+        guard pump(5, { MediaAudioPlayer.admittedSourceCount == 0 }) else {
+            throw Failure(message: "Montage audio did not release global voice admission")
+        }
+        return ["midpointPerVoiceStereoMean": output, "expected": expected,
+                "sampleRate": 48_000, "sourceTimesSeconds": [0.75, 0.25], "hardwareAudioStarted": false]
     }
 
     private static func color(second:Int)->[Int] {

@@ -102,7 +102,7 @@ import MappingCore
             caption("Add or select a parameter track",at:NSPoint(x:r.midX-100,y:r.midY),color:.labelColor)
         }
         for marker in markers where marker.time>=visibleStart && marker.time<=visibleEnd {
-            let x=location(time:marker.time,value:0).x,color:NSColor=marker.action == .pause ? .systemOrange : .systemPurple
+            let x=location(time:marker.time,value:0).x,color:NSColor=marker.action == .pause ? .systemOrange : marker.action == .jump ? .systemCyan : .systemPurple
             line(NSPoint(x:x,y:r.minY),NSPoint(x:x,y:r.maxY),color:color.withAlphaComponent(0.45))
             color.setFill(); let flag=NSBezierPath(); flag.move(to:NSPoint(x:x-5,y:34)); flag.line(to:NSPoint(x:x+5,y:34)); flag.line(to:NSPoint(x:x,y:42)); flag.close(); flag.fill()
         }

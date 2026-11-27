@@ -19,6 +19,8 @@ AppKit editor и Metal compositor: PNG/AVFoundation video, quad/triangle/ellipse
 
 ## Текущий этап
 
+**Этап 4 · Show control — интеграция schema 14.** В исходниках появились Conductor, сигналы, формы переходов, Jump, редактирование диапазона ключей, расписание/ICS, OSC/MIDI события, внешний локальный таймкод и расширенный монтаж. Итоговая проверка и публикация ещё выполняются. [Контракты и приёмка](stage-4-completion.md).
+
 **Этап 3 · Media playback and durability — программные критерии объявленного subset завершены, alpha 16 опубликована.** Независимые source clocks/modes, frozen image sequences, bounded PCM routing и exact-revision recovery реализованы в schema 13. [Полный ledger](stage-3-completion.md), [видимый workflow](verification/media-workflow.md), [отчёты](verification/stage-3/).
 
 - Локально: **154 standalone core метода**, 0 failed assertions; это не XCTest. Окончательная production-сборка: **90 editor, 13 media, 15 offline audio, 5 durability/SIGKILL, 51 GPU/media, 27 montage, 25 composition, 3 live-editor, 5 live-presentation, 11 lighting/UDP**, OSC/MIDI localhost — PASS.

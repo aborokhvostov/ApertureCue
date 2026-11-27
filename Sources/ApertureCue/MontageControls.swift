@@ -42,7 +42,7 @@ extension EditorController {
     }
     func montageSaveClip(montageID:UUID,clip:MontageClip)throws {
         guard let i=project.montages.firstIndex(where:{$0.id==montageID}) else {throw ProjectError.invalid("montage no longer exists")}
-        if let asset=project.assets.first(where:{$0.id==clip.assetID}),asset.kind=="video" {
+        if let asset=project.assets.first(where:{$0.id==clip.assetID}),asset.kind != "image" {
             let known=media.duration(for:asset.id)
             guard known<=0 || clip.sourceOut<=known+1e-6 else {throw ProjectError.invalid("Source Out exceeds known media duration")}
         }
@@ -54,7 +54,19 @@ extension EditorController {
     }
     func montageDeleteClip(montageID:UUID,clipID:UUID)throws {
         guard let i=project.montages.firstIndex(where:{$0.id==montageID}),project.montages[i].clips.contains(where:{$0.id==clipID}) else {throw ProjectError.invalid("montage clip no longer exists")}
-        var candidate=project;candidate.montages[i].clips.removeAll {$0.id==clipID}
+        var candidate = project
+        let clips = candidate.montages[i].clips
+        if let removed = clips.first(where: { $0.id == clipID }) {
+            let audioIDs = Set(project.assets.filter { $0.kind == "audio" }.map(\.id))
+            let onAudioLane = audioIDs.contains(removed.assetID)
+            if let successor = clips.indices.filter({
+                clips[$0].start > removed.start && audioIDs.contains(clips[$0].assetID) == onAudioLane
+            }).min(by: { clips[$0].start < clips[$1].start }),
+               clips[successor].start < removed.end {
+                candidate.montages[i].clips[successor].crossfadeIn = nil
+            }
+        }
+        candidate.montages[i].clips.removeAll { $0.id == clipID }
         try ProjectStore.validate(candidate);mutate("Delete montage clip") {$0=candidate}
     }
     func montageAssign(id:UUID)throws {

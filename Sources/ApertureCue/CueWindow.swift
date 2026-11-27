@@ -9,6 +9,7 @@ import MappingCore
     var selectedCueID: UUID?
     var selectedSurfaceID: UUID?
     let nameField = ActionField("Scene", action: { _ in })
+    let curvePicker = ActionPopUp(items: CueCurve.allCases.map(\.rawValue), action: { _ in })
     let durationField = ActionField("1", action: { _ in })
     let followField = ActionField("", action: { _ in })
     let scopePicker = ActionPopUp(items: ["Full surface snapshot", "Selective fields"], selected: 1, action: { _ in })
@@ -81,7 +82,7 @@ import MappingCore
         nameField.widthAnchor.constraint(equalToConstant: 260).isActive = true
         for view in [durationField, followField] { view.widthAnchor.constraint(equalToConstant: 78).isActive = true }
         let metadata = stack([label("Name"), nameField, label("Scope"), scopePicker], vertical: false)
-        let timing = stack([label("Transition s"), durationField, label("Follow s (blank = none)"), followField], vertical: false)
+        let timing = stack([label("Transition s"), durationField, curvePicker, label("Follow s (blank = none)"), followField], vertical: false)
         let fieldActions = stack([allButton, clearButton, clearAllButton], vertical: false)
         let fieldHeader = stack([label("Included field", bold: true), label("Stored snapshot", bold: true), label("Current surface", bold: true)], vertical: false, spacing: 10)
         fieldHeader.arrangedSubviews[0].widthAnchor.constraint(equalToConstant: 165).isActive = true
@@ -161,7 +162,7 @@ import MappingCore
         selectedCueID = nil; loadedCue = nil; fields.removeAll()
         draftInitialized = true
         nameField.stringValue = "Scene \((editor?.project.cues.count ?? 0) + 1)"
-        durationField.stringValue = "1"; followField.stringValue = ""; scopePicker.selectItem(at: 1)
+        durationField.stringValue = "1"; curvePicker.selectItem(at: 0); followField.stringValue = ""; scopePicker.selectItem(at: 1)
         if let id = editor?.selectedID { selectedSurfaceID = id; fields[id] = [.opacity] }
         refresh()
     }
@@ -176,6 +177,7 @@ import MappingCore
         if let cue = selectedCue {
             if loadedCue != cue {
                 nameField.stringValue = cue.name; durationField.stringValue = String(cue.duration)
+                curvePicker.selectItem(at: CueCurve.allCases.firstIndex(of: cue.curve) ?? 0)
                 followField.stringValue = cue.followAfter.map { String($0) } ?? ""
                 scopePicker.selectItem(at: cue.scope == .full ? 0 : 1)
                 fields = Dictionary(uniqueKeysWithValues: cue.surfaces.map { ($0.id, Set<CueParameter>()) })
@@ -189,7 +191,7 @@ import MappingCore
             surfaces = editor.project.surfaces
             if !draftInitialized {
                 nameField.stringValue = "Scene \(editor.project.cues.count + 1)"; scopePicker.selectItem(at: 1)
-                durationField.stringValue = "1"; followField.stringValue = ""
+                durationField.stringValue = "1"; curvePicker.selectItem(at: 0); followField.stringValue = ""
                 if let id = editor.selectedID, surfaces.contains(where: { $0.id == id }) { fields[id] = [.opacity]; selectedSurfaceID = id }
                 draftInitialized = true
             }
@@ -268,7 +270,7 @@ import MappingCore
     private func save() {
         guard let editor, let id = selectedCueID else { return }
         let bindings = draftScope == .full ? [] : draftBindings
-        perform { let (duration, follow) = try timing(); try editor.cueUpdate(id: id, name: nameField.stringValue, scope: draftScope, bindings: bindings, duration: duration, followAfter: follow) }
+        perform { let (duration, follow) = try timing(); try editor.cueUpdate(id: id, name: nameField.stringValue, scope: draftScope, bindings: bindings, duration: duration, followAfter: follow, curve: CueCurve.allCases[max(0, curvePicker.indexOfSelectedItem)]) }
     }
     private func recapture() {
         guard let editor, let cue = selectedCue else { return }
@@ -279,7 +281,7 @@ import MappingCore
     private func capture(scope: CueScope) {
         guard let editor else { return }
         let bindings = scope == .full ? [] : draftBindings
-        perform { let (duration, follow) = try timing(); selectedCueID = try editor.cueCreate(name: nameField.stringValue, scope: scope, bindings: bindings, duration: duration, followAfter: follow) }
+        perform { let (duration, follow) = try timing(); selectedCueID = try editor.cueCreate(name: nameField.stringValue, scope: scope, bindings: bindings, duration: duration, followAfter: follow, curve: CueCurve.allCases[max(0, curvePicker.indexOfSelectedItem)]) }
     }
     func numberOfRows(in tableView: NSTableView) -> Int { tableView === cueTable ? editor?.project.cues.count ?? 0 : surfaces.count }
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {

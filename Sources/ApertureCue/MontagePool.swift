@@ -66,7 +66,7 @@ final class MontageVideoSlot {
     }
     func acceptedResource(cache:CVMetalTextureCache)->MediaFrameResource? {
         guard let frame,let epoch else {return nil}
-        guard Self.permitsFrame(frame,time:requestedTime,playing:playing,backward:backward,rate:epoch.clip.rate),frame.end>epoch.clip.sourceIn,frame.pts<epoch.clip.sourceOut else {return nil}
+        guard Self.permitsFrame(frame,time:requestedTime,playing:playing,backward:backward,rate:abs(epoch.clip.rate)),frame.end>epoch.clip.sourceIn,frame.pts<epoch.clip.sourceOut else {return nil}
         if resourceFrame === frame {return resource}
         var wrapper:CVMetalTexture?
         let buffer=frame.buffer
@@ -81,108 +81,250 @@ final class MontageVideoSlot {
     }
 }
 
-/// Assignable virtual source frames. Decoder count is fixed at eight, with one
-/// in-flight operation and one coalesced pending request per slot. Images share
-/// the ordinary immutable texture cache. All published frames are main-thread.
-final class MontagePool:VirtualMediaFrames {
-    static let maximumVideoDecoders=8
-    private weak var media:MediaPool?
-    private let device:MTLDevice
-    private var cache:CVMetalTextureCache?
-    private let slots=(0..<maximumVideoDecoders).map {_ in MontageVideoSlot()}
-    private var document=UUID()
-    private var program:MontageProgram?
-    private var definitions:[MediaMontage]=[],assets:[MediaAsset]=[]
-    private var known:[UUID:MediaMontage]=[:],fingerprints:[UUID:String]=[:],revisions:[UUID:UUID]=[:]
-    private var frames:[UUID:MediaFrameResource]=[:],skipIDs=Set<UUID>()
-    private(set) var diagnostics:[UUID:String]=[:]
-    private(set) var samples:[UUID:MontageSample]=[:]
-    private let black:MTLTexture,transparent:MTLTexture
-    init(device:MTLDevice,media:MediaPool) {
-        self.device=device;self.media=media
-        let descriptor=MTLTextureDescriptor.texture2DDescriptor(pixelFormat:.bgra8Unorm,width:1,height:1,mipmapped:false)
-        descriptor.storageMode = .shared;descriptor.usage = .shaderRead
-        black=device.makeTexture(descriptor:descriptor)!;transparent=device.makeTexture(descriptor:descriptor)!
-        var opaque:[UInt8]=[0,0,0,255],clear:[UInt8]=[0,0,0,0]
-        black.replace(region:MTLRegionMake2D(0,0,1,1),mipmapLevel:0,withBytes:&opaque,bytesPerRow:4)
-        transparent.replace(region:MTLRegionMake2D(0,0,1,1),mipmapLevel:0,withBytes:&clear,bytesPerRow:4)
-        CVMetalTextureCacheCreate(kCFAllocatorDefault,nil,device,nil,&cache)
+/// A visual decoder lease belongs to a clip, allowing two clips of the same
+/// file to coexist without seeking either the other clip or the ordinary player.
+final class MontagePool: VirtualMediaFrames {
+    static let maximumVideoDecoders = 8
+    static let maximumAudioVoices = 8
+
+    private weak var media: MediaPool?
+    private var cache: CVMetalTextureCache?
+    private let slots = (0..<maximumVideoDecoders).map { _ in MontageVideoSlot() }
+    private let audioFactory: () -> MediaAudioPlayer
+    private var audioVoices: [UUID: MontageAudioVoice] = [:]
+    private var document = UUID()
+    private var program: MontageProgram?
+    private var definitions: [MediaMontage] = []
+    private var assets: [MediaAsset] = []
+    private var known: [UUID: MediaMontage] = [:]
+    private var fingerprints: [UUID: String] = [:]
+    private var revisions: [UUID: UUID] = [:]
+    private var frames: [UUID: MediaFrameResource] = [:]
+    private var skipIDs = Set<UUID>()
+    private(set) var diagnostics: [UUID: String] = [:]
+    private(set) var samples: [UUID: MontageSample] = [:]
+    private let black: MTLTexture
+    private let transparent: MTLTexture
+
+    init(device: MTLDevice, media: MediaPool, audioFactory: @escaping () -> MediaAudioPlayer = { MediaAudioPlayer() }) {
+        self.media = media
+        self.audioFactory = audioFactory
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: 1, height: 1, mipmapped: false)
+        descriptor.storageMode = .shared
+        descriptor.usage = .shaderRead
+        black = device.makeTexture(descriptor: descriptor)!
+        transparent = device.makeTexture(descriptor: descriptor)!
+        var opaque: [UInt8] = [0, 0, 0, 255]
+        var clear: [UInt8] = [0, 0, 0, 0]
+        black.replace(region: MTLRegionMake2D(0, 0, 1, 1), mipmapLevel: 0, withBytes: &opaque, bytesPerRow: 4)
+        transparent.replace(region: MTLRegionMake2D(0, 0, 1, 1), mipmapLevel: 0, withBytes: &clear, bytesPerRow: 4)
+        CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &cache)
     }
-    var activeVideoDecoderCount:Int {slots.filter {$0.owner != nil}.count}
-    var decoderSlotCount:Int {slots.count}
+
+    var activeVideoDecoderCount: Int { slots.filter { $0.owner != nil }.count }
+    var decoderSlotCount: Int { slots.count }
+    var activeAudioVoiceCount: Int { audioVoices.count }
+
     func reset() {
-        document=UUID();slots.forEach {$0.clear()};program=nil;definitions=[];assets=[];known=[:];fingerprints=[:];revisions=[:];frames=[:];skipIDs=[];diagnostics=[:];samples=[:]
+        document = UUID()
+        slots.forEach { $0.clear() }
+        audioVoices.values.forEach { $0.invalidate() }
+        audioVoices.removeAll()
+        program = nil
+        definitions = []
+        assets = []
+        known = [:]
+        fingerprints = [:]
+        revisions = [:]
+        clearFrames()
     }
-    func reconcile(montages:[MediaMontage],assets:[MediaAsset],baseURL:URL)throws {
-        var keys:[UUID:String]=[:]
-        for asset in assets where asset.kind=="image" || asset.kind=="video" {
-            let url=asset.path.hasPrefix("/") ? URL(fileURLWithPath:asset.path) : baseURL.appendingPathComponent(asset.path)
-            let attributes=try? FileManager.default.attributesOfItem(atPath:url.path)
-            keys[asset.id]=url.standardizedFileURL.path+"|"+asset.kind+"|"+String(describing:attributes?[.modificationDate])+"|"+String(describing:attributes?[.size])
+
+    func reconcile(montages: [MediaMontage], assets: [MediaAsset], baseURL: URL) throws {
+        var keys: [UUID: String] = [:]
+        for asset in assets where ["image", "video", "audio"].contains(asset.kind) {
+            let url = sourceURL(asset, baseURL: baseURL)
+            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+            keys[asset.id] = url.standardizedFileURL.path + "|" + asset.kind
+                + "|" + String(describing: attributes?[.modificationDate])
+                + "|" + String(describing: attributes?[.size])
         }
-        guard montages != definitions || assets != self.assets || keys != fingerprints else {return}
-        let next=try MontageProgram(montages:montages,assets:assets)
-        for (id,key) in keys where key != fingerprints[id] {revisions[id]=UUID()}
-        revisions=revisions.filter {keys[$0.key] != nil}
-        program=next;definitions=montages;self.assets=assets;known=Dictionary(uniqueKeysWithValues:montages.map {($0.id,$0)})
-        fingerprints=keys;frames=[:];skipIDs=[];diagnostics=[:];samples=[:]
-        slots.filter {slot in slot.owner.map {known[$0]==nil} ?? false}.forEach {$0.clear()}
+        guard montages != definitions || assets != self.assets || keys != fingerprints else { return }
+        let next = try MontageProgram(montages: montages, assets: assets)
+        for (id, key) in keys where key != fingerprints[id] { revisions[id] = UUID() }
+        revisions = revisions.filter { keys[$0.key] != nil }
+        program = next
+        definitions = montages
+        self.assets = assets
+        known = Dictionary(uniqueKeysWithValues: montages.map { ($0.id, $0) })
+        fingerprints = keys
+        clearFrames()
+        let clips = Set(montages.flatMap(\.clips).map(\.id))
+        for slot in slots where slot.owner.map({ !clips.contains($0) }) ?? false { slot.clear() }
+        releaseAudio(except: clips)
     }
-    func invalidateAsset(_ id:UUID) {
-        revisions[id]=UUID()
-        for montage in definitions where montage.clips.contains(where:{$0.assetID==id}) {frames.removeValue(forKey:montage.id)}
+
+    func invalidateAsset(_ id: UUID) {
+        revisions[id] = UUID()
+        for montage in definitions where montage.clips.contains(where: { $0.assetID == id }) {
+            frames.removeValue(forKey: montage.id)
+        }
+        for (clipID, voice) in audioVoices where voice.assetID == id {
+            voice.invalidate()
+            audioVoices.removeValue(forKey: clipID)
+        }
     }
-    func update(time:Double,playing:Bool,used:Set<UUID>,serial:UInt64,baseURL:URL) {
+
+    private func clearFrames() {
+        frames = [:]
+        skipIDs = []
+        diagnostics = [:]
+        samples = [:]
+    }
+
+    func update(time: Double, playing: Bool, used: Set<UUID>, serial: UInt64, baseURL: URL) {
         precondition(Thread.isMainThread)
-        frames=[:];skipIDs=[];diagnostics=[:];samples=[:]
-        guard let program else {return}
-        let selected=used.filter {known[$0] != nil}.sorted {$0.uuidString<$1.uuidString}
+        clearFrames()
+        guard let program else { return }
+        let selected = used.filter { known[$0] != nil }.sorted { $0.uuidString < $1.uuidString }
         for id in selected {
-            do {if let sample=try program.sample(id:id,time:time) {samples[id]=sample}}
-            catch {diagnostics[id]=error.localizedDescription}
+            do { samples[id] = try program.sample(id: id, time: time) }
+            catch { note(id, error.localizedDescription) }
         }
-        let videos=selected.filter {samples[$0]?.asset?.kind=="video"}
-        let admitted=Set(videos.prefix(Self.maximumVideoDecoders))
-        for slot in slots where slot.owner.map({!admitted.contains($0)}) ?? false {slot.clear()}
+
+        let videos = selected.flatMap { id in samples[id]?.visual.filter { $0.asset.kind == "video" } ?? [] }
+        let admitted = Set(videos.prefix(Self.maximumVideoDecoders).map(\.clip.id))
+        for slot in slots where slot.owner.map({ !admitted.contains($0) }) ?? false { slot.clear() }
+
+        let audio = selected.flatMap { id in samples[id]?.audio ?? [] }
+        let audioAdmitted = Set(audio.prefix(Self.maximumAudioVoices).map(\.clip.id))
+        releaseAudio(except: audioAdmitted)
+
         for id in selected {
-            guard let definition=known[id],let sample=samples[id],let clip=sample.clip,let asset=sample.asset else {
-                fallback(id,message:diagnostics[id] ?? "");continue
+            guard let sample = samples[id] else { continue }
+            publishVisual(sample, admitted: admitted, playing: playing, serial: serial, baseURL: baseURL)
+            for leg in sample.audio {
+                guard audioAdmitted.contains(leg.clip.id) else {
+                    note(id, "Montage audio voice limit (8) reached")
+                    continue
+                }
+                let voice = audioVoices[leg.clip.id] ?? MontageAudioVoice(factory: audioFactory)
+                audioVoices[leg.clip.id] = voice
+                let revision = revisions[leg.asset.id] ?? document
+                if let message = voice.update(leg, url: sourceURL(leg.asset, baseURL: baseURL), revision: revision,
+                                              montageCycle: sample.montageCycle, serial: serial, playing: playing) {
+                    note(id, message)
+                }
             }
-            if asset.kind=="image" {
-                if let resource=media?.frameResources(for:[asset.id]),let texture=resource.textures[asset.id] {
-                    frames[id]=MediaFrameResource(texture:texture,wrappers:resource.retained,buffers:resource.buffers,owners:resource.owners)
-                } else {fallback(id,message:media?.errorMessages[asset.id] ?? "Loading image clip")}
-            } else {
-                guard admitted.contains(id),let cache,let target=sample.sourceTime else {fallback(id,message:"Montage video decoder limit (8) reached");continue}
-                guard let slot=slots.first(where:{$0.owner==id}) ?? slots.first(where:{$0.owner==nil}) else {fallback(id,message:"Montage decoder unavailable");continue}
-                let url=asset.path.hasPrefix("/") ? URL(fileURLWithPath:asset.path) : baseURL.appendingPathComponent(asset.path)
-                let epoch=MontageVideoEpoch(document:document,assetRevision:revisions[asset.id] ?? document,url:url,clip:clip,montageCycle:sample.montageCycle,clipCycle:sample.clipCycle)
-                slot.request(owner:id,epoch:epoch,time:target,playing:playing,serial:serial)
-                if let resource=slot.acceptedResource(cache:cache) {frames[id]=resource}
-                else {fallback(id,message:slot.message.isEmpty ? "Waiting for current clip frame" : slot.message)}
-            }
-            _=definition
         }
     }
-    private func fallback(_ id:UUID,message:String) {
-        let skip=known[id]?.gapMode == .skip
-        if skip {skipIDs.insert(id)}
-        frames[id]=MediaFrameResource(texture:skip ? transparent : black)
-        if !message.isEmpty {diagnostics[id]=message}
+
+    private func publishVisual(_ sample: MontageSample, admitted: Set<UUID>, playing: Bool, serial: UInt64, baseURL: URL) {
+        let id = sample.montageID
+        let empty = fallbackFrame(sample.gapMode)
+        let legs = sample.visual.map {
+            visualFrame($0, sample: sample, admitted: admitted, playing: playing, serial: serial, baseURL: baseURL)
+        }
+        let first = legs.first.flatMap { $0 }
+        guard legs.count == 2 else {
+            if let frame = first { frames[id] = frame }
+            else {
+                frames[id] = empty
+                if sample.gapMode == .skip { skipIDs.insert(id) }
+            }
+            return
+        }
+        // A missing leg contributes the montage gap color. In Skip mode its
+        // transparency preserves the other leg and the layer below the montage.
+        let weight = sample.visual[1].weight
+        let second = legs[1]
+        if sample.gapMode == .skip && ((first == nil && second == nil) || (first == nil && weight == 0)) {
+            skipIDs.insert(id)
+        }
+        var combined = first ?? empty
+        if weight > 0 {
+            let incoming = second ?? empty
+            combined.blend = MediaFrameBlend(texture: incoming.texture, uv: incoming.uv, weight: Float(weight))
+            combined.wrappers += incoming.wrappers
+            combined.buffers += incoming.buffers
+            combined.owners += incoming.owners
+        }
+        frames[id] = combined
     }
-    func apply(to surfaces:[Surface])->[Surface] {
-        surfaces.map {surface in
-            guard let id=surface.mediaID,skipIDs.contains(id) else {return surface}
-            var hidden=surface;hidden.enabled=false;return hidden
+
+    private func visualFrame(_ leg: MontageLeg, sample: MontageSample, admitted: Set<UUID>, playing: Bool,
+                             serial: UInt64, baseURL: URL) -> MediaFrameResource? {
+        let id = sample.montageID
+        let asset = leg.asset
+        if asset.kind == "image" {
+            guard let resource = media?.frameResources(for: [asset.id]),
+                  let texture = resource.textures[asset.id] else {
+                note(id, media?.errorMessages[asset.id] ?? "Loading image clip")
+                return nil
+            }
+            return MediaFrameResource(texture: texture, wrappers: resource.retained, buffers: resource.buffers,
+                                      uv: resource.uv[asset.id] ?? .identity, owners: resource.owners)
+        }
+        let clip = leg.clip
+        guard admitted.contains(clip.id), let cache else {
+            note(id, "Montage video decoder limit (8) reached")
+            return nil
+        }
+        guard let slot = slots.first(where: { $0.owner == clip.id }) ?? slots.first(where: { $0.owner == nil }) else {
+            note(id, "Montage decoder unavailable")
+            return nil
+        }
+        let epoch = MontageVideoEpoch(document: document, assetRevision: revisions[asset.id] ?? document,
+                                      url: sourceURL(asset, baseURL: baseURL), clip: clip,
+                                      montageCycle: sample.montageCycle, clipCycle: leg.clipCycle)
+        slot.request(owner: clip.id, epoch: epoch, time: leg.sourceTime, playing: playing,
+                     serial: serial, backward: clip.rate < 0)
+        if let frame = slot.acceptedResource(cache: cache) { return frame }
+        note(id, slot.message.isEmpty ? "Waiting for current clip frame" : slot.message)
+        return nil
+    }
+
+    private func releaseAudio(except retained: Set<UUID>) {
+        for (id, voice) in audioVoices where !retained.contains(id) {
+            voice.invalidate()
+            audioVoices.removeValue(forKey: id)
         }
     }
-    func frameResource(for id:UUID)->MediaFrameResource? {
-        guard let montage=known[id] else {return nil}
-        return frames[id] ?? MediaFrameResource(texture:montage.gapMode == .skip ? transparent : black)
+
+    private func note(_ id: UUID, _ message: String) {
+        if diagnostics[id] == nil { diagnostics[id] = message }
     }
-    func presentationTime(for id:UUID)->Double? {slots.first {$0.owner==id}?.frame?.pts}
-    func frameEnd(for id:UUID)->Double? {slots.first {$0.owner==id}?.frame?.end}
-    func frameGeneration(for id:UUID)->UInt64? {slots.first {$0.owner==id}?.generation}
-    func videoExtent(for id:UUID)->Double? {slots.first {$0.owner==id}?.videoEnd}
+
+    private func sourceURL(_ asset: MediaAsset, baseURL: URL) -> URL {
+        asset.path.hasPrefix("/") ? URL(fileURLWithPath: asset.path) : baseURL.appendingPathComponent(asset.path)
+    }
+
+    private func fallbackFrame(_ gapMode: MontageGapMode) -> MediaFrameResource {
+        MediaFrameResource(texture: gapMode == .skip ? transparent : black)
+    }
+
+    func apply(to surfaces: [Surface]) -> [Surface] {
+        surfaces.map { surface in
+            guard let id = surface.mediaID, skipIDs.contains(id) else { return surface }
+            var hidden = surface
+            hidden.enabled = false
+            return hidden
+        }
+    }
+
+    func frameResource(for id: UUID) -> MediaFrameResource? {
+        guard let montage = known[id] else { return nil }
+        return frames[id] ?? fallbackFrame(montage.gapMode)
+    }
+
+    private func primarySlot(_ id: UUID) -> MontageVideoSlot? {
+        guard let clip = samples[id]?.clip else { return nil }
+        return slots.first { $0.owner == clip.id }
+    }
+
+    func presentationTime(for id: UUID) -> Double? { primarySlot(id)?.frame?.pts }
+    func presentationTime(forClip id: UUID) -> Double? { slots.first { $0.owner == id }?.frame?.pts }
+    func frameEnd(for id: UUID) -> Double? { primarySlot(id)?.frame?.end }
+    func frameGeneration(for id: UUID) -> UInt64? { primarySlot(id)?.generation }
+    func videoExtent(for id: UUID) -> Double? { primarySlot(id)?.videoEnd }
 }
 #endif

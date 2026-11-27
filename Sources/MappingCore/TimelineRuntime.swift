@@ -1,15 +1,36 @@
 import Foundation
 
-public enum TimelineMarkerAction:String,Codable,CaseIterable,Sendable { case pause,cue }
+public enum TimelineMarkerAction:String,Codable,CaseIterable,Sendable { case pause,cue,jump }
 public struct TimelineMarker:Codable,Equatable,Identifiable,Sendable {
     public var id:UUID
     public var name:String
     public var time:Double
     public var action:TimelineMarkerAction
     public var cueID:UUID?
-    public init(id:UUID=UUID(),name:String="Marker",time:Double,action:TimelineMarkerAction = .pause,cueID:UUID?=nil) {
+    public var jumpTime: Double?
+    public var jumpLimit: Int?
+    public init(id:UUID=UUID(),name:String="Marker",time:Double,action:TimelineMarkerAction = .pause,cueID:UUID?=nil,jumpTime:Double?=nil,jumpLimit:Int?=nil) {
         self.id=id;self.name=name;self.time=time;self.action=action;self.cueID=cueID
+        self.jumpTime=jumpTime;self.jumpLimit=jumpLimit
     }
+    private enum CodingKeys: String, CodingKey { case id, name, time, action, cueID, jumpTime, jumpLimit }
+
+    public init(from decoder: Decoder) throws {
+        try self.init(from: decoder, legacy: false)
+    }
+
+    init(from decoder: Decoder, legacy: Bool) throws {
+        let fields = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(id: try fields.decode(UUID.self, forKey: .id),
+                  name: try fields.decode(String.self, forKey: .name),
+                  time: try fields.decode(Double.self, forKey: .time),
+                  action: try fields.decode(TimelineMarkerAction.self, forKey: .action),
+                  cueID: try fields.decodeIfPresent(UUID.self, forKey: .cueID),
+                  jumpTime: legacy ? nil : try fields.decodeIfPresent(Double.self, forKey: .jumpTime),
+                  jumpLimit: legacy ? nil : try fields.decodeIfPresent(Int.self, forKey: .jumpLimit))
+        if legacy && action == .jump { throw ProjectError.invalid("Jump markers require schema 14") }
+    }
+
 }
 
 public struct TimelineSettings:Codable,Equatable,Sendable {
@@ -25,14 +46,34 @@ public struct TimelineSettings:Codable,Equatable,Sendable {
     }
     private enum CodingKeys:String,CodingKey { case duration,stopAtEnd,loopEnabled,loopStart,loopEnd,markers }
     public init(from decoder:Decoder) throws {
+        try self.init(from: decoder, legacy: false)
+    }
+
+    init(from decoder: Decoder, legacy: Bool) throws {
         let c=try decoder.container(keyedBy:CodingKeys.self)
+        var list = try c.nestedUnkeyedContainer(forKey: .markers)
+        var markers: [TimelineMarker] = []
+        while !list.isAtEnd {
+            guard markers.count < 1024 else { throw ProjectError.invalid("Too many timeline markers") }
+            markers.append(try TimelineMarker(from: list.superDecoder(), legacy: legacy))
+        }
         self.init(duration:try c.decode(Double.self,forKey:.duration),
                   loopEnabled:try c.decode(Bool.self,forKey:.loopEnabled),
                   loopStart:try c.decode(Double.self,forKey:.loopStart),
                   loopEnd:try c.decode(Double.self,forKey:.loopEnd),
-                  markers:try c.decode([TimelineMarker].self,forKey:.markers),
+                  markers:markers,
                   stopAtEnd:try c.decodeIfPresent(Bool.self,forKey:.stopAtEnd) ?? true)
     }
+    func withoutShowControlExtensions() throws -> TimelineSettings {
+        var settings = self
+        for index in settings.markers.indices {
+            guard settings.markers[index].action != .jump else { throw ProjectError.invalid("Jump markers require schema 14") }
+            settings.markers[index].jumpTime = nil
+            settings.markers[index].jumpLimit = nil
+        }
+        return settings
+    }
+
     public static func inferred(from tracks:[AutomationTrack]) -> TimelineSettings {
         let end=max(10,tracks.flatMap(\.keyframes).map(\.time).filter(\.isFinite).max() ?? 0)
         return TimelineSettings(duration:end,loopEnd:end)
@@ -46,9 +87,21 @@ public struct TimelineSettings:Codable,Equatable,Sendable {
               Set(settings.markers.map(\.time)).count==settings.markers.count else { throw ProjectError.invalid("timeline requires at most 1024 markers with unique IDs and times") }
         for marker in settings.markers {
             guard marker.name.utf8.count<=4096,marker.time.isFinite,marker.time>0,marker.time<=settings.duration else { throw ProjectError.invalid("timeline markers must be after 0 seconds, within duration, with a bounded name") }
+            if marker.action != .jump, marker.jumpTime != nil || marker.jumpLimit != nil {
+                throw ProjectError.invalid("Jump settings belong to a Jump marker")
+            }
             switch marker.action {
             case .pause:guard marker.cueID==nil else { throw ProjectError.invalid("pause marker cannot reference a scene") }
             case .cue:guard let id=marker.cueID,cueIDs.contains(id) else { throw ProjectError.invalid("timeline marker references a missing scene") }
+            case .jump:
+                guard marker.cueID == nil, let target = marker.jumpTime, target.isFinite,
+                      (0...settings.duration).contains(target), target != marker.time,
+                      let limit = marker.jumpLimit, (1...64).contains(limit) else {
+                    throw ProjectError.invalid("Jump requires a different destination within the timeline and a limit of 1…64")
+                }
+                if settings.loopEnabled, target >= settings.loopEnd {
+                    throw ProjectError.invalid("Jump destination must precede the loop end")
+                }
             }
         }
     }
@@ -71,18 +124,23 @@ public struct TimelineProgram:Sendable {
         for track in tracks {
             guard let i=indices[track.surfaceID] else { continue }
             let value=Automation.evaluated(at:time,keyframes:track.keyframes)
-            switch track.parameter {
-            case "opacity":result[i].opacity=value
-            case "brightness":result[i].brightness=value
-            case "gamma":result[i].gamma=value
-            case "red","green","blue":
-                guard result[i].color.count==3 else { throw ProjectError.invalid("sampled surface requires three color components") }
-                result[i].color[track.parameter == "red" ? 0 : (track.parameter == "green" ? 1 : 2)]=value
-            default:throw ProjectError.invalid("unknown compiled timeline parameter")
-            }
+            try Self.set(value, parameter: track.parameter, on: &result[i])
         }
         return result
     }
+    static func set(_ value: Double, parameter: String, on surface: inout Surface) throws {
+        switch parameter {
+        case "opacity": surface.opacity = value
+        case "brightness": surface.brightness = value
+        case "gamma": surface.gamma = value
+        case "red", "green", "blue":
+            guard surface.color.count == 3 else { throw ProjectError.invalid("sampled surface requires three color components") }
+            let channel = parameter == "red" ? 0 : (parameter == "green" ? 1 : 2)
+            surface.color[channel] = value
+        default: throw ProjectError.invalid("unknown compiled timeline parameter")
+        }
+    }
+
 }
 
 public struct TimelineTick:Equatable,Sendable {
@@ -95,6 +153,7 @@ public struct TimelineTick:Equatable,Sendable {
     /// Traversal exceeded the bounded event budget; later cue events were skipped.
     /// Pause markers are still honored at the first exact crossing.
     public var eventsSkipped:Bool
+    public var controlEvents: [ShowControlEvent] = []
 }
 
 /// Timeline time is independent of movie duration/decoder loops. All host time
@@ -107,9 +166,10 @@ public final class ShowRuntime {
     public private(set) var settings=TimelineSettings()
     public private(set) var time=0.0
     public private(set) var isPlaying=false
+    public var allowsPositionJumps = true
     public static let eventBudget=256
     public static let maximumTime=31536000.0
-    private struct Event { var markerID:UUID; var cueID:UUID? }
+    private enum Event { case marker(TimelineMarker), control(ShowControlEvent) }
     private var queuedEvents:[Event]=[]
     private var deliveredEvents:[Event]=[]
     private var queuedSkipped=false
@@ -119,29 +179,39 @@ public final class ShowRuntime {
     private var sourceIDs=Set<UUID>()
     private var markers:[TimelineMarker]=[]
     private var pauses:[TimelineMarker]=[]
+    private var jumps: [TimelineMarker] = []
+    private var jumpCounts: [UUID: Int] = [:]
+    private var sourceControlTracks: [ShowControlTrack] = []
+    private var controlEvents: [ShowControlEvent] = []
     private var program=try! TimelineProgram(tracks:[],surfaces:[])
     public init() {}
 
-    public func configure(settings newSettings:TimelineSettings,tracks:[AutomationTrack],surfaces:[Surface],cueIDs:Set<UUID>=[],at hostTime:Double=ProcessInfo.processInfo.systemUptime) throws {
+    public func configure(settings newSettings:TimelineSettings,tracks:[AutomationTrack],surfaces:[Surface],cueIDs:Set<UUID>=[],controlTracks:[ShowControlTrack]=[],at hostTime:Double=ProcessInfo.processInfo.systemUptime) throws {
         guard hostTime.isFinite else { throw ProjectError.invalid("timeline host time must be finite") }
         try TimelineSettings.validate(newSettings,tracks:tracks,cueIDs:cueIDs)
         let ids=Set(surfaces.map(\.id))
         // A frame refresh must not move the host anchor or lose elapsed time.
-        if newSettings==settings,tracks==sourceTracks,ids==sourceIDs { return }
+        if newSettings==settings,tracks==sourceTracks,ids==sourceIDs,controlTracks==sourceControlTracks { return }
         let tracksOnly=newSettings==settings && ids==sourceIDs
         let nextProgram=try TimelineProgram(tracks:tracks,surfaces:surfaces)
+        try ShowControlTrack.validate(controlTracks, duration: newSettings.duration)
+        let nextEvents = ShowControlTrack.events(controlTracks)
         // Validate completely before consuming any clock or queued events.
         let previous=tick(at:hostTime)
         let oldEvents=deliveredEvents
         let newTime=min(seekLimit(newSettings),previous.time)
+        if newSettings.markers != settings.markers { jumpCounts.removeAll() }
         settings=newSettings;sourceTracks=tracks;sourceIDs=ids;program=nextProgram
+        sourceControlTracks=controlTracks;controlEvents=nextEvents
         markers=newSettings.markers.sorted {$0.time<$1.time};pauses=markers.filter {$0.action == .pause}
+        jumps = markers.filter { $0.action == .jump }
         time=newTime
         isPlaying=previous.isPlaying && (newSettings.loopEnabled || newTime<endBoundary(newSettings))
         anchorHost=max(anchorHost,hostTime);pendingDiscontinuity=previous.discontinuity || !tracksOnly
         queuedEvents=oldEvents;queuedSkipped=previous.eventsSkipped
     }
     public func currentTime(at hostTime:Double=ProcessInfo.processInfo.systemUptime) -> Double { projected(at:hostTime).time }
+    public func projectedPlaying(at hostTime: Double) -> Bool { projected(at: hostTime).playing }
     public func play(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
         guard hostTime.isFinite,!isPlaying else { return }
         if (!settings.loopEnabled && time>=endBoundary(settings)) || (settings.loopEnabled && time>=settings.loopEnd) {
@@ -158,12 +228,12 @@ public final class ShowRuntime {
     public func stop(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
         guard hostTime.isFinite else { return }
         time=0;isPlaying=false;anchorHost=hostTime;pendingDiscontinuity=true
-        clearQueuedEvents()
+        jumpCounts.removeAll(); clearQueuedEvents()
     }
     public func seek(to seconds:Double,at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
         guard seconds.isFinite,hostTime.isFinite else { return }
         time=min(seekLimit(settings),max(0,seconds));anchorHost=hostTime;pendingDiscontinuity=true
-        clearQueuedEvents()
+        jumpCounts.removeAll(); clearQueuedEvents()
     }
     public func apply(surfaces:[Surface]) throws -> [Surface] { try program.apply(time:time,surfaces:surfaces) }
 
@@ -173,24 +243,46 @@ public final class ShowRuntime {
         pendingDiscontinuity=false;queuedEvents=[];queuedSkipped=false
         func result() -> TimelineTick {
             deliveredEvents=events
-            return TimelineTick(time:time,isPlaying:isPlaying,discontinuity:discontinuity,cueIDs:events.compactMap(\.cueID),firedMarkerIDs:events.map(\.markerID),eventsSkipped:skipped)
+            var markerIDs: [UUID] = []
+            var cueIDs: [UUID] = []
+            var controls: [ShowControlEvent] = []
+            for event in events {
+                switch event {
+                case .marker(let marker):
+                    markerIDs.append(marker.id)
+                    if let id = marker.cueID { cueIDs.append(id) }
+                case .control(let command): controls.append(command)
+                }
+            }
+            return TimelineTick(time: time, isPlaying: isPlaying, discontinuity: discontinuity,
+                                cueIDs: cueIDs, firedMarkerIDs: markerIDs, eventsSkipped: skipped,
+                                controlEvents: controls)
         }
         guard isPlaying else { return result() }
         var remaining=elapsed(at:hostTime),budget=Self.eventBudget-events.count
         anchorHost=max(anchorHost,hostTime)
-        func collect(from old:Double,to next:Double) -> Double? {
-            let pause=firstPause(after:old,through:next)
-            let target=pause?.time ?? next
-            let first=upperBound(markers,old),end=upperBound(markers,target)
-            let available=max(0,budget),count=min(available,end-first)
-            if count>0 {
-                for marker in markers[first..<(first+count)] {
-                    events.append(Event(markerID:marker.id,cueID:marker.cueID))
+        func collect(from old: Double, to next: Double) -> TimelineMarker? {
+            let boundary = firstBoundary(after: old, through: next)
+            let target = boundary?.time ?? next
+            var markerIndex = upperBound(markers, old)
+            let markerEnd = upperBound(markers, target)
+            var controlIndex = Self.upperBound(controlEvents, old, time: { $0.time })
+            let controlEnd = Self.upperBound(controlEvents, target, time: { $0.time })
+            while markerIndex < markerEnd || controlIndex < controlEnd {
+                if budget <= 0 { skipped = true; break }
+                if markerIndex < markerEnd,
+                   controlIndex == controlEnd || markers[markerIndex].time <= controlEvents[controlIndex].time {
+                    let marker = markers[markerIndex]
+                    markerIndex += 1
+                    if marker.action == .jump && marker.id != boundary?.id { continue }
+                    events.append(.marker(marker))
+                } else {
+                    events.append(.control(controlEvents[controlIndex]))
+                    controlIndex += 1
                 }
-                budget-=count
+                budget -= 1
             }
-            if end-first>count { skipped=true }
-            return pause?.time
+            return boundary
         }
         if settings.loopEnabled,time>=settings.loopEnd {
             time=settings.loopStart;discontinuity=true;budget-=1
@@ -201,8 +293,16 @@ public final class ShowRuntime {
         while remaining>0 {
             let boundary=settings.loopEnabled ? settings.loopEnd : endBoundary(settings)
             let distance=max(0,boundary-time),travel=min(remaining,distance),next=time+travel
-            if let pause=collect(from:time,to:next) {
-                time=pause;isPlaying=false;discontinuity=true;remaining=0;break
+            if let marker = collect(from: time, to: next) {
+                discontinuity = true
+                if let destination = marker.jumpTime {
+                    jumpCounts[marker.id, default: 0] += 1
+                    time = destination
+                } else {
+                    time = marker.time
+                    isPlaying = false
+                }
+                break
             }
             time=next;remaining=max(0,remaining-travel)
             if time>=boundary {
@@ -223,9 +323,24 @@ public final class ShowRuntime {
     private func seekLimit(_ settings:TimelineSettings) -> Double { !settings.stopAtEnd && !settings.loopEnabled ? Self.maximumTime : settings.duration }
     private func endBoundary(_ settings:TimelineSettings) -> Double { settings.stopAtEnd ? settings.duration : Self.maximumTime }
     private func upperBound(_ collection:[TimelineMarker],_ value:Double) -> Int {
-        var low=0,high=collection.count
-        while low<high { let middle=(low+high)/2;if collection[middle].time<=value { low=middle+1 } else { high=middle } }
+        Self.upperBound(collection, value, time: { $0.time })
+    }
+    private static func upperBound<T>(_ collection: [T], _ value: Double, time: (T) -> Double) -> Int {
+        var low = 0, high = collection.count
+        while low < high {
+            let middle = (low + high) / 2
+            if time(collection[middle]) <= value { low = middle + 1 } else { high = middle }
+        }
         return low
+    }
+    private func firstBoundary(after start: Double, through end: Double) -> TimelineMarker? {
+        let pause = firstPause(after: start, through: end)
+        guard allowsPositionJumps else { return pause }
+        let end = pause?.time ?? end
+        let jump = jumps.dropFirst(upperBound(jumps, start)).prefix { $0.time <= end }.first {
+            jumpCounts[$0.id, default: 0] < ($0.jumpLimit ?? 0)
+        }
+        return jump ?? pause
     }
     private func firstPause(after start:Double,through end:Double) -> TimelineMarker? {
         let index=upperBound(pauses,start)
@@ -251,7 +366,11 @@ public final class ShowRuntime {
     }
     private func projected(at hostTime:Double) -> (time:Double,playing:Bool) {
         guard hostTime.isFinite,isPlaying else { return (time,isPlaying) }
-        let value=advanced(from:time,elapsed:elapsed(at:hostTime))
+        let elapsed = elapsed(at: hostTime)
+        let boundary = settings.loopEnabled ? settings.loopEnd : endBoundary(settings)
+        if let marker = firstBoundary(after: time, through: min(boundary, time + elapsed)),
+           let jump = marker.jumpTime { return (jump, true) }
+        let value=advanced(from:time,elapsed:elapsed)
         return (value.time,value.playing)
     }
 }

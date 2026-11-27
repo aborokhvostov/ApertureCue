@@ -44,6 +44,7 @@ public final class CueEngine {
     private var target: [Surface] = []
     private var start: Double = 0
     private var duration: Double = 0
+    private var curve: CueCurve = .linear
     private var selectiveBindings:[UUID:[CueParameter]]?
     public private(set) var activeCueID: UUID?
     public private(set) var isTransitioning = false
@@ -53,17 +54,18 @@ public final class CueEngine {
     public func begin(from surfaces: [Surface], cue: Cue, at hostTime: Double = ProcessInfo.processInfo.systemUptime) {
         guard hostTime.isFinite,let destination=try? CueSelection.destination(from:surfaces,cue:cue),
               Set(surfaces.map(\.id)).count == surfaces.count else { cancel(); return }
-        source=surfaces; target=destination; start=hostTime; duration=max(0,cue.duration)
+        source=surfaces; target=destination; start=hostTime; duration=max(0,cue.duration); curve=cue.curve
         selectiveBindings=cue.scope == .selective ? Dictionary(uniqueKeysWithValues:cue.bindings.map { ($0.surfaceID,$0.parameters) }) : nil
         activeCueID=cue.id; isTransitioning=true; completedAt=nil; followAfter=cue.followAfter
     }
     public func sample(at hostTime: Double = ProcessInfo.processInfo.systemUptime) -> [Surface]? {
-        guard isTransitioning else { return nil }
-        let t = duration <= 0 ? 1 : min(1,max(0,(hostTime-start)/duration))
-        if t >= 1 {
+        guard isTransitioning, hostTime.isFinite else { return nil }
+        let progress = duration <= 0 ? 1 : min(1,max(0,(hostTime-start)/duration))
+        if progress >= 1 {
             isTransitioning=false; completedAt=start+duration
             return target
         }
+        let t = curve.value(at: progress)
         let sourceByID = Dictionary(uniqueKeysWithValues:source.map { ($0.id,$0) })
         if let bindings=selectiveBindings {
             return target.map { b in

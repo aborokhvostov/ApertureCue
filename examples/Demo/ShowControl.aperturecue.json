@@ -1,0 +1,1302 @@
+{
+  "assets" : [
+
+  ],
+  "conductor" : {
+    "banks" : [
+      {
+        "id" : "35CE9CA4-7F34-4BE6-867B-DBD4B0D2488E",
+        "name" : "Parallel tracks",
+        "rows" : [
+          {
+            "cells" : [
+              {
+                "duration" : 2,
+                "id" : "4A09E1EF-170D-4D03-8012-D2BABEEBA6FF",
+                "loops" : true,
+                "name" : "Rise",
+                "tracks" : [
+                  {
+                    "enabled" : true,
+                    "id" : "D45E8B2B-DF08-4E84-BD4C-E8341557BC18",
+                    "keyframes" : [
+                      {
+                        "control1" : {
+                          "x" : 0.3333333333333333,
+                          "y" : 0.3333333333333333
+                        },
+                        "control2" : {
+                          "x" : 0.6666666666666666,
+                          "y" : 0.6666666666666666
+                        },
+                        "interpolation" : "linear",
+                        "time" : 0,
+                        "value" : 0
+                      },
+                      {
+                        "control1" : {
+                          "x" : 0.3333333333333333,
+                          "y" : 0.3333333333333333
+                        },
+                        "control2" : {
+                          "x" : 0.6666666666666666,
+                          "y" : 0.6666666666666666
+                        },
+                        "interpolation" : "linear",
+                        "time" : 2,
+                        "value" : 1
+                      }
+                    ],
+                    "name" : "Rise",
+                    "parameter" : "opacity",
+                    "surfaceID" : "CD564052-DA38-4954-9695-BFA345221C77"
+                  }
+                ]
+              },
+              {
+                "duration" : 2,
+                "id" : "036F615C-4B27-4FAD-9F5E-AFBF32CB8B97",
+                "loops" : false,
+                "name" : "Dim",
+                "tracks" : [
+                  {
+                    "enabled" : true,
+                    "id" : "706E49F7-606C-47C3-ABAD-D0F4A73AE1AC",
+                    "keyframes" : [
+                      {
+                        "control1" : {
+                          "x" : 0.3333333333333333,
+                          "y" : 0.3333333333333333
+                        },
+                        "control2" : {
+                          "x" : 0.6666666666666666,
+                          "y" : 0.6666666666666666
+                        },
+                        "interpolation" : "linear",
+                        "time" : 0,
+                        "value" : 0.3
+                      },
+                      {
+                        "control1" : {
+                          "x" : 0.3333333333333333,
+                          "y" : 0.3333333333333333
+                        },
+                        "control2" : {
+                          "x" : 0.6666666666666666,
+                          "y" : 0.6666666666666666
+                        },
+                        "interpolation" : "linear",
+                        "time" : 2,
+                        "value" : 0.3
+                      }
+                    ],
+                    "name" : "Dim",
+                    "parameter" : "opacity",
+                    "surfaceID" : "CD564052-DA38-4954-9695-BFA345221C77"
+                  }
+                ]
+              }
+            ],
+            "id" : "C28BF839-E444-4CC0-8898-94A22DFC7038",
+            "name" : "Left"
+          },
+          {
+            "cells" : [
+              {
+                "duration" : 2,
+                "id" : "49FE1773-27C7-485F-88D9-C44094EB2161",
+                "loops" : true,
+                "name" : "Fall",
+                "tracks" : [
+                  {
+                    "enabled" : true,
+                    "id" : "9B56B4B5-6A62-45F9-ABF6-9AAF4C03771F",
+                    "keyframes" : [
+                      {
+                        "control1" : {
+                          "x" : 0.3333333333333333,
+                          "y" : 0.3333333333333333
+                        },
+                        "control2" : {
+                          "x" : 0.6666666666666666,
+                          "y" : 0.6666666666666666
+                        },
+                        "interpolation" : "linear",
+                        "time" : 0,
+                        "value" : 1
+                      },
+                      {
+                        "control1" : {
+                          "x" : 0.3333333333333333,
+                          "y" : 0.3333333333333333
+                        },
+                        "control2" : {
+                          "x" : 0.6666666666666666,
+                          "y" : 0.6666666666666666
+                        },
+                        "interpolation" : "linear",
+                        "time" : 2,
+                        "value" : 0
+                      }
+                    ],
+                    "name" : "Fall",
+                    "parameter" : "opacity",
+                    "surfaceID" : "791F0751-0C2A-4CCD-920E-FFDBD59C2542"
+                  }
+                ]
+              }
+            ],
+            "id" : "EFC1F14B-6FB8-48BD-96B2-ADC7C7733439",
+            "name" : "Right"
+          }
+        ]
+      },
+      {
+        "id" : "EAD8FD76-EAC1-4B12-A18A-9A2B242DD8FB",
+        "name" : "Alternate bank",
+        "rows" : [
+          {
+            "cells" : [
+              {
+                "duration" : 2,
+                "id" : "D6E7F1B3-8298-435D-B447-882103287CA3",
+                "loops" : false,
+                "name" : "Dim",
+                "tracks" : [
+                  {
+                    "enabled" : true,
+                    "id" : "706E49F7-606C-47C3-ABAD-D0F4A73AE1AC",
+                    "keyframes" : [
+                      {
+                        "control1" : {
+                          "x" : 0.3333333333333333,
+                          "y" : 0.3333333333333333
+                        },
+                        "control2" : {
+                          "x" : 0.6666666666666666,
+                          "y" : 0.6666666666666666
+                        },
+                        "interpolation" : "linear",
+                        "time" : 0,
+                        "value" : 0.3
+                      },
+                      {
+                        "control1" : {
+                          "x" : 0.3333333333333333,
+                          "y" : 0.3333333333333333
+                        },
+                        "control2" : {
+                          "x" : 0.6666666666666666,
+                          "y" : 0.6666666666666666
+                        },
+                        "interpolation" : "linear",
+                        "time" : 2,
+                        "value" : 0.3
+                      }
+                    ],
+                    "name" : "Dim",
+                    "parameter" : "opacity",
+                    "surfaceID" : "CD564052-DA38-4954-9695-BFA345221C77"
+                  }
+                ]
+              }
+            ],
+            "id" : "370CC8ED-C31B-4E28-9D2D-B843ED86E460",
+            "name" : "Left"
+          }
+        ]
+      }
+    ],
+    "bindings" : [
+      {
+        "id" : "D1D12AB5-3571-40C1-87ED-6358DAD75F1D",
+        "maximum" : 1,
+        "minimum" : 0.5,
+        "parameter" : "blue",
+        "signalID" : "C734032B-14C1-4BA8-AB5C-4427775A29CE",
+        "surfaceID" : "791F0751-0C2A-4CCD-920E-FFDBD59C2542"
+      }
+    ],
+    "signals" : [
+      {
+        "frequency" : 0.5,
+        "id" : "C734032B-14C1-4BA8-AB5C-4427775A29CE",
+        "inputs" : [
+
+        ],
+        "kind" : "triangle",
+        "name" : "Slow triangle",
+        "phase" : 0
+      }
+    ]
+  },
+  "cues" : [
+    {
+      "bindings" : [
+
+      ],
+      "curve" : "easeInOut",
+      "duration" : 1,
+      "id" : "6BC8F623-5300-44C1-AB1E-D0DE46CE1E12",
+      "name" : "Open",
+      "scope" : "full",
+      "surfaces" : [
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            0.25,
+            0.1
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "solid",
+          "group" : "",
+          "id" : "CD564052-DA38-4954-9695-BFA345221C77",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialValues" : {
+
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "Left automation",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.06,
+              "y" : 0.2
+            },
+            {
+              "x" : 0.44,
+              "y" : 0.2
+            },
+            {
+              "x" : 0.44,
+              "y" : 0.8
+            },
+            {
+              "x" : 0.06,
+              "y" : 0.8
+            }
+          ],
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        },
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            0.1,
+            0.4,
+            1
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "solid",
+          "group" : "",
+          "id" : "791F0751-0C2A-4CCD-920E-FFDBD59C2542",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialValues" : {
+
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "Right automation",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.56,
+              "y" : 0.2
+            },
+            {
+              "x" : 0.94,
+              "y" : 0.2
+            },
+            {
+              "x" : 0.94,
+              "y" : 0.8
+            },
+            {
+              "x" : 0.56,
+              "y" : 0.8
+            }
+          ],
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        }
+      ]
+    },
+    {
+      "bindings" : [
+
+      ],
+      "curve" : "easeOut",
+      "duration" : 1,
+      "id" : "78831EBF-20D3-439F-9C86-B661910164F9",
+      "name" : "Dim blue",
+      "scope" : "full",
+      "surfaces" : [
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            1,
+            0.25,
+            0.1
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "solid",
+          "group" : "",
+          "id" : "CD564052-DA38-4954-9695-BFA345221C77",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialValues" : {
+
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "Left automation",
+          "opacity" : 1,
+          "output" : [
+            {
+              "x" : 0.06,
+              "y" : 0.2
+            },
+            {
+              "x" : 0.44,
+              "y" : 0.2
+            },
+            {
+              "x" : 0.44,
+              "y" : 0.8
+            },
+            {
+              "x" : 0.06,
+              "y" : 0.8
+            }
+          ],
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        },
+        {
+          "blendMode" : "normal",
+          "brightness" : 1,
+          "color" : [
+            0.1,
+            0.4,
+            1
+          ],
+          "effects" : {
+            "inverted" : false,
+            "keyColor" : [
+              0,
+              1,
+              0
+            ],
+            "keyMode" : "none",
+            "posterizeLevels" : 0,
+            "saturation" : 1,
+            "softness" : 0.1,
+            "spill" : 0,
+            "threshold" : 0.1
+          },
+          "enabled" : true,
+          "feather" : 0,
+          "gamma" : 1,
+          "generator" : "solid",
+          "group" : "",
+          "id" : "791F0751-0C2A-4CCD-920E-FFDBD59C2542",
+          "input" : [
+            {
+              "x" : 0,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 0
+            },
+            {
+              "x" : 1,
+              "y" : 1
+            },
+            {
+              "x" : 0,
+              "y" : 1
+            }
+          ],
+          "inputMesh" : [
+
+          ],
+          "inputWarpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          },
+          "mask" : [
+
+          ],
+          "maskSettings" : {
+            "feather" : 0,
+            "inverted" : false,
+            "space" : "sourceUV"
+          },
+          "masks" : [
+
+          ],
+          "materialValues" : {
+
+          },
+          "mesh" : [
+
+          ],
+          "meshColumns" : 0,
+          "meshLinked" : false,
+          "meshRows" : 0,
+          "meshWeights" : [
+
+          ],
+          "name" : "Right automation",
+          "opacity" : 0.2,
+          "output" : [
+            {
+              "x" : 0.56,
+              "y" : 0.2
+            },
+            {
+              "x" : 0.94,
+              "y" : 0.2
+            },
+            {
+              "x" : 0.94,
+              "y" : 0.8
+            },
+            {
+              "x" : 0.56,
+              "y" : 0.8
+            }
+          ],
+          "shape" : "quad",
+          "stroke" : {
+            "closed" : false,
+            "nodes" : [
+              {
+                "anchor" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.15,
+                  "y" : 0.5
+                }
+              },
+              {
+                "anchor" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "incoming" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                },
+                "outgoing" : {
+                  "x" : 0.85,
+                  "y" : 0.5
+                }
+              }
+            ],
+            "width" : 0.08
+          },
+          "warpTransform" : {
+            "a" : 1,
+            "b" : 0,
+            "c" : 0,
+            "d" : 1,
+            "pw" : 1,
+            "px" : 0,
+            "py" : 0,
+            "tx" : 0,
+            "ty" : 0
+          }
+        }
+      ]
+    }
+  ],
+  "fixtures" : [
+
+  ],
+  "geometryLockedSurfaceIDs" : [
+
+  ],
+  "globalMasks" : [
+
+  ],
+  "groups" : [
+
+  ],
+  "materials" : [
+
+  ],
+  "montages" : [
+
+  ],
+  "name" : "ApertureCue Show Control",
+  "outputs" : [
+    {
+      "edgeBlend" : {
+        "blackLevel" : 0,
+        "bottom" : 0,
+        "gamma" : 1,
+        "left" : 0,
+        "power" : 1,
+        "right" : 0,
+        "top" : 0
+      },
+      "height" : 1080,
+      "id" : "1A4F89AF-4BCE-4243-B423-136D0585A44B",
+      "name" : "Preview",
+      "screenIndex" : 0,
+      "width" : 1920
+    }
+  ],
+  "showControlTracks" : [
+
+  ],
+  "showSchedule" : {
+    "entries" : [
+
+    ]
+  },
+  "surfaces" : [
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        0.25,
+        0.1
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "solid",
+      "group" : "",
+      "id" : "CD564052-DA38-4954-9695-BFA345221C77",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "Left automation",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.06,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.44,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.44,
+          "y" : 0.8
+        },
+        {
+          "x" : 0.06,
+          "y" : 0.8
+        }
+      ],
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    },
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        0.1,
+        0.4,
+        1
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "solid",
+      "group" : "",
+      "id" : "791F0751-0C2A-4CCD-920E-FFDBD59C2542",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "Right automation",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.56,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.94,
+          "y" : 0.2
+        },
+        {
+          "x" : 0.94,
+          "y" : 0.8
+        },
+        {
+          "x" : 0.56,
+          "y" : 0.8
+        }
+      ],
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    }
+  ],
+  "timeline" : [
+    {
+      "enabled" : true,
+      "id" : "D45E8B2B-DF08-4E84-BD4C-E8341557BC18",
+      "keyframes" : [
+        {
+          "control1" : {
+            "x" : 0.3333333333333333,
+            "y" : 0.3333333333333333
+          },
+          "control2" : {
+            "x" : 0.6666666666666666,
+            "y" : 0.6666666666666666
+          },
+          "interpolation" : "linear",
+          "time" : 0,
+          "value" : 0
+        },
+        {
+          "control1" : {
+            "x" : 0.3333333333333333,
+            "y" : 0.3333333333333333
+          },
+          "control2" : {
+            "x" : 0.6666666666666666,
+            "y" : 0.6666666666666666
+          },
+          "interpolation" : "linear",
+          "time" : 2,
+          "value" : 1
+        }
+      ],
+      "name" : "Rise",
+      "parameter" : "opacity",
+      "surfaceID" : "CD564052-DA38-4954-9695-BFA345221C77"
+    },
+    {
+      "enabled" : true,
+      "id" : "9B56B4B5-6A62-45F9-ABF6-9AAF4C03771F",
+      "keyframes" : [
+        {
+          "control1" : {
+            "x" : 0.3333333333333333,
+            "y" : 0.3333333333333333
+          },
+          "control2" : {
+            "x" : 0.6666666666666666,
+            "y" : 0.6666666666666666
+          },
+          "interpolation" : "linear",
+          "time" : 0,
+          "value" : 1
+        },
+        {
+          "control1" : {
+            "x" : 0.3333333333333333,
+            "y" : 0.3333333333333333
+          },
+          "control2" : {
+            "x" : 0.6666666666666666,
+            "y" : 0.6666666666666666
+          },
+          "interpolation" : "linear",
+          "time" : 2,
+          "value" : 0
+        }
+      ],
+      "name" : "Fall",
+      "parameter" : "opacity",
+      "surfaceID" : "791F0751-0C2A-4CCD-920E-FFDBD59C2542"
+    }
+  ],
+  "timelineSettings" : {
+    "duration" : 4,
+    "loopEnabled" : false,
+    "loopEnd" : 4,
+    "loopStart" : 0,
+    "markers" : [
+      {
+        "action" : "jump",
+        "id" : "CDB6B538-E302-4838-BA13-52738EEA03E0",
+        "jumpLimit" : 2,
+        "jumpTime" : 0.5,
+        "name" : "Repeat opening",
+        "time" : 2
+      },
+      {
+        "action" : "pause",
+        "id" : "E9C7518A-104E-4B25-B870-808E753B2199",
+        "name" : "Hold",
+        "time" : 3.5
+      }
+    ],
+    "stopAtEnd" : true
+  },
+  "version" : 14
+}

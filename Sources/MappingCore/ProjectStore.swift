@@ -165,6 +165,15 @@ public enum ProjectStore {
             guard portable.assets.allSatisfy({["image","video","camera"].contains($0.kind)}) else {throw ProjectError.invalid("media kind requires schema 13")}
             for i in portable.assets.indices {portable.assets[i].playback=nil;portable.assets[i].sequence=nil;portable.assets[i].audioRouting=nil}
         }
+        if portable.version < 14 {
+            portable.conductor = Conductor()
+            portable.showSchedule = ShowSchedule()
+            portable.showControlTracks = []
+            portable.montages = try portable.montages.map { try $0.withoutShowControlExtensions() }
+            try MontageProgram.validate(montages: portable.montages, assets: portable.assets, legacy: true)
+            portable.timelineSettings = try portable.timelineSettings.withoutShowControlExtensions()
+            for index in portable.cues.indices { portable.cues[index].curve = .linear }
+        }
         portable.version = Project.currentVersion
         try validate(portable)
         let base = url.deletingLastPathComponent().standardizedFileURL
@@ -241,6 +250,7 @@ public enum ProjectStore {
         if p.version < 5 { migrateLegacyTimeline(&p) }
         if p.version < 6 { clearLegacyCueExtensions(&p) }
         if p.version < 7 { p.montages=[] }
+        if p.version < 14 { try MontageProgram.validate(montages: p.montages, assets: p.assets, legacy: true) }
         p.version = Project.currentVersion
         try validate(p)
         let base = url.deletingLastPathComponent()
@@ -427,7 +437,7 @@ public enum ProjectStore {
             try EdgeBlend.validate(output.edgeBlend)
             guard output.screenIndex >= 0, output.screenIndex < 64, (1...16384).contains(output.width), (1...16384).contains(output.height) else { throw ProjectError.invalid("invalid output size or screen index") }
         }
-        try MontageProgram.validate(montages:project.version>=7 ? project.montages : [],assets:project.assets)
+        try MontageProgram.validate(montages:project.version>=7 ? project.montages : [],assets:project.assets,legacy:project.version < 14)
         if project.version >= 3, (project.surfaces + project.cues.flatMap(\.surfaces)).contains(where:{ !$0.group.isEmpty }) {
             throw ProjectError.invalid("schema 3 uses groupID references; legacy group labels must be migrated from a version 0...2 document")
         }
@@ -450,8 +460,16 @@ public enum ProjectStore {
         }
         // Only a full cue can restore an absent layer. A partial cue skips missing
         // targets, so its dormant snapshot cannot keep an orphan track alive.
-        try TimelineEngine.validate(tracks:project.timeline,surfaces:project.surfaces+project.cues.filter { $0.scope == .full }.flatMap(\.surfaces))
-        try TimelineSettings.validate(project.timelineSettings,tracks:project.timeline,cueIDs:Set(project.cues.map(\.id)))
+        let automationSurfaces = project.surfaces + project.cues.filter { $0.scope == .full }.flatMap(\.surfaces)
+        let cueIDs = Set(project.cues.map(\.id))
+        try TimelineEngine.validate(tracks: project.timeline, surfaces: automationSurfaces)
+        let settings = try project.version < 14 ? project.timelineSettings.withoutShowControlExtensions() : project.timelineSettings
+        try TimelineSettings.validate(settings, tracks: project.timeline, cueIDs: cueIDs)
+        if project.version >= 14 {
+            try project.conductor.validate(surfaces: automationSurfaces)
+            try project.showSchedule.validate(cueIDs: cueIDs)
+            try ShowControlTrack.validate(project.showControlTracks, duration: settings.duration)
+        }
     }
 
     private static func validateSurfaces(_ surfaces: [Surface], mediaIDs: Set<UUID>, outputIDs: Set<UUID>,materials:[UUID:MaterialProgram]) throws {

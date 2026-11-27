@@ -11,6 +11,13 @@ new source controls are documented in the [user guide](docs/user-guide.md);
 [Stage 3 evidence](docs/stage-3-completion.md) separates automatic, visible and
 hardware verification.
 
+Show control in schema 14 adds Conductor banks and parallel automation cells,
+a signal graph, scene easing, bounded Jump markers, key-range retiming, local
+schedule/ICS, OSC and virtual MIDI tracks, external clock recovery, and
+signed-rate video/PCM montage with adjacent crossfades. The original
+`Demo/ShowControl.aperturecue.json` shows standalone automation cells and master
+markers. [Stage 4 behavior and verification](docs/stage-4-completion.md)
+
 [Download the Apple Silicon development build (alpha 16)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.16). It includes the original Media/Composition/Demo projects and uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-16).
 
 Alpha 16 completes the declared Stage 3 software criteria. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45895275823) passed 154 actual XCTest on each macOS/Linux, alongside production media/editor/audio/recovery, scoped visible workflow and fresh-archive checks. Physical camera/audio wiring, audible AV synchronization and show-length stability remain open. Open Media/Media.aperturecue.json and use Sources to try the new controls.
@@ -76,6 +83,9 @@ dist/ApertureCue.app/Contents/MacOS/ApertureCue --live-editor-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --protocol-loopback
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --lighting-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --editor-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --conductor-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --show-schedule-test
+dist/ApertureCue.app/Contents/MacOS/ApertureCue --show-control-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --montage-test
 dist/ApertureCue.app/Contents/MacOS/ApertureCue --benchmark
 ```

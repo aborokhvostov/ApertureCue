@@ -9,7 +9,7 @@ ditto --norsrc --noextattr dist/ApertureCue.app "$task_release/ApertureCue.app"
 mkdir -p "$task_release/Demo"
 # Ship only the original demos and their media. Working copies and recovery
 # sidecars can exist beside them after running the editor.
-for task_demo in Demo Composition Groups Montage Recording SelectiveCues Shapes Strokes Timeline; do
+for task_demo in Demo Composition Groups Montage Recording SelectiveCues Shapes ShowControl Strokes Timeline; do
   cp "examples/Demo/$task_demo.aperturecue.json" "$task_release/Demo/"
 done
 cp examples/Demo/calibration.png examples/Demo/motion.mov "$task_release/Demo/"
@@ -31,6 +31,9 @@ and select Demo/Demo.aperturecue.json beside this file. Press Play.
 Demo/Composition.aperturecue.json demonstrates procedural materials, Bezier
 warps, scoped masks and isolated groups without external media or hardware.
 Original import examples are in Examples/Materials and Examples/SVG.
+Demo/ShowControl.aperturecue.json contains a procedural show. Use Show >
+Conductor to launch its two rows independently. Timeline contains a bounded Jump
+and a Pause marker. Schedule and OSC/MIDI dispatch are session controls.
 Media/Media.aperturecue.json demonstrates frozen image sequences, independent
 source transport and reverse ping-pong. Open Sources in the Media library.
 Its original stereo tone asset is unassigned and volume 0. Assign it to a

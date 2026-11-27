@@ -12,7 +12,9 @@ extension EditorController {
         let beforeTime=showRuntime.currentTime(at:hostTime), beforePlaying=showRuntime.isPlaying
         do {
             try showRuntime.configure(settings:project.timelineSettings,tracks:project.timeline,
-                                      surfaces:project.surfaces+project.cues.filter {$0.scope == .full}.flatMap(\.surfaces),cueIDs:Set(project.cues.map(\.id)),at:hostTime)
+                                      surfaces:automationSurfaces, cueIDs:Set(project.cues.map(\.id)),
+                                      controlTracks:project.showControlTracks, at:hostTime)
+            try conductorRuntime.configure(project.conductor, surfaces:automationSurfaces)
             showConfigurationError=""
             let stopped=beforePlaying && !showRuntime.isPlaying
             if stopped { media.pause() }
@@ -21,6 +23,7 @@ extension EditorController {
         } catch { showConfigurationError=error.localizedDescription }
     }
     func playShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
+        releaseExternalShowClock()
         configureShow(at:hostTime)
         guard showConfigurationError.isEmpty,!showRuntime.isPlaying else { return }
         showRuntime.play(at:hostTime)
@@ -28,12 +31,18 @@ extension EditorController {
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func pauseShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
+        releaseExternalShowClock()
         advanceShow(at:hostTime)
+        flushShowControlNotes()
         stopAutomationRecording(reason:"Paused",at:hostTime)
         showRuntime.pause(at:hostTime); montageSerial &+= 1; media.pause(); media.seek(to:showRuntime.time)
         updateRender(); timelineWindow?.updatePlayhead()
     }
     func stopShow(at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
+        releaseExternalShowClock()
+        flushShowControlNotes()
+        conductorRuntime.stopAll()
+        conductorWindow?.updateStatus()
         feedback?.reset()
         stopAutomationRecording(reason:"Stopped",at:hostTime)
         timelineEventWarning=""
@@ -43,6 +52,8 @@ extension EditorController {
     func seekShow(to seconds:Double,at hostTime:Double=ProcessInfo.processInfo.systemUptime) {
         feedback?.reset()
         guard seconds.isFinite else { return }
+        releaseExternalShowClock()
+        flushShowControlNotes()
         stopAutomationRecording(reason:"Seek",at:hostTime)
         timelineEventWarning=""
         showRuntime.seek(to:seconds,at:hostTime); montageSerial &+= 1; media.seek(to:showRuntime.time)
@@ -54,6 +65,7 @@ extension EditorController {
             stopAutomationRecording(reason:!result.isPlaying ? "Playback paused or ended" : result.discontinuity ? "Playback discontinuity / loop wrap" : "Recording reached graph end",at:hostTime)
         }
         if result.discontinuity {
+            flushShowControlNotes()
             feedback?.reset()
             montageSerial &+= 1
             if !result.isPlaying { media.pause() }
@@ -62,8 +74,15 @@ extension EditorController {
         }
         if result.eventsSkipped { timelineEventWarning="Timeline event budget reached; excess events skipped" }
         for id in result.cueIDs {
-            if let index=project.cues.firstIndex(where:{$0.id==id}) { goCue(index:index) }
+            if let index = project.cues.firstIndex(where: { $0.id == id }),
+               goCue(index: index, interactive: false), cueTarget?.duration == 0 {
+                // Several scene markers can cross in one host tick. Publish an
+                // instant cue before the next marker captures its start state.
+                applyCueSample(at: cueStart)
+            }
         }
+        dispatchShowControlEvents(result.controlEvents)
+        if !result.isPlaying { flushShowControlNotes() }
         timelineWindow?.updatePlayhead()
     }
     @discardableResult
@@ -102,6 +121,27 @@ extension EditorController {
         candidate.timeline[i].keyframes.sort {$0.time<$1.time}
         try ProjectStore.validate(candidate);mutate(index == nil ? "Insert timeline key" : "Edit timeline key") {$0=candidate}
     }
+    func timelineRetimeKeys(trackID: UUID, from start: Double, through end: Double,
+                            to destination: Double, scale: Double) throws {
+        guard let index = project.timeline.firstIndex(where: { $0.id == trackID }),
+              start.isFinite, end.isFinite, start >= 0, end >= start,
+              destination.isFinite, destination >= 0, scale.isFinite, scale > 0 else {
+            throw ProjectError.invalid("Select a track and enter a valid range, destination and positive scale")
+        }
+        var candidate = project
+        var moved = false
+        for key in candidate.timeline[index].keyframes.indices {
+            let time = candidate.timeline[index].keyframes[key].time
+            guard time >= start, time <= end else { continue }
+            candidate.timeline[index].keyframes[key].time = destination + (time - start) * scale
+            moved = true
+        }
+        guard moved else { throw ProjectError.invalid("No keys lie within the selected range") }
+        candidate.timeline[index].keyframes.sort { $0.time < $1.time }
+        try ProjectStore.validate(candidate)
+        mutate("Retime timeline keys") { $0 = candidate }
+    }
+
     func timelineDeleteKey(trackID:UUID,index:Int) throws {
         guard let i=project.timeline.firstIndex(where:{$0.id==trackID}),project.timeline[i].keyframes.indices.contains(index) else { throw ProjectError.invalid("timeline key no longer exists") }
         guard project.timeline[i].keyframes.count>1 else { throw ProjectError.invalid("a track needs at least one key; remove the track to remove all keys") }
@@ -113,9 +153,9 @@ extension EditorController {
         mutate("Timeline settings") {$0=candidate}
     }
     @discardableResult
-    func timelineAddMarker(name:String,time:Double,action:TimelineMarkerAction,cueID:UUID?) throws -> UUID {
+    func timelineAddMarker(name:String,time:Double,action:TimelineMarkerAction,cueID:UUID?,jumpTime:Double?=nil,jumpLimit:Int?=nil) throws -> UUID {
         guard time>0 else { throw ProjectError.invalid("automatic markers must be after 0 seconds; seek forward before adding one") }
-        let marker=TimelineMarker(name:name,time:time,action:action,cueID:cueID)
+        let marker=TimelineMarker(name:name,time:time,action:action,cueID:cueID,jumpTime:jumpTime,jumpLimit:jumpLimit)
         var candidate=project;candidate.timelineSettings.markers.append(marker);candidate.timelineSettings.markers.sort {$0.time<$1.time}
         try ProjectStore.validate(candidate);mutate("Add timeline marker") {$0=candidate};return marker.id
     }

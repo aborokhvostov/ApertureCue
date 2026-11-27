@@ -166,6 +166,45 @@ import MappingCore
         e.undoEdit()
         checks.append("montage assignment and shared definitions retain cue UUID snapshots; deletion clears all current/full/selective/dormant refs with complete Undo/Redo")
 
+        ui.selectMontage(id: montageID)
+        ui.newClipButton.performClick(nil)
+        ui.selectAsset(id: movie.id)
+        ui.clipStartField.stringValue = "5"
+        ui.clipDurationField.stringValue = "2"
+        ui.sourceInField.stringValue = "0.25"
+        ui.sourceOutField.stringValue = "2.25"
+        ui.rateField.stringValue = "-1"
+        ui.crossfadeField.stringValue = "1"
+        ui.addClipButton.performClick(nil)
+        let incomingID = try required(ui.selectedClipID, "Native signed-rate clip was not saved")
+        let incoming = try required(e.project.montages[0].clips.first { $0.id == incomingID }, "Incoming clip missing")
+        try expect(incoming.rate == -1 && incoming.crossfadeIn == 1 && incoming.audioEnabled == nil,
+                   "Visible clip fields did not save signed rate or exact incoming crossfade")
+        let beforeOutgoingDeletion = e.project
+        ui.selectClip(id: imageID)
+        ui.deleteClipButton.performClick(nil)
+        try expect(e.project.montages[0].clips.first { $0.id == incomingID }?.crossfadeIn == nil,
+                   "Deleting an outgoing clip left a dangling transition")
+        e.undoEdit()
+        try expect(e.project == beforeOutgoingDeletion, "Undo lost the deleted clip's transition")
+
+        let audioURL = mediaDirectory.appendingPathComponent("original-montage-audio.wav")
+        try MediaAudioSelfTest.writeWave(to: audioURL, sampleRate: 48_000, seconds: 2)
+        let audio = MediaAsset(name: "Original silent test route", path: audioURL.path, kind: "audio",
+                               audioRouting: AudioRoutingSettings(enabled: false))
+        e.mutate("Add test audio asset") { $0.assets.append(audio) }
+        ui.selectMontage(id: montageID)
+        ui.newClipButton.performClick(nil)
+        ui.selectAsset(id: audio.id)
+        ui.clipStartField.stringValue = "0.75"
+        ui.clipDurationField.stringValue = "1"
+        ui.sourceOutField.stringValue = "1"
+        ui.addClipButton.performClick(nil)
+        try expect(e.project.montages[0].clips.contains { $0.assetID == audio.id && $0.start == 0.75 } &&
+                   ui.strip.audioAssetIDs.contains(audio.id) && !ui.clipAudioButton.isEnabled,
+                   "Native audio clip did not share show time independently from the picture lane")
+        checks.append("native signed-rate and crossfade fields save, outgoing Delete cleans up its transition with Undo, and audio files have a separate lane")
+
         let savedURL=directory.appendingPathComponent("montage-saved.aperturecue.json")
         e.saveTo(savedURL);let saved=e.project
         let json=try required(try JSONSerialization.jsonObject(with:Data(contentsOf:savedURL)) as? [String:Any],"Saved montage JSON missing")
@@ -188,7 +227,7 @@ import MappingCore
         e.openProject(collectedURL)
         try expect(e.project==collected && e.project.montages[0].clips.map(\.id)==saved.montages[0].clips.map(\.id) && !e.dirty && !e.history.canUndo,
                    "Production Open lost a collected montage definition or stable clip UUID")
-        checks.append("schema-7 Save/New/Open and collected original image/H.264 bytes retain montage, clip, source and cue UUIDs with clean document/runtime")
+        checks.append("current-schema Save/New/Open and collected original image/H.264/WAV bytes retain montage, clip, source and cue UUIDs with clean document/runtime")
         return checks
     }
 }

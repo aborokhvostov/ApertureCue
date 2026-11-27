@@ -19,8 +19,10 @@ import MappingCore
     let clipDurationField=ActionField("1",action:{_ in})
     let sourceInField=ActionField("0",action:{_ in})
     let sourceOutField=ActionField("1",action:{_ in})
-    let rateField=ActionField("1",action:{_ in})
-    let clipLoopButton=NSButton(checkboxWithTitle:"Loop trimmed video",target:nil,action:nil)
+    let rateField = ActionField("1", action: { _ in })
+    let crossfadeField = ActionField("0", action: { _ in })
+    let clipLoopButton = NSButton(checkboxWithTitle: "Loop trim", target: nil, action: nil)
+    let clipAudioButton = NSButton(checkboxWithTitle: "Play movie audio", target: nil, action: nil)
     let newMontageButton=ActionButton("New montage",action:{})
     let createButton=ActionButton("Create montage",action:{})
     let saveButton=ActionButton("Save montage properties",action:{})
@@ -72,25 +74,29 @@ import MappingCore
         guard let content=window?.contentView else {return}
         let saved=makeTable(montageTable,columns:[("name","Montage",240)],height:220)
         let left=FlippedStackView(views:[label("MONTAGE SOURCES",bold:true),saved,newMontageButton,deleteButton,
-            label("ASSIGNMENT",bold:true),assignButton,truncated("Import images/video from the main editor before adding clips.")])
+            label("ASSIGNMENT",bold:true),assignButton,truncated("Import images, video or audio in the main editor.")])
         left.orientation = .vertical;left.alignment = .leading;left.spacing=9;left.translatesAutoresizingMaskIntoConstraints=false
         left.widthAnchor.constraint(equalToConstant:250).isActive=true
         for view in left.arrangedSubviews {view.widthAnchor.constraint(equalTo:left.widthAnchor).isActive=true}
         let leftScroll=scroll(left);leftScroll.widthAnchor.constraint(equalToConstant:265).isActive=true
         nameField.widthAnchor.constraint(equalToConstant:260).isActive=true
-        for field in [durationField,clipStartField,clipDurationField,sourceInField,sourceOutField,rateField] {field.widthAnchor.constraint(equalToConstant:80).isActive=true}
+        for field in [durationField,clipStartField,clipDurationField,sourceInField,sourceOutField,rateField,crossfadeField] {field.widthAnchor.constraint(equalToConstant:80).isActive=true}
         let titleRow=stack([label("Name"),nameField],vertical:false)
         let settingsRow=stack([label("Duration s"),durationField,montageLoopButton,label("Gap"),gapPicker],vertical:false)
         let montageActions=stack([createButton,saveButton],vertical:false)
-        strip.heightAnchor.constraint(equalToConstant:104).isActive=true
-        let clipScroll=makeTable(clipTable,columns:[("source","Source",270),("start","Start s",85),("duration","Duration s",95),("trim","Video In / Out",125),("rate","Rate / loop",95)],height:155)
+        strip.heightAnchor.constraint(equalToConstant:150).isActive=true
+        let clipScroll=makeTable(clipTable,columns:[("source","Source",270),("start","Start s",85),("duration","Duration s",95),("trim","Source In / Out",125),("rate","Rate / loop",95)],height:155)
         let clipListActions=stack([newClipButton,deleteClipButton,seekClipButton,playheadLabel],vertical:false)
         let sourceRow=stack([label("Source asset"),assetPicker],vertical:false)
         assetPicker.widthAnchor.constraint(equalTo:sourceRow.widthAnchor,constant:-92).isActive=true
         let placement=stack([label("Start s"),clipStartField,label("Duration s"),clipDurationField],vertical:false)
-        let trim=stack([label("Video In s"),sourceInField,label("Out s"),sourceOutField,label("Rate"),rateField,clipLoopButton],vertical:false)
-        let clipActions=stack([addClipButton,saveClipButton],vertical:false)
-        let help=label("Save montage properties before editing clips. Clips use [start,end); touching is allowed, overlaps are rejected. Click a strip block to select it; edit timing below. Video clips are silent. Reverse/crossfade and montage audio are not available in this stage.",size:11)
+        let trim = stack([label("Source In s"), sourceInField, label("Out s"), sourceOutField,
+                          label("Rate"), rateField, clipLoopButton], vertical: false)
+        let transition = stack([label("Incoming crossfade s"), crossfadeField, clipAudioButton], vertical: false)
+        let clipActions = stack([addClipButton, saveClipButton], vertical: false)
+        let help = label("Set incoming crossfade to the exact overlap with the preceding clip on the same lane. Enter 0 for a hard cut. Negative rates reverse video. Audio files use the lower lane. Movie audio can be enabled for forward clips.", size: 11)
+        help.preferredMaxLayoutWidth = 590
+        help.cell?.wraps = true
         for field in [summary,warning,sourceInfo,help] {
             field.maximumNumberOfLines=0;field.lineBreakMode = .byWordWrapping
             field.setContentCompressionResistancePriority(.defaultLow,for:.horizontal)
@@ -102,7 +108,7 @@ import MappingCore
             field.setContentHuggingPriority(.defaultLow,for:.horizontal)
         }
         warning.textColor = .systemOrange
-        let rows:[NSView]=[heading,titleRow,settingsRow,montageActions,summary,warning,strip,clipScroll,clipListActions,clipHeading,sourceRow,placement,trim,sourceInfo,clipActions,help]
+        let rows:[NSView]=[heading,titleRow,settingsRow,montageActions,summary,warning,strip,clipScroll,clipListActions,clipHeading,sourceRow,placement,trim,transition,sourceInfo,clipActions,help]
         let right=FlippedStackView(views:rows)
         right.orientation = .vertical;right.alignment = .leading;right.spacing=9;right.translatesAutoresizingMaskIntoConstraints=false
         for view in rows {view.widthAnchor.constraint(equalTo:right.widthAnchor).isActive=true}
@@ -141,7 +147,7 @@ import MappingCore
         }
         gapPicker.actionBlock={[weak self] _ in self?.updateSummary()}
         strip.onSelect={[weak self] id in self?.selectClip(id:id)}
-        for field in [durationField,clipStartField,clipDurationField,sourceInField,sourceOutField,rateField] {
+        for field in [durationField,clipStartField,clipDurationField,sourceInField,sourceOutField,rateField,crossfadeField] {
             field.actionBlock={[weak self] _ in self?.updateSummary()}
         }
     }
@@ -190,7 +196,7 @@ import MappingCore
             loadedMontage=montage
             clips=montage.clips.sorted {$0.start == $1.start ? $0.id.uuidString<$1.id.uuidString : $0.start<$1.start}
         } else {clips=[]}
-        let assets=editor.project.assets.filter {$0.kind=="image" || $0.kind=="video"}
+        let assets = editor.project.assets.filter { ["image", "video", "audio"].contains($0.kind) }
         assetIDs=assets.map(\.id)
         if !assetIDs.contains(where:{$0==selectedAssetID}) {selectedAssetID=assetIDs.first}
         assetPicker.removeAllItems();assetPicker.addItems(withTitles:assets.map {String($0.name.prefix(55))+" · "+String($0.id.uuidString.prefix(6))})
@@ -202,8 +208,11 @@ import MappingCore
                 if let i=assetIDs.firstIndex(of:clip.assetID) {assetPicker.selectItem(at:i)}
                 clipStartField.stringValue=String(clip.start);clipDurationField.stringValue=String(clip.duration)
                 sourceInField.stringValue=String(clip.sourceIn);sourceOutField.stringValue=String(clip.sourceOut)
-                rateField.stringValue=String(clip.rate);clipLoopButton.state=clip.loop ? .on : .off
-                loadedClip=clip
+                rateField.stringValue = String(clip.rate)
+                clipLoopButton.state = clip.loop ? .on : .off
+                crossfadeField.stringValue = String(clip.crossfadeIn ?? 0)
+                clipAudioButton.state = clip.audioEnabled == true ? .on : .off
+                loadedClip = clip
             }
         } else if !clipDraftInitialized {
             clipStartField.stringValue=String(clips.map {$0.start+$0.duration}.max() ?? 0)
@@ -222,46 +231,60 @@ import MappingCore
         heading.stringValue=saved ? "Saved montage · edit properties explicitly" : "New montage draft · create to add clips"
         clipHeading.stringValue=hasClip ? "Saved clip" : "New clip draft · use Add clip to save"
         strip.montage=selectedMontage;strip.selectedClipID=selectedClipID
-        strip.assetNames=Dictionary(uniqueKeysWithValues:assets.map {($0.id,$0.name)})
+        strip.assetNames = Dictionary(uniqueKeysWithValues: assets.map { ($0.id, $0.name) })
+        strip.audioAssetIDs = Set(assets.filter { $0.kind == "audio" }.map(\.id))
         updateSourceControls();updateSummary();updatePlayhead()
     }
     private func seedClipSource() {
-        guard let asset=selectedAsset else {
-            clipDurationField.stringValue="1";sourceInField.stringValue="0";sourceOutField.stringValue="1";rateField.stringValue="1";clipLoopButton.state = .off;return
-        }
-        let sourceDuration=asset.kind=="video" ? (editor?.media.duration(for:asset.id) ?? 0) : 0
-        let span=sourceDuration.isFinite && sourceDuration>0 ? sourceDuration : 1
-        sourceInField.stringValue="0";sourceOutField.stringValue=asset.kind=="video" ? String(span) : "1"
-        rateField.stringValue="1";clipLoopButton.state = .off
-        clipDurationField.stringValue=String(asset.kind=="video" ? min(5,span) : 1)
+        let temporal = selectedAsset.map { $0.kind != "image" } ?? false
+        let duration = selectedAsset.flatMap { editor?.media.duration(for: $0.id) } ?? 0
+        let span = duration.isFinite && duration > 0 ? duration : 1
+        sourceInField.stringValue = "0"
+        sourceOutField.stringValue = temporal ? String(span) : "1"
+        rateField.stringValue = "1"
+        clipDurationField.stringValue = String(temporal ? min(5, span) : 1)
+        clipLoopButton.state = .off
+        crossfadeField.stringValue = "0"
+        clipAudioButton.state = .off
     }
+
     private func updateSourceControls() {
-        let video=selectedAsset?.kind=="video",enabled=selectedMontage != nil && video
-        for field in [sourceInField,sourceOutField,rateField] {field.isEnabled=enabled}
-        clipLoopButton.isEnabled=enabled
-        guard let asset=selectedAsset else {sourceInfo.stringValue="Import an image or video in the main editor to add clips.";return}
-        if video {
-            let duration=editor?.media.duration(for:asset.id) ?? 0
-            let info=duration.isFinite && duration>0 ? String(format:"Decoded file duration %.3f s.",duration) : "File duration is not ready; enter trim explicitly and check playback diagnostics."
-            sourceInfo.stringValue="\(asset.name) · \(info) Positive rate 0.25…4; In/Out trim source seconds. Montage video is silent."
-        } else {sourceInfo.stringValue="\(asset.name) · Image clip: set Start and Duration."}
-        sourceInfo.toolTip=sourceInfo.stringValue
+        let temporal = selectedAsset.map { $0.kind != "image" } ?? false
+        let hasSource = selectedMontage != nil && selectedAsset != nil
+        for field in [sourceInField, sourceOutField, rateField] { field.isEnabled = hasSource && temporal }
+        crossfadeField.isEnabled = hasSource
+        clipLoopButton.isEnabled = hasSource && temporal
+        clipAudioButton.isEnabled = hasSource && selectedAsset?.kind == "video"
+        guard let asset = selectedAsset else {
+            sourceInfo.stringValue = "Import an image, video or audio file to add clips."
+            return
+        }
+        if temporal {
+            let duration = editor?.media.duration(for: asset.id) ?? 0
+            sourceInfo.stringValue = duration.isFinite && duration > 0
+                ? String(format: "%@ · File duration %.3f s", asset.name, duration)
+                : "\(asset.name) · File duration is loading. You can enter the trim directly."
+        } else {
+            sourceInfo.stringValue = "\(asset.name) · Image clip"
+        }
+        sourceInfo.toolTip = sourceInfo.stringValue
     }
+
     private func updateSummary() {
         guard let editor else {return}
         let gap=gapPicker.indexOfSelectedItem==1 ? "Skip" : "Black"
         summary.stringValue="\(clips.count) saved clips · duration \(durationField.stringValue) s · gap \(gap) · montage loop \(montageLoopButton.state == .on ? "on" : "off"). Changes take effect only after Save."
         var notices:[String]=[]
         if selectedMontage==nil {notices.append("Create the montage before adding clips or assigning it to a surface.")}
-        if assetIDs.isEmpty {notices.append("No image/video assets: use Import in the main editor.")}
+        if assetIDs.isEmpty {notices.append("No supported assets. Use Import in the main editor.")}
         if let end=Double(durationField.stringValue),editor.project.timelineSettings.stopAtEnd,end>editor.project.timelineSettings.duration {
             notices.append(String(format:"Master timeline stops at %.3f s; adjust its duration to play the full montage.",editor.project.timelineSettings.duration))
         }
-        if let asset=selectedAsset,asset.kind=="video" {
+        if let asset=selectedAsset,asset.kind != "image" {
             let actual=editor.media.duration(for:asset.id)
             if let out=Double(sourceOutField.stringValue),actual.isFinite,actual>0,out>actual+1e-8 {notices.append(String(format:"Out exceeds the current decoded file duration %.3f s.",actual))}
-            if clipLoopButton.state != .on,let start=Double(sourceInField.stringValue),let end=Double(sourceOutField.stringValue),let rate=Double(rateField.stringValue),rate>0,let duration=Double(clipDurationField.stringValue),duration>(end-start)/rate+1e-8 {
-                notices.append("A non-loop video clip cannot outlast its trimmed source span at the chosen rate.")
+            if clipLoopButton.state != .on,let start=Double(sourceInField.stringValue),let end=Double(sourceOutField.stringValue),let rate=Double(rateField.stringValue),abs(rate)>0,let duration=Double(clipDurationField.stringValue),duration>(end-start)/abs(rate)+1e-8 {
+                notices.append("A non-loop clip cannot outlast its source trim at the chosen rate.")
             }
         }
         if let start=Double(clipStartField.stringValue),let duration=Double(clipDurationField.stringValue),let end=Double(durationField.stringValue),start+duration>end+1e-8 {notices.append("Draft clip end exceeds montage duration; extend the montage or shorten this clip.")}
@@ -308,10 +331,19 @@ import MappingCore
         perform {
             let id=asNew ? UUID() : selectedClipID
             guard let id else {throw ProjectError.invalid("Select a saved clip to update")}
-            let video=asset.kind=="video"
-            let clip=MontageClip(id:id,assetID:asset.id,start:try number(clipStartField,"clip start"),duration:try number(clipDurationField,"clip duration"),
-                sourceIn:video ? try number(sourceInField,"source In") : 0,sourceOut:video ? try number(sourceOutField,"source Out") : 1,
-                rate:video ? try number(rateField,"source rate") : 1,loop:video && clipLoopButton.state == .on)
+            let temporal = asset.kind != "image"
+            let fade = try number(crossfadeField, "incoming crossfade")
+            let clip = MontageClip(
+                id: id, assetID: asset.id,
+                start: try number(clipStartField, "clip start"),
+                duration: try number(clipDurationField, "clip duration"),
+                sourceIn: temporal ? try number(sourceInField, "source In") : 0,
+                sourceOut: temporal ? try number(sourceOutField, "source Out") : 1,
+                rate: temporal ? try number(rateField, "source rate") : 1,
+                loop: temporal && clipLoopButton.state == .on,
+                crossfadeIn: fade == 0 ? nil : fade,
+                audioEnabled: asset.kind == "video" && clipAudioButton.state == .on ? true : nil
+            )
             try editor.montageSaveClip(montageID:montageID,clip:clip)
             selectedClipID=id;loadedClip=nil;clipDraftInitialized=false
         }
@@ -332,8 +364,8 @@ import MappingCore
         switch tableColumn?.identifier.rawValue {
         case "start":text=String(format:"%.4g",clip.start)
         case "duration":text=String(format:"%.4g",clip.duration)
-        case "trim":text=asset?.kind=="video" ? String(format:"%.4g / %.4g",clip.sourceIn,clip.sourceOut) : "Image"
-        case "rate":text=asset?.kind=="video" ? String(format:"%.3g×",clip.rate)+(clip.loop ? " loop" : "") : "—"
+        case "trim":text=asset?.kind != "image" ? String(format:"%.4g / %.4g",clip.sourceIn,clip.sourceOut) : "Image"
+        case "rate":text=asset?.kind != "image" ? String(format:"%.3g×",clip.rate)+(clip.loop ? " loop" : "") : "—"
         default:text=asset?.name ?? "Missing asset \(clip.assetID.uuidString.prefix(8))"
         }
         return truncated(text)
@@ -352,36 +384,50 @@ import MappingCore
 @MainActor final class MontageStripView:NSView {
     var montage:MediaMontage? {didSet {needsDisplay=true}}
     var selectedClipID:UUID? {didSet {needsDisplay=true}}
-    var assetNames:[UUID:String]=[:] {didSet {needsDisplay=true}}
+    var assetNames: [UUID: String] = [:] { didSet { needsDisplay = true } }
+    var audioAssetIDs: Set<UUID> = [] { didSet { needsDisplay = true } }
     var playhead=0.0 {didSet {if oldValue != playhead {needsDisplay=true}}}
     var onSelect:((UUID)->Void)?
     override var isFlipped:Bool {true}
-    private var plot:NSRect {NSRect(x:8,y:28,width:max(1,bounds.width-16),height:48)}
+    private var plot:NSRect {NSRect(x:8,y:28,width:max(1,bounds.width-16),height:44)}
     override func draw(_ dirtyRect:NSRect) {
         NSColor(calibratedWhite:0.08,alpha:1).setFill();bounds.fill()
         guard let montage,montage.duration.isFinite,montage.duration>0 else {
             drawText("Create or select a montage to inspect clip placement",in:bounds.insetBy(dx:8,dy:28));return
         }
         drawText(String(format:"0 s · click a clip to select · %.4g s",montage.duration),in:NSRect(x:8,y:4,width:max(1,bounds.width-16),height:20))
-        NSColor(calibratedWhite:0.17,alpha:1).setFill();plot.fill()
+        let audioPlot = plot.offsetBy(dx: 0, dy: 48)
+        NSColor(calibratedWhite: 0.17, alpha: 1).setFill()
+        plot.fill()
+        audioPlot.fill()
+        drawText("Picture", in: NSRect(x: 12, y: plot.minY + 2, width: 80, height: 14))
+        drawText("Audio", in: NSRect(x: 12, y: audioPlot.minY + 2, width: 80, height: 14))
         for clip in montage.clips.sorted(by:{$0.start<$1.start}) where clip.start.isFinite && clip.duration.isFinite {
-            let x=plot.minX+CGFloat(clip.start/montage.duration)*plot.width
-            let width=max(0.5,CGFloat(clip.duration/montage.duration)*plot.width)
-            let rect=NSRect(x:x,y:plot.minY,width:width,height:plot.height).intersection(plot)
+            let audio = audioAssetIDs.contains(clip.assetID)
+            let lane = audio ? audioPlot : plot
+            let x = lane.minX + CGFloat(clip.start / montage.duration) * lane.width
+            let width = max(0.5, CGFloat(clip.duration / montage.duration) * lane.width)
+            let rect = NSRect(x: x, y: lane.minY + 16, width: width, height: lane.height - 16).intersection(lane)
             guard !rect.isNull && rect.width>0 else {continue}
-            (clip.id==selectedClipID ? NSColor.systemBlue : NSColor.systemTeal.withAlphaComponent(0.65)).setFill();rect.insetBy(dx:0.5,dy:1).fill()
+            let color = audio ? NSColor.systemPurple : NSColor.systemTeal
+            (clip.id == selectedClipID ? NSColor.systemBlue : color.withAlphaComponent(0.75)).setFill()
+            rect.insetBy(dx: 0.5, dy: 1).fill()
+            if let fade = clip.crossfadeIn {
+                let fadeWidth = CGFloat(fade / montage.duration) * lane.width
+                NSColor.white.withAlphaComponent(0.22).setFill()
+                NSRect(x: rect.minX, y: rect.minY, width: min(rect.width, fadeWidth), height: rect.height).fill()
+            }
             if rect.width>50 {
                 NSGraphicsContext.saveGraphicsState();NSBezierPath(rect:rect).addClip()
-                drawText(assetNames[clip.assetID] ?? "Missing asset",in:rect.insetBy(dx:5,dy:6))
-                drawText(String(format:"%.4g + %.4g s",clip.start,clip.duration),in:NSRect(x:rect.minX+5,y:rect.minY+27,width:max(1,rect.width-10),height:16))
+                drawText(assetNames[clip.assetID] ?? "Missing asset", in: rect.insetBy(dx: 5, dy: 6))
                 NSGraphicsContext.restoreGraphicsState()
             }
         }
         if playhead.isFinite,(0...montage.duration).contains(playhead) {
             let x=plot.minX+CGFloat(playhead/montage.duration)*plot.width
-            NSColor.systemRed.setStroke();let line=NSBezierPath();line.move(to:NSPoint(x:x,y:plot.minY-4));line.line(to:NSPoint(x:x,y:plot.maxY+4));line.stroke()
+            NSColor.systemRed.setStroke();let line=NSBezierPath();line.move(to:NSPoint(x:x,y:plot.minY-4));line.line(to:NSPoint(x:x,y:audioPlot.maxY+4));line.stroke()
         }
-        drawText("Gap: \(montage.gapMode == .skip ? "Skip" : "Black") · \(montage.loop ? "Montage loops" : "Montage does not loop")",in:NSRect(x:8,y:82,width:max(1,bounds.width-16),height:18))
+        drawText("Gap: \(montage.gapMode == .skip ? "Skip" : "Black") · \(montage.loop ? "Montage loops" : "Montage does not loop")",in:NSRect(x:8,y:130,width:max(1,bounds.width-16),height:18))
     }
     private func drawText(_ text:String,in rect:NSRect) {
         let style=NSMutableParagraphStyle();style.lineBreakMode = .byTruncatingTail
@@ -390,9 +436,13 @@ import MappingCore
     override func mouseDown(with event:NSEvent) {
         guard let montage,montage.duration.isFinite,montage.duration>0 else {return}
         let point=convert(event.locationInWindow,from:nil)
-        guard plot.contains(point) else {return}
-        let time=Double((point.x-plot.minX)/plot.width)*montage.duration
-        if let clip=montage.clips.first(where:{$0.start<=time && time<$0.start+$0.duration}) {onSelect?(clip.id)}
+        let audio = plot.offsetBy(dx: 0, dy: 48).contains(point)
+        guard audio || plot.contains(point) else { return }
+        let time = Double((point.x - plot.minX) / plot.width) * montage.duration
+        let clip = montage.clips.filter {
+            $0.start <= time && time < $0.end && audioAssetIDs.contains($0.assetID) == audio
+        }.max { $0.start < $1.start }
+        if let clip { onSelect?(clip.id) }
     }
 }
 #endif

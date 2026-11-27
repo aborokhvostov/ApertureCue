@@ -225,7 +225,7 @@ import MappingCore
             save(true);print("PASS audio integration: \(checks.count) checks. \(directory.appendingPathComponent("report.json").path)");return 0
         } catch {save(false,error.localizedDescription);fputs("AUDIO TEST FAILED: \(error.localizedDescription)\n",stderr);return 1}
     }
-    private static func writeWave(to url:URL,sampleRate:Int,seconds:Double)throws {
+    static func writeWave(to url:URL,sampleRate:Int,seconds:Double)throws {
         let frames=Int((Double(sampleRate)*seconds).rounded()),channels=2,bytes=frames*channels*4
         var data=Data()
         func ascii(_ value:String) {data.append(contentsOf:value.utf8)}

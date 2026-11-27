@@ -144,7 +144,7 @@ private final class MontageVideoReader:@unchecked Sendable {
                 while budget>0 {
                     guard request.lease.matches(request.generation) else {clear();return MontageDecodeResult()}
                     if future==nil && !eof {future=try nextSample();budget-=1}
-                    if let next=future,next.pts<=target+1e-9 {
+                    if let next = future, next.pts <= target + 1e-9, next.pts < request.epoch.clip.sourceOut {
                         if let previous=past {
                             let previousEnd=previous.duration.map {previous.pts+$0} ?? next.pts
                             if abs(previousEnd-next.pts)>1e-6 {contiguousStart=next.pts}

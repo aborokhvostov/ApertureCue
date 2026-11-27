@@ -178,22 +178,36 @@ public struct OutputConfig: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
+public enum CueCurve: String, Codable, CaseIterable, Sendable {
+    case linear, easeIn, easeOut, easeInOut
+
+    func value(at progress: Double) -> Double {
+        switch self {
+        case .linear: return progress
+        case .easeIn: return progress * progress
+        case .easeOut: return 1 - (1 - progress) * (1 - progress)
+        case .easeInOut: return progress * progress * (3 - 2 * progress)
+        }
+    }
+}
+
 public struct Cue: Codable, Equatable, Identifiable, Sendable {
     public var id: UUID
     public var name: String
     public var surfaces: [Surface]
     /// Transition duration in seconds.
     public var duration: Double
+    public var curve: CueCurve
     /// If set, trigger the next cue this many seconds after this cue's transition completes.
     public var followAfter: Double?
     public var scope: CueScope
     public var bindings: [CueBinding]
     public init(id: UUID = UUID(), name: String, surfaces: [Surface], duration: Double = 1, followAfter: Double? = nil,
-                scope: CueScope = .full, bindings: [CueBinding] = []) {
+                scope: CueScope = .full, bindings: [CueBinding] = [], curve: CueCurve = .linear) {
         self.id=id; self.name=name; self.surfaces=surfaces; self.duration=duration; self.followAfter=followAfter
-        self.scope=scope; self.bindings=bindings
+        self.scope=scope; self.bindings=bindings; self.curve=curve
     }
-    private enum CodingKeys:String,CodingKey { case id,name,surfaces,duration,followAfter,scope,bindings }
+    private enum CodingKeys:String,CodingKey { case id,name,surfaces,duration,followAfter,scope,bindings,curve }
     public init(from decoder:Decoder) throws { try self.init(from:decoder,legacy:false,version:Project.currentVersion) }
     /// Extension keys in older schemas have no selective-cue meaning, even when
     /// their values cannot be decoded as the schema-6 types.
@@ -209,7 +223,8 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
                   duration:try c.decode(Double.self,forKey:.duration),
                   followAfter:try c.decodeIfPresent(Double.self,forKey:.followAfter),
                   scope:legacy ? .full : try c.decode(CueScope.self,forKey:.scope),
-                  bindings:legacy ? [] : try c.decode([CueBinding].self,forKey:.bindings))
+                  bindings:legacy ? [] : try c.decode([CueBinding].self,forKey:.bindings),
+                  curve:version<14 ? .linear : try c.decodeIfPresent(CueCurve.self,forKey:.curve) ?? .linear)
         if version<12,bindings.contains(where:{$0.parameters.contains(.effects) || $0.parameters.contains(.material)}) {
             throw ProjectError.invalid("material/FX cue fields require schema 12")
         }
@@ -217,7 +232,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 13
+    public static let currentVersion = 14
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]
@@ -228,6 +243,9 @@ public struct Project: Codable, Equatable, Sendable {
     public var fixtures: [Fixture]
     public var timeline: [AutomationTrack]
     public var timelineSettings:TimelineSettings
+    public var conductor = Conductor()
+    public var showSchedule = ShowSchedule()
+    public var showControlTracks: [ShowControlTrack] = []
     public var groups: [SurfaceGroup]
     public var materials:[MaterialDefinition] = []
     public var globalMasks:[CompositionMask] = []
@@ -257,7 +275,7 @@ public struct Project: Codable, Equatable, Sendable {
             Cue(name:"Aligned", surfaces:cueSurfaces, duration:2)
         ])
     }
-    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups,timelineSettings,montages,geometryLockedSurfaceIDs,materials,globalMasks }
+    private enum CodingKeys: String, CodingKey { case version,name,assets,surfaces,outputs,cues,fixtures,timeline,groups,timelineSettings,montages,geometryLockedSurfaceIDs,materials,globalMasks,conductor,showSchedule,showControlTracks }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy:CodingKeys.self)
         let version=try c.decodeIfPresent(Int.self,forKey:.version) ?? 0
@@ -290,6 +308,13 @@ public struct Project: Codable, Equatable, Sendable {
             var entries=try c.nestedUnkeyedContainer(forKey:.assets)
             while !entries.isAtEnd {assets.append(try MediaAsset(from:entries.superDecoder(),legacy:version<13))}
         }
+        var montages: [MediaMontage] = []
+        if version >= 7 {
+            var entries = try c.nestedUnkeyedContainer(forKey: .montages)
+            while !entries.isAtEnd {
+                montages.append(try MediaMontage(from: entries.superDecoder(), legacy: version < 14))
+            }
+        }
         self.init(version: version,
                   name: try c.decodeIfPresent(String.self, forKey:.name) ?? "Untitled",
                   assets:assets,
@@ -299,13 +324,23 @@ public struct Project: Codable, Equatable, Sendable {
                   fixtures: try c.decodeIfPresent([Fixture].self, forKey:.fixtures) ?? [],
                   timeline: try c.decodeIfPresent([AutomationTrack].self, forKey:.timeline) ?? [],
                   groups: groups,
-                  timelineSettings:try c.decodeIfPresent(TimelineSettings.self,forKey:.timelineSettings),
-                  montages:version<7 ? [] : try c.decode([MediaMontage].self,forKey:.montages),
+                  timelineSettings:try Self.decodeTimelineSettings(c, version: version),
+                  montages:montages,
                   geometryLockedSurfaceIDs: locks)
         if version >= 12 {
             materials=try c.decodeIfPresent([MaterialDefinition].self,forKey:.materials) ?? []
             globalMasks=try c.decodeIfPresent([CompositionMask].self,forKey:.globalMasks) ?? []
         }
+        if version >= 14 {
+            conductor = try c.decodeIfPresent(Conductor.self, forKey: .conductor) ?? Conductor()
+            showSchedule = try c.decodeIfPresent(ShowSchedule.self, forKey: .showSchedule) ?? ShowSchedule()
+            showControlTracks = try c.decodeIfPresent([ShowControlTrack].self, forKey: .showControlTracks) ?? []
+        }
+    }
+
+    private static func decodeTimelineSettings(_ container: KeyedDecodingContainer<CodingKeys>, version: Int) throws -> TimelineSettings? {
+        guard container.contains(.timelineSettings), try !container.decodeNil(forKey: .timelineSettings) else { return nil }
+        return try TimelineSettings(from: container.superDecoder(forKey: .timelineSettings), legacy: version < 14)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -322,6 +357,11 @@ public struct Project: Codable, Equatable, Sendable {
         try c.encode(materials,forKey:.materials);try c.encode(globalMasks,forKey:.globalMasks)
         try c.encode(timelineSettings, forKey: .timelineSettings)
         try c.encode(montages, forKey: .montages)
+        if version >= 14 {
+            try c.encode(conductor, forKey: .conductor)
+            try c.encode(showSchedule, forKey: .showSchedule)
+            try c.encode(showControlTracks, forKey: .showControlTracks)
+        }
         if version >= 8 {
             try c.encode(geometryLockedSurfaceIDs.map(\.uuidString).sorted(), forKey: .geometryLockedSurfaceIDs)
         }

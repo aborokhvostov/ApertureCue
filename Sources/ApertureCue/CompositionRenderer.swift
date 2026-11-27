@@ -16,8 +16,8 @@ extension MetalRenderer {
         if materialCache[definition.id]?.definition == definition { return }
         let program=try MaterialProgram(definition:definition)
         let expression=program.metalExpression
-            .replacingOccurrences(of:"sampleMaterialISF(",with:"sampleMaterialISF(image,u.mediaX,u.mediaY,u.misc.x,")
-            .replacingOccurrences(of:"sampleMaterial(",with:"sampleMaterial(image,u.mediaX,u.mediaY,u.misc.x,")
+            .replacingOccurrences(of:"sampleMaterialISF(",with:"sampleMaterialISF(image,nextImage,u,")
+            .replacingOccurrences(of:"sampleMaterial(",with:"sampleMaterial(image,nextImage,u,")
         let body="float2 materialUV=uv;float materialTime=u.misc.w;float2 materialSize=u.frame.xy;color="+expression+";"
         let source=Self.shaderSource.replacingOccurrences(of:"/*MATERIAL_EVALUATION*/",with:body)
         let library=try device.makeLibrary(source:source,options:nil)
@@ -172,7 +172,7 @@ extension MetalRenderer {
                         try composite(intermediate,encoder:encoder,opacity:group.opacity,blend:group.blendMode,masks:group.masks,inverse:inverse,effects:group.effects,edge:.init())
                         i=end
                     } else {
-                        try draw(surface:items[i],encoder:encoder,textures:resources.textures,mediaUV:resources.uv);i+=1
+                        try draw(surface:items[i],encoder:encoder,resources:resources);i+=1
                     }
                 }
             }

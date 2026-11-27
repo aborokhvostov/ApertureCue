@@ -6,6 +6,7 @@ import MappingCore
 
 enum ControlCommand: Equatable {
     case play, pause, seek(Double), blackout(Bool), cue(Int), opacity(Int, Double)
+    case externalClock(ExternalShowClockPacket, Double)
     static func from(_ message:OSCMessage) -> ControlCommand? {
         func number() -> Double? {
             switch message.arguments.first { case .int(let n): return Double(n); case .float(let n): return Double(n); case .bool(let b): return b ? 1 : 0; default: return nil }
@@ -51,9 +52,15 @@ private final class ControlMailbox {
 /// UDP input is opt-in and bound to loopback. Parsing runs on a dedicated queue.
 @MainActor final class NetworkController {
     private var source:DispatchSourceRead?
+    private var generation: UUID?
     private let handler:(ControlCommand)->Void
+    private let clockOnly: Bool
     var isRunning:Bool { source != nil }
-    init(handler:@escaping (ControlCommand)->Void) { self.handler = handler }
+    private(set) var boundPort: UInt16?
+    init(clockOnly: Bool = false, handler:@escaping (ControlCommand)->Void) {
+        self.clockOnly = clockOnly
+        self.handler = handler
+    }
     func start(port:UInt16) throws {
         stop()
         let fd = socket(AF_INET,SOCK_DGRAM,0)
@@ -62,23 +69,49 @@ private final class ControlMailbox {
         address.sin_port = port.bigEndian; address.sin_addr.s_addr = inet_addr("127.0.0.1")
         let bound = withUnsafePointer(to:&address) { $0.withMemoryRebound(to:sockaddr.self,capacity:1) { Darwin.bind(fd,$0,socklen_t(MemoryLayout<sockaddr_in>.size)) } }
         guard bound == 0 else { let e = errno; close(fd); throw SystemFailure(message:"Cannot bind OSC localhost:\(port): \(String(cString:strerror(e)))") }
-        _ = fcntl(fd,F_SETFL,O_NONBLOCK)
+        var addressLength = socklen_t(MemoryLayout<sockaddr_in>.size)
+        let named = withUnsafeMutablePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { getsockname(fd, $0, &addressLength) }
+        }
+        guard named == 0 else { close(fd); throw SystemFailure(message: "Cannot read bound OSC port") }
+        guard fcntl(fd, F_SETFL, O_NONBLOCK) == 0 else {
+            close(fd)
+            throw SystemFailure(message: "Cannot configure non-blocking OSC input")
+        }
+        boundPort = UInt16(bigEndian: address.sin_port)
         let reader = DispatchSource.makeReadSource(fileDescriptor:fd,queue:DispatchQueue(label:"org.aperturecue.osc"))
-        let mailbox = ControlMailbox(handler)
+        let token = UUID()
+        generation = token
+        let mailbox = ControlMailbox { [weak self] command in
+            guard let self, self.generation == token else { return }
+            self.handler(command)
+        }
+        let clockOnly = self.clockOnly
         reader.setEventHandler {
             var buffer = [UInt8](repeating:0,count:65536)
             // Bound work per callback so a flood cannot monopolize the dispatch queue.
             for _ in 0..<64 {
                 let size = recv(fd,&buffer,buffer.count,0)
                 if size <= 0 { break }
+                let timestamp = ProcessInfo.processInfo.systemUptime
                 guard let messages = try? OSCCodec.decode(Data(buffer.prefix(size))) else { continue }
-                let commands = messages.compactMap(ControlCommand.from)
+                let commands = messages.compactMap { message -> ControlCommand? in
+                    if clockOnly {
+                        return ExternalShowClockPacket(message: message).map { .externalClock($0, timestamp) }
+                    }
+                    return ControlCommand.from(message)
+                }
                 mailbox.enqueue(commands)
             }
         }
         reader.setCancelHandler { close(fd) }; source = reader; reader.resume()
     }
-    func stop() { source?.cancel(); source = nil }
+    func stop() {
+        generation = nil
+        boundPort = nil
+        source?.cancel()
+        source = nil
+    }
 }
 
 /// Stateful MIDI 1.0 channel-message parser; real-time bytes do not disturb running status.
@@ -133,8 +166,14 @@ final class MIDIParser {
         }
         guard status == noErr else { stop(); throw SystemFailure(message:"MIDI input error \(status)") }
         for index in 0..<MIDIGetNumberOfSources() {
+            let endpoint = MIDIGetSource(index)
+            var endpointName: Unmanaged<CFString>?
+            if MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &endpointName) == noErr,
+               let endpointName, (endpointName.takeRetainedValue() as String) == ShowControlOutput.midiSourceName {
+                continue
+            }
             let context = Unmanaged.passRetained(MIDIParser()).toOpaque()
-            if MIDIPortConnectSource(port,MIDIGetSource(index),context) == noErr { sourceContexts.append(context) }
+            if MIDIPortConnectSource(port,endpoint,context) == noErr { sourceContexts.append(context) }
             else { Unmanaged<MIDIParser>.fromOpaque(context).release() }
         }
     }

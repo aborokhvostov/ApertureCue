@@ -227,4 +227,102 @@ final class MontageTests:XCTestCase {
         XCTAssertEqual(project.assets,[video]);XCTAssertEqual(project.surfaces,[ordinary,one,two])
         XCTAssertFalse(video.loop);XCTAssertEqual(video.volume,0.7)
     }
+
+    func testSignedRateCrossfadeAndIndependentAudioLane() throws {
+        let video = asset()
+        let wav = asset("audio")
+        let a = MontageClip(assetID: video.id, duration: 1, sourceOut: 1, audioEnabled: true)
+        let b = MontageClip(assetID: video.id, start: 0.5, duration: 1, sourceIn: 2, sourceOut: 3,
+                            rate: -1, crossfadeIn: 0.5)
+        let audio = MontageClip(assetID: wav.id, start: 0.25, duration: 1, sourceIn: 2, sourceOut: 4, rate: 0.5)
+        let montage = MediaMontage(duration: 2, loop: true, clips: [b, audio, a])
+        let program = try MontageProgram(montages: [montage], assets: [video, wav])
+        let start = try XCTUnwrap(program.sample(id: montage.id, time: 0.5))
+        XCTAssertEqual(start.visual.map(\.weight), [1, 0])
+        XCTAssertEqual(start.visual.last?.sourceTime, 3.0.nextDown)
+        let mid = try XCTUnwrap(program.sample(id: montage.id, time: 0.75))
+        XCTAssertEqual(mid.visual.map(\.weight), [0.5, 0.5])
+        XCTAssertEqual(mid.visual.map(\.sourceTime), [0.75, 2.75])
+        XCTAssertEqual(mid.audio.map(\.clip.id), [a.id, audio.id])
+        XCTAssertEqual(mid.audio.map(\.weight), [0.5, 1])
+        XCTAssertEqual(mid.audio.map(\.sourceTime), [0.75, 2.25])
+        XCTAssertEqual(mid.audio.map(\.audioEnd), [1, 2.5])
+        let end = try XCTUnwrap(program.sample(id: montage.id, time: 1))
+        XCTAssertEqual(end.visual.map(\.clip.id), [b.id])
+        XCTAssertEqual(end.visual.map(\.sourceTime), [2.5])
+        XCTAssertEqual(end.audio.map(\.clip.id), [audio.id])
+        let repeatSample = try XCTUnwrap(program.sample(id: montage.id, time: 2.75))
+        XCTAssertEqual(repeatSample.visual, mid.visual)
+        XCTAssertEqual(repeatSample.audio, mid.audio)
+        XCTAssertEqual(repeatSample.montageCycle, 1)
+
+        let looping = MontageClip(assetID: video.id, duration: 2, sourceIn: 1, sourceOut: 2, rate: -2, loop: true)
+        let reverse = MediaMontage(duration: 2, clips: [looping])
+        let reverseProgram = try MontageProgram(montages: [reverse], assets: [video])
+        let wrap = try XCTUnwrap(reverseProgram.sample(id: reverse.id, time: 0.5))
+        XCTAssertEqual(wrap.sourceTime, 2.0.nextDown)
+        XCTAssertEqual(wrap.clipCycle, 1)
+    }
+
+    func testExplicitCrossfadeRejectsTripleOrMismatchedOverlap() throws {
+        let video = asset()
+        let wav = asset("audio")
+        let first = MontageClip(assetID: video.id, duration: 2, sourceOut: 2)
+        let good = MontageClip(assetID: video.id, start: 1, duration: 2, sourceOut: 2, crossfadeIn: 1)
+        let badThird = MontageClip(assetID: video.id, start: 1.5, duration: 2, sourceOut: 2, crossfadeIn: 1.5)
+        let goodThird = MontageClip(assetID: video.id, start: 2, duration: 2, sourceOut: 2, crossfadeIn: 1)
+        let audio = MontageClip(assetID: wav.id, duration: 2, sourceOut: 2)
+        try MontageProgram.validate(montages: [MediaMontage(clips: [goodThird, audio, first, good])], assets: [video, wav])
+        XCTAssertThrowsError(try MontageProgram.validate(montages: [MediaMontage(clips: [first, good, badThird])], assets: [video]))
+        for value in [nil, 0.5, 0, Double.nan] as [Double?] {
+            var bad = good
+            bad.crossfadeIn = value
+            XCTAssertThrowsError(try MontageProgram.validate(montages: [MediaMontage(clips: [first, bad])], assets: [video]))
+        }
+
+        let dangling = MontageClip(assetID: video.id, start: 2, duration: 1, crossfadeIn: 1)
+        let reverseAudio = MontageClip(assetID: wav.id, duration: 1, rate: -1)
+        let reverseWithAudio = MontageClip(assetID: video.id, duration: 1, rate: -1, audioEnabled: true)
+        for clip in [dangling, reverseAudio, reverseWithAudio] {
+            XCTAssertThrowsError(try MontageProgram.validate(montages: [MediaMontage(clips: [clip])], assets: [video, wav]))
+        }
+    }
+
+    func testSchemaFourteenMontageOptionsRoundTripAndLegacyIsolation() throws {
+        let video = asset()
+        let audio = asset("audio")
+        let first = MontageClip(assetID: video.id, duration: 1, audioEnabled: true)
+        let second = MontageClip(assetID: video.id, start: 0.5, duration: 1, rate: -1, crossfadeIn: 0.5)
+        let audioClip = MontageClip(assetID: audio.id, duration: 1)
+        let montage = MediaMontage(clips: [first, second, audioClip])
+        let project = Project(assets: [video, audio], surfaces: [Surface(mediaID: montage.id)], montages: [montage])
+        let current = try write(object(project))
+        XCTAssertEqual(try ProjectStore.load(from: current).montages, [montage])
+
+        var legacy = try object(Project(assets: [video, audio], montages: [MediaMontage(clips: [first])]))
+        legacy["version"] = 13
+        var definitions = try XCTUnwrap(legacy["montages"] as? [[String: Any]])
+        var clips = try XCTUnwrap(definitions[0]["clips"] as? [[String: Any]])
+        clips[0]["crossfadeIn"] = "formerly undefined"
+        clips[0]["audioEnabled"] = [1, 2, 3]
+        definitions[0]["clips"] = clips
+        legacy["montages"] = definitions
+        let stripped = try XCTUnwrap(ProjectStore.load(from: write(legacy)).montages.first?.clips.first)
+        XCTAssertNil(stripped.audioEnabled)
+        XCTAssertNil(stripped.crossfadeIn)
+
+        clips[0]["rate"] = -1
+        definitions[0]["clips"] = clips
+        legacy["montages"] = definitions
+        XCTAssertThrowsError(try ProjectStore.load(from: write(legacy)))
+
+        clips[0]["rate"] = 1
+        clips[0]["assetID"] = audio.id.uuidString
+        definitions[0]["clips"] = clips
+        legacy["montages"] = definitions
+        XCTAssertThrowsError(try ProjectStore.load(from: write(legacy)))
+        let invalidLegacy = Project(version: 13, assets: [audio], montages: [MediaMontage(clips: [audioClip])])
+        XCTAssertThrowsError(try ProjectStore.save(invalidLegacy, to: current))
+    }
+
 }

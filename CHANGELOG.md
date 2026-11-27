@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-alpha.17 — Show control
+
+- Add Conductor banks with independently running automation cells, row exclusivity and explicit parameter priority. Generate and combine show-time signals in a bounded graph.
+- Add scene easing, bounded timeline jumps and Undoable retiming of recorded key ranges. Apply instant scene markers in order when a delayed tick crosses several.
+- Add timed localhost OSC and virtual MIDI tracks, optional external OSC timecode with loss/reacquisition, local iCalendar import and session-armed scene schedules.
+- Extend montage clips with reverse video, adjacent crossfades, separate PCM audio clips and optional forward movie audio.
+- Schema 14 migrates earlier projects and preserves their existing hard cuts, transport and linear cue curves. Include an original procedural Show Control demo.
+
 ## 0.1.0-alpha.16 — media playback and durability, 2026-11-27
 
 - Add independent per-source transport and saved trim/signed speed/Once/Loop/Hold/PingPong/seeded Random modes. Preserve adjacent source clocks, generation-tag frame publication and source state through relink/refresh; keep ordinary montage/rotation behavior.

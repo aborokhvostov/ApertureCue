@@ -12,8 +12,15 @@ import MappingCore
         NSApp.appearance = NSAppearance(named: .darkAqua)
         editor = EditorController(); editor.showWindow(nil)
         installMenu()
-        if let path = CommandLine.arguments.dropFirst().first, !path.hasPrefix("--") {
-            editor.openProject(URL(fileURLWithPath: path))
+        let arguments = Array(CommandLine.arguments.dropFirst())
+        let armSchedule = arguments.contains("--arm-schedule")
+        if let path = arguments.first(where: { $0 != "--arm-schedule" }), !path.hasPrefix("--") {
+            let url = URL(fileURLWithPath: path).standardizedFileURL
+            editor.openProject(url)
+            if armSchedule, editor.projectURL == url {
+                do { try editor.setShowScheduleArmed(true, at: Date()) }
+                catch { editor.workMessage = error.localizedDescription; editor.refresh() }
+            }
         }
         NSApp.activate(ignoringOtherApps: true)
     }
@@ -23,7 +30,12 @@ import MappingCore
     }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard editor.confirmDiscard() else { return .terminateCancel }
-        editor.showRuntime.pause(); editor.media.reset(); editor.network?.stop(); editor.midi?.stop()
+        editor.showRuntime.pause()
+        editor.resetShowControlSessions()
+        editor.media.reset()
+        editor.montagePool.reset()
+        editor.network?.stop()
+        editor.midi?.stop()
         waitingForTermination = true
         let finish: @MainActor @Sendable () -> Void = { [weak self] in
             guard let self, self.waitingForTermination else { return }
@@ -54,7 +66,11 @@ import MappingCore
         edit.addItem(item("Copy", #selector(NSText.copy(_:)), "c", target: nil)); edit.items.last?.target = nil
         edit.addItem(item("Paste", #selector(NSText.paste(_:)), "v", target: nil)); edit.items.last?.target = nil
         edit.addItem(item("Select All", #selector(NSText.selectAll(_:)), "a", target: nil)); edit.items.last?.target = nil
-        for (title, submenu) in [("ApertureCue",app),("File",file),("Edit",edit)] {
+        let show = NSMenu()
+        show.addItem(item("Conductor…", #selector(EditorController.showConductor), ""))
+        show.addItem(item("Schedule…", #selector(EditorController.openShowSchedule), ""))
+        show.addItem(item("OSC / MIDI Tracks and Clock…", #selector(EditorController.openShowControlTools), ""))
+        for (title, submenu) in [("ApertureCue",app),("File",file),("Edit",edit),("Show",show)] {
             let i = NSMenuItem(); i.title = title; i.submenu = submenu; menu.addItem(i)
         }
         NSApp.mainMenu = menu
@@ -78,6 +94,12 @@ import MappingCore
     var dirty = false
     let history = EditHistory()
     let showRuntime = ShowRuntime()
+    let conductorRuntime = ConductorRuntime()
+    var conductorWindow: ConductorWindow?
+    var conductorHostTime = ProcessInfo.processInfo.systemUptime
+    let showScheduleRuntime = ShowScheduleRuntime()
+    var showScheduleWindow: ShowScheduleWindow?
+    let showControlSession = NativeShowControlSession()
     let recording = AutomationRecordingState()
     var timelineWindow: TimelineWindowController?
     var cueWindow: CueWindowController?
@@ -116,7 +138,9 @@ import MappingCore
     var effectiveSurfaces: [Surface] {
         do {
             guard showConfigurationError.isEmpty else { throw ProjectError.invalid(showConfigurationError) }
-            let timed = applyRecordingOverride(to:try showRuntime.apply(surfaces:project.surfaces))
+            let master = try showRuntime.apply(surfaces: project.surfaces)
+            let conducted = try conductorRuntime.apply(to: master, hostTime: conductorHostTime, showTime: showRuntime.time)
+            let timed = applyRecordingOverride(to: conducted)
             let resolved = try GroupEngine.resolveForComposition(surfaces:montagePool.apply(to:timed),groups:project.groups)
             renderError = ""; return resolved
         } catch {
@@ -391,12 +415,12 @@ import MappingCore
     func refresh() {
         let currentIDs=Set(project.surfaces.map(\.id))
         recording.armed.formIntersection(Set(project.timeline.filter {$0.enabled && currentIDs.contains($0.surfaceID)}.map(\.id)))
-        configureShow(); updateRender()
+        configureShow(); reconcileShowSchedule(); updateRender()
         layerTable.reloadData(); mediaTable.reloadData(); sourceWindow?.refresh()
         if let i = selectedIndex { layerTable.selectRowIndexes(IndexSet(integer:i),byExtendingSelection:false) }
         cuePicker.removeAllItems(); cuePicker.addItems(withTitles:project.cues.map(\.name))
         window?.title = "\(project.name)\(dirty ? " •" : "") — ApertureCue 0.1"
-        window?.isDocumentEdited = dirty; refreshInspector(); timelineWindow?.refresh(); cueWindow?.refresh(); montageWindow?.refresh()
+        window?.isDocumentEdited = dirty; refreshInspector(); timelineWindow?.refresh(); cueWindow?.refresh(); montageWindow?.refresh(); conductorWindow?.refresh(); showScheduleWindow?.refresh(); refreshShowControls()
     }
     func updateRender() {
         updateActiveMedia()
@@ -568,7 +592,7 @@ import MappingCore
     }
     @objc func newProject() {
         stopAutomationRecording(reason:"New project")
-        guard confirmDiscard() else { return }; resetAutomationRecording(); closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil; recoveryBaseline=nil; sourceWindow?.close();sourceWindow=nil;media.reset();workMessage=""
+        guard confirmDiscard() else { return }; resetShowControlSessions(); resetAutomationRecording(); closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil; recoveryBaseline=nil; sourceWindow?.close();sourceWindow=nil;media.reset();workMessage=""
         history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false; documentGeneration = UUID();feedback?.reset()
         lighting?.stop(); selectedID = project.surfaces.first?.id; dirty = false; showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; reconcile(); refresh()
     }
@@ -599,7 +623,7 @@ import MappingCore
                 }
             } else if recovery.state != .missing {recoveryMessage=recovery.diagnostic}
             guard baseline == (try ProjectStore.captureRecoveryBaseline(for:url)) else {throw ProjectError.invalid("saved project changed during opening; retry")}
-            resetAutomationRecording();media.reset();sourceWindow?.close();sourceWindow=nil
+            resetShowControlSessions();resetAutomationRecording();media.reset();sourceWindow?.close();sourceWindow=nil
             closeOutputs(); lighting?.stop(); showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false; documentGeneration = UUID();feedback?.reset(); project = loaded; projectURL = url; recoveryBaseline=baseline; dirty = false; selectedID = loaded.surfaces.first?.id
             dirty=recovered;workMessage=recoveryMessage
             reconcile(); refresh()
@@ -685,6 +709,8 @@ import MappingCore
             let id = p.surfaces.remove(at:i).id
             p.geometryLockedSurfaceIDs.remove(id)
             p.timeline.removeAll { $0.surfaceID == id }
+            let targets = Set((p.surfaces + p.cues.filter { $0.scope == .full }.flatMap(\.surfaces)).map(\.id))
+            p.conductor.pruneTargets(targets)
             selectedID = p.surfaces.last?.id
         }
     }
@@ -696,8 +722,10 @@ import MappingCore
     func togglePlayback() { if showRuntime.isPlaying { pauseShow() } else { playShow() }; playButton.title = showRuntime.isPlaying ? "Ⅱ Pause" : "▶ Play" }
     func captureCue() { mutate("Capture scene") { $0.cues.append(Cue(name:"Scene \($0.cues.count+1)",surfaces:$0.surfaces,duration:1)) } }
     func deleteCue() { let i=cuePicker.indexOfSelectedItem;guard project.cues.indices.contains(i) else {return};do {try cueDelete(id:project.cues[i].id)} catch {showError(error)} }
-    func goCue(index:Int? = nil) {
-        let i = index ?? cuePicker.indexOfSelectedItem; guard project.cues.indices.contains(i) else { return }
+    @discardableResult
+    func goCue(index: Int? = nil, interactive: Bool = true) -> Bool {
+        let i = index ?? cuePicker.indexOfSelectedItem
+        guard project.cues.indices.contains(i) else { return false }
         var target = project.cues[i]
         if target.scope == .full {
             let targetIDs = Set(target.surfaces.map(\.id))
@@ -711,13 +739,17 @@ import MappingCore
             var destination=project
             destination.surfaces=try CueSelection.destination(from:project.surfaces,cue:target)
             try ProjectStore.validate(destination)
-        } catch {showError(error);return}
+        } catch {
+            if interactive { showError(error) } else { cueMessage = error.localizedDescription }
+            return false
+        }
         stopAutomationRecording(reason:"Scene GO")
         let missing=CueSelection.missingTargets(from:project.surfaces,cue:target)
         cueMessage=missing.isEmpty ? "" : "Cue skipped \(missing.count) missing surface target(s)"
         commitInterruptedCue()
         cueBefore = project; cueFrom = project.surfaces; cueTarget = target; cueStart = ProcessInfo.processInfo.systemUptime
         cueEngine.begin(from:project.surfaces,cue:target,at:cueStart)
+        return cueEngine.isTransitioning
     }
     func startTick() {
         let tickTimer = Timer(timeInterval:1.0/30,repeats:true) { [weak self] _ in
@@ -725,20 +757,34 @@ import MappingCore
         }
         timer=tickTimer;RunLoop.main.add(tickTimer,forMode:.common)
     }
+    func applyCueSample(at hostTime: Double) {
+        guard let sampled = cueEngine.sample(at: hostTime), sampled != project.surfaces else { return }
+        do {
+            try CompositionPlan.validateStack(surfaces: sampled, groups: project.groups)
+            _ = try GroupEngine.resolveForComposition(surfaces: sampled, groups: project.groups)
+            project.surfaces = sampled
+            dirty = true
+            window?.isDocumentEdited = true
+        } catch {
+            cueMessage = "Scene kept its last valid geometry: " + error.localizedDescription
+        }
+    }
+
     func tick() {
         let now = ProcessInfo.processInfo.systemUptime
-        advanceShow(at:now);media.update();sourceWindow?.updateClock()
+        conductorHostTime = now
+        applyExternalShowClock(at: now)
+        advanceShow(at: now)
+        pollShowSchedule(at: Date())
+        media.update()
+        sourceWindow?.updateClock()
         updateRecordingInspector()
         if let cue = cueTarget {
-            if let sampled=cueEngine.sample(at:now),sampled != project.surfaces {
-                do {
-                    try CompositionPlan.validateStack(surfaces:sampled,groups:project.groups)
-                    _=try GroupEngine.resolveForComposition(surfaces:sampled,groups:project.groups)
-                    project.surfaces=sampled;dirty=true;window?.isDocumentEdited=true
-                } catch {cueMessage="Scene kept its last valid geometry: "+error.localizedDescription}
-            }
+            applyCueSample(at: now)
             if !cueEngine.isTransitioning {
-                if cueEngine.shouldFollow(at:now), let i = project.cues.firstIndex(where:{$0.id == cue.id}), i+1 < project.cues.count { goCue(index:i+1) }
+                if cueEngine.shouldFollow(at:now), let i = project.cues.firstIndex(where:{$0.id == cue.id}), i+1 < project.cues.count {
+                    if !goCue(index:i+1, interactive:false) { commitInterruptedCue() }
+                }
                 else if cue.followAfter == nil || (cueEngine.shouldFollow(at:now) && project.cues.last?.id == cue.id) {
                     if let before=cueBefore,before != project { history.commit(before:before,after:project,label:"Recall scene");dirty=true }
                     cueBefore=nil;cueTarget=nil;refresh()
@@ -748,7 +794,7 @@ import MappingCore
         }
         for target in allCompositionRenderers {target.materialTime=showRuntime.time}
         advanceFeedback();updateFeedbackTextures()
-        if !project.timeline.isEmpty || !project.montages.isEmpty || !project.materials.isEmpty { updateRender() }; montageWindow?.updatePlayhead()
+        if !project.timeline.isEmpty || !project.montages.isEmpty || !project.materials.isEmpty || conductorRuntime.affectsRender { updateRender() }; montageWindow?.updatePlayhead()
         if lighting?.isSampling == true, now-lastLighting >= 1.0/30 {
             lighting?.fixtures = project.fixtures
             lighting?.renderer.blackout = blackout
@@ -786,7 +832,8 @@ import MappingCore
         case .pause: pauseShow()
         case .seek(let time): seekShow(to:time)
         case .blackout(let value): blackout = value; updateRender()
-        case .cue(let index): goCue(index:index)
+        case .cue(let index): goCue(index:index, interactive:false)
+        case .externalClock: break
         case .opacity(let index,let value): if project.surfaces.indices.contains(index) { mutate("Remote opacity") { $0.surfaces[index].opacity = max(0,min(1,value)) } }
         }
     }

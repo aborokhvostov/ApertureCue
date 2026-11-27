@@ -8,18 +8,19 @@ extension EditorController {
         cueWindow?.refresh();cueWindow?.showWindow(nil);cueWindow?.window?.makeKeyAndOrderFront(nil)
     }
     @discardableResult
-    func cueCreate(name:String,scope:CueScope,bindings:[CueBinding],duration:Double,followAfter:Double?) throws -> UUID {
-        let cue:Cue
+    func cueCreate(name:String,scope:CueScope,bindings:[CueBinding],duration:Double,followAfter:Double?,curve:CueCurve = .linear) throws -> UUID {
+        var cue:Cue
         if scope == .full { cue=Cue(name:name,surfaces:project.surfaces,duration:duration,followAfter:followAfter) }
         else { cue=try CueSelection.capture(name:name,surfaces:project.surfaces,bindings:bindings,duration:duration,followAfter:followAfter) }
+        cue.curve = curve
         var candidate=project;candidate.cues.append(cue);try ProjectStore.validate(candidate)
         mutate("Capture \(scope.rawValue) cue") {$0=candidate};return cue.id
     }
-    func cueUpdate(id:UUID,name:String,scope:CueScope,bindings:[CueBinding],duration:Double,followAfter:Double?) throws {
+    func cueUpdate(id:UUID,name:String,scope:CueScope,bindings:[CueBinding],duration:Double,followAfter:Double?,curve:CueCurve? = nil) throws {
         guard let i=project.cues.firstIndex(where:{$0.id==id}) else { throw ProjectError.invalid("cue no longer exists") }
         guard project.cues[i].scope == scope else { throw ProjectError.invalid("A saved scene keeps its scope. Capture a new full or selective scene to change scope.") }
         var candidate=project, cue=candidate.cues[i]
-        cue.name=name;cue.duration=duration;cue.followAfter=followAfter;cue.scope=scope
+        cue.name=name;cue.duration=duration;cue.followAfter=followAfter;cue.scope=scope;cue.curve=curve ?? cue.curve
         if scope == .selective {
             let wanted=Set(bindings.map(\.surfaceID))
             cue.surfaces=cue.surfaces.filter {wanted.contains($0.id)}
@@ -30,9 +31,11 @@ extension EditorController {
     }
     func cueRecapture(id:UUID,bindings:[CueBinding]) throws {
         guard let i=project.cues.firstIndex(where:{$0.id==id}) else { throw ProjectError.invalid("cue no longer exists") }
-        let previous=project.cues[i],cue:Cue
+        let previous=project.cues[i]
+        var cue:Cue
         if previous.scope == .full {cue=Cue(id:previous.id,name:previous.name,surfaces:project.surfaces,duration:previous.duration,followAfter:previous.followAfter)}
         else {cue=try CueSelection.capture(name:previous.name,surfaces:project.surfaces,bindings:bindings,duration:previous.duration,followAfter:previous.followAfter,id:previous.id)}
+        cue.curve=previous.curve
         var candidate=project;candidate.cues[i]=cue;try ProjectStore.validate(candidate)
         mutate("Recapture cue values") {$0=candidate}
     }
@@ -40,9 +43,11 @@ extension EditorController {
         guard project.cues.contains(where:{$0.id==id}) else {throw ProjectError.invalid("cue no longer exists")}
         var candidate=project
         candidate.cues.removeAll {$0.id==id}
+        candidate.showSchedule.entries.removeAll { $0.cueID == id }
         candidate.timelineSettings.markers.removeAll {$0.cueID==id}
         let targets=Set((candidate.surfaces+candidate.cues.filter {$0.scope == .full}.flatMap(\.surfaces)).map(\.id))
         candidate.timeline.removeAll {!targets.contains($0.surfaceID)}
+        candidate.conductor.pruneTargets(targets)
         try ProjectStore.validate(candidate)
         mutate("Delete scene") {$0=candidate}
     }

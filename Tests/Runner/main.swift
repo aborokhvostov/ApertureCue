@@ -156,4 +156,21 @@ runCase("DurabilityTests.testSequenceCollectionMissingSymlinkAndOversizedFramesR
 runCase("DurabilityTests.testSchemaThirteenMediaValidationAndLegacySaveCannotActivateExtensions", DurabilityTests.self) { try $0.testSchemaThirteenMediaValidationAndLegacySaveCannotActivateExtensions() }
 
 runCase("DurabilityTests.testEditorOpenAndSaveReturnBaselineForExactlyTheirProjectBytes", DurabilityTests.self) { try $0.testEditorOpenAndSaveReturnBaselineForExactlyTheirProjectBytes() }
+runCase("ConductorTests.testRowExclusivityPriorityBankSwitchAndImmutableCapture", ConductorTests.self) { try $0.testRowExclusivityPriorityBankSwitchAndImmutableCapture() }
+runCase("ConductorTests.testSignalClockGraphCycleAndParameterMapping", ConductorTests.self) { try $0.testSignalClockGraphCycleAndParameterMapping() }
+runCase("ConductorTests.testJumpLimitsStopSeekAndCueCurve", ConductorTests.self) { try $0.testJumpLimitsStopSeekAndCueCurve() }
+runCase("ConductorTests.testSchema14AndIgnoredUndefinedLegacyExtensions", ConductorTests.self) { try $0.testSchema14AndIgnoredUndefinedLegacyExtensions() }
+runCase("ShowControlEventTests.testEventEncodingOrderAndBounds", ShowControlEventTests.self) { try $0.testEventEncodingOrderAndBounds() }
+runCase("ShowControlEventTests.testExternalClockPacketAndPhaseCorrections", ShowControlEventTests.self) { try $0.testExternalClockPacketAndPhaseCorrections() }
+runCase("ShowControlEventTests.testExternalClockLossOrderingAndRestart", ShowControlEventTests.self) { try $0.testExternalClockLossOrderingAndRestart() }
+runCase("ShowScheduleTests.testICSImportWeeklyRulesExclusionsAndMetadata", ShowScheduleTests.self) { try $0.testICSImportWeeklyRulesExclusionsAndMetadata() }
+runCase("ShowScheduleTests.testLocalDSTGapAndRepeatedHourPolicy", ShowScheduleTests.self) { try $0.testLocalDSTGapAndRepeatedHourPolicy() }
+runCase("ShowScheduleTests.testDelayedPollingConflictsAndClockRollback", ShowScheduleTests.self) { try $0.testDelayedPollingConflictsAndClockRollback() }
+runCase("ShowScheduleTests.testUnboundedWeeklyIntervalAndInclusiveUntil", ShowScheduleTests.self) { try $0.testUnboundedWeeklyIntervalAndInclusiveUntil() }
+runCase("ShowScheduleTests.testInvalidICSAndModelAreRejectedAtomically", ShowScheduleTests.self) { try $0.testInvalidICSAndModelAreRejectedAtomically() }
+runCase("ShowScheduleTests.testSavedScheduleAndLegacyVersionIgnoreNewField", ShowScheduleTests.self) { try $0.testSavedScheduleAndLegacyVersionIgnoreNewField() }
+runCase("MontageTests.testSignedRateCrossfadeAndIndependentAudioLane", MontageTests.self) { try $0.testSignedRateCrossfadeAndIndependentAudioLane() }
+runCase("MontageTests.testExplicitCrossfadeRejectsTripleOrMismatchedOverlap", MontageTests.self) { try $0.testExplicitCrossfadeRejectsTripleOrMismatchedOverlap() }
+runCase("MontageTests.testSchemaFourteenMontageOptionsRoundTripAndLegacyIsolation", MontageTests.self) { try $0.testSchemaFourteenMontageOptionsRoundTripAndLegacyIsolation() }
+runCase("ConductorTests.testEventsAndMarkersUseOneBudgetAndDoNotReplayAfterSeek", ConductorTests.self) { try $0.testEventsAndMarkersUseOneBudgetAndDoNotReplayAfterSeek() }
 exit(finishTests())

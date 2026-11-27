@@ -32,8 +32,10 @@ import MappingCore
     private let c2x=ActionField("0.6666666667",action:{_ in}),c2y=ActionField("0.6666666667",action:{_ in})
     private let keyCaption=label("Select a key or double-click the graph",size:11)
     private let markerName=ActionField("Marker",action:{_ in})
-    private let markerAction=ActionPopUp(items:["Pause","Recall scene"],action:{_ in})
+    private let markerAction=ActionPopUp(items:["Pause","Recall scene","Jump"],action:{_ in})
     private let markerCue=ActionPopUp(items:[],action:{_ in})
+    private let jumpDestination = ActionField("0", action: { _ in })
+    private let jumpRepeats = ActionField("1", action: { _ in })
     private let trackToggle=ActionButton("Disable track",action:{})
     private let deleteKeyButton=ActionButton("Delete key",action:{})
     private let saveKeyButton=ActionButton("Save key",action:{})
@@ -77,12 +79,15 @@ import MappingCore
         let loopRow=stack([loopButton,label("Start s"),loopStartField,label("End s"),loopEndField],vertical:false)
         let settings=stack([durationRow,loopRow],spacing:6)
         fixedWidth([durationField,loopStartField,loopEndField],90)
+        fixedWidth([jumpDestination, jumpRepeats], 88)
         let tracks=table(trackTable,height:170),markers=table(markerTable,height:100)
         let left=FlippedStackView(views:[label("PARAMETER TRACKS",bold:true),tracks,
             stack([trackToggle,ActionButton("Delete track") {[weak self] in self?.deleteTrack()}],vertical:false),
             label("Surface"),surfacePicker,label("Parameter"),parameterPicker,
             ActionButton("Add track") {[weak self] in self?.addTrack()},
             label("TIME MARKERS",bold:true),markers,markerName,markerAction,markerCue,
+            label("Jump to seconds / max crossings"),
+            stack([jumpDestination, jumpRepeats], vertical: false),
             ActionButton("Add marker at playhead") {[weak self] in self?.addMarker()},
             stack([ActionButton("Seek marker") {[weak self] in self?.seekMarker()},ActionButton("Delete marker") {[weak self] in self?.deleteMarker()}],vertical:false)])
         left.orientation = .vertical;left.alignment = .leading;left.spacing=6;left.translatesAutoresizingMaskIntoConstraints=false
@@ -97,7 +102,8 @@ import MappingCore
         fixedWidth([c1x,c1y,c2x,c2y],75)
         canvas.translatesAutoresizingMaskIntoConstraints=false
         canvas.heightAnchor.constraint(greaterThanOrEqualToConstant:240).isActive=true
-        let right=stack([viewRange,canvas,keyCaption,keyRow,tangentRow],spacing:8)
+        let rangeTools = stack([ActionButton("Retime key range…") { [weak self] in self?.retimeKeys() }], vertical: false)
+        let right=stack([viewRange,canvas,keyCaption,keyRow,tangentRow,rangeTools],spacing:8)
         for view in [viewRange,canvas,keyCaption,keyRow,tangentRow] {view.widthAnchor.constraint(equalTo:right.widthAnchor).isActive=true}
         let work=stack([leftScroll,right],vertical:false,spacing:16);work.alignment = .top
         right.widthAnchor.constraint(equalTo:work.widthAnchor,constant:-301).isActive=true
@@ -135,7 +141,7 @@ import MappingCore
         }
         timeField.actionBlock={[weak self] _ in self?.seekTyped()}
         interpolationPicker.actionBlock={[weak self] _ in self?.updateCurveControls()}
-        markerAction.actionBlock={[weak self] _ in self?.markerCue.isEnabled=self?.markerAction.indexOfSelectedItem == 1 && !(self?.cueIDs.isEmpty ?? true)}
+        markerAction.actionBlock={[weak self] _ in self?.refreshMarkerFields()}
         canvas.onSelectKey={[weak self] index in self?.selectedKeyIndex=index;self?.loadKeyFields()}
         canvas.onSeek={[weak self] time in self?.editor?.seekShow(to:time)}
         canvas.onInsertKey={[weak self] time,value in
@@ -176,7 +182,7 @@ import MappingCore
         let oldCue=cueIDs.indices.contains(markerCue.indexOfSelectedItem) ? cueIDs[markerCue.indexOfSelectedItem] : nil
         cueIDs=editor.project.cues.map(\.id);markerCue.removeAllItems();markerCue.addItems(withTitles:editor.project.cues.map {String($0.name.prefix(50))})
         markerCue.selectItem(at:oldCue.flatMap {cueIDs.firstIndex(of:$0)} ?? 0)
-        markerCue.isEnabled=markerAction.indexOfSelectedItem == 1 && !cueIDs.isEmpty
+        refreshMarkerFields()
         if !editor.project.timeline.contains(where:{$0.id==selectedTrackID}) {selectedTrackID=editor.project.timeline.first?.id;selectedKeyIndex=nil}
         if !editor.project.timelineSettings.markers.contains(where:{$0.id==selectedMarkerID}) {selectedMarkerID=nil}
         trackTable.reloadData();markerTable.reloadData()
@@ -268,12 +274,46 @@ import MappingCore
         if let editedTime {selectKey(at:editedTime)}
     }
     private func deleteKey() {guard let editor,let track=selectedTrack,let i=selectedKeyIndex else {return};perform {try editor.timelineDeleteKey(trackID:track.id,index:i);selectedKeyIndex=nil}}
+    private func retimeKeys() {
+        guard let editor, let trackID = selectedTrackID else { return }
+        let token = editor.documentGeneration
+        let start = ActionField(String(canvas.visibleStart), action: { _ in })
+        let end = ActionField(String(canvas.visibleEnd), action: { _ in })
+        let destination = ActionField(String(canvas.visibleStart), action: { _ in })
+        let scale = ActionField("1", action: { _ in })
+        fixedWidth([start, end, destination, scale], 90)
+        let alert = NSAlert()
+        alert.messageText = "Retime keys in the selected track"
+        let fields = stack([stack([label("From / through"), start, end], vertical: false),
+                            stack([label("Destination / scale"), destination, scale], vertical: false)])
+        fields.frame = NSRect(x: 0, y: 0, width: 350, height: fields.fittingSize.height)
+        alert.accessoryView = fields
+        alert.addButton(withTitle: "Apply")
+        alert.addButton(withTitle: "Cancel")
+        guard alert.runModal() == .alertFirstButtonReturn, editor.documentGeneration == token else { return }
+        perform {
+            try editor.timelineRetimeKeys(trackID: trackID, from: number(start, "start"),
+                through: number(end, "end"), to: number(destination, "destination"), scale: number(scale, "scale"))
+            selectedKeyIndex = nil
+        }
+    }
+
+    private func refreshMarkerFields() {
+        markerCue.isEnabled = markerAction.indexOfSelectedItem == 1 && !cueIDs.isEmpty
+        let jumps = markerAction.indexOfSelectedItem == 2
+        jumpDestination.isEnabled = jumps
+        jumpRepeats.isEnabled = jumps
+    }
+
     private func addMarker() {
         guard let editor else {return}
         perform {
-            let action:TimelineMarkerAction=markerAction.indexOfSelectedItem == 0 ? .pause : .cue
-            let cueID=action == .cue && cueIDs.indices.contains(markerCue.indexOfSelectedItem) ? cueIDs[markerCue.indexOfSelectedItem] : nil
-            selectedMarkerID=try editor.timelineAddMarker(name:markerName.stringValue,time:editor.showRuntime.time,action:action,cueID:cueID)
+            let action = TimelineMarkerAction.allCases[markerAction.indexOfSelectedItem]
+            let cueID = action == .cue && cueIDs.indices.contains(markerCue.indexOfSelectedItem) ? cueIDs[markerCue.indexOfSelectedItem] : nil
+            let target = action == .jump ? try number(jumpDestination, "Jump destination") : nil
+            let limit = action == .jump ? Int(jumpRepeats.stringValue) : nil
+            selectedMarkerID = try editor.timelineAddMarker(name: markerName.stringValue, time: editor.showRuntime.time,
+                action: action, cueID: cueID, jumpTime: target, jumpLimit: limit)
         }
     }
     private func seekMarker() {guard let editor,let marker=editor.project.timelineSettings.markers.first(where:{$0.id==selectedMarkerID}) else {return};editor.seekShow(to:marker.time);updatePlayhead()}
@@ -301,7 +341,7 @@ import MappingCore
         }
         guard editor.project.timelineSettings.markers.indices.contains(row) else {return nil}
         let marker=editor.project.timelineSettings.markers[row]
-        return label(String(format:"%.3f · ",marker.time)+(marker.action == .pause ? "Pause · " : "Scene · ")+String(marker.name.prefix(60)),size:11)
+        return label(String(format:"%.3f · ",marker.time)+(marker.action == .pause ? "Pause · " : marker.action == .cue ? "Scene · " : "Jump → \(marker.jumpTime ?? 0) · ")+String(marker.name.prefix(60)),size:11)
     }
     func tableViewSelectionDidChange(_ notification:Notification) {
         guard !refreshing,let table=notification.object as? NSTableView,let editor else {return}
