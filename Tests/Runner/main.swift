@@ -202,4 +202,18 @@ runCase("LEDScannerTests.testAmbiguousMissingAndRepeatedPositionsPreserveSlots",
 runCase("LEDScannerTests.testScannerValidationAndProjectPatchLimit", LEDScannerTests.self) { try $0.testScannerValidationAndProjectPatchLimit() }
 runCase("LightingAdapterTests.testBufferedUSBProMatchesGoldenBytes", LightingAdapterTests.self) { try $0.testBufferedUSBProMatchesGoldenBytes() }
 runCase("LightingAdapterTests.testSPIRGBExportKeepsChannelOrderAndBounds", LightingAdapterTests.self) { try $0.testSPIRGBExportKeepsChannelOrderAndBounds() }
+runCase("ExternalVideoTests.testFrameGoldenAndMalformedBudget", ExternalVideoTests.self) { try $0.testFrameGoldenAndMalformedBudget() }
+runCase("ExternalVideoTests.testOwnerFreshnessAndReplayRejection", ExternalVideoTests.self) { try $0.testOwnerFreshnessAndReplayRejection() }
+runCase("ExternalVideoTests.testFeedReferenceMigratesAndCollectsWithoutFile", ExternalVideoTests.self) { try $0.testFeedReferenceMigratesAndCollectsWithoutFile() }
+runCase("FirmataTests.testFragmentedDiscoveryAndAnalogInput", FirmataTests.self) { try $0.testFragmentedDiscoveryAndAnalogInput() }
+runCase("FirmataTests.testDigitalPortAndIndividualPinWrite", FirmataTests.self) { try $0.testDigitalPortAndIndividualPinWrite() }
+runCase("FirmataTests.testBoardResetClearsInFlightControl", FirmataTests.self) { try $0.testBoardResetClearsInFlightControl() }
+runCase("FirmataTests.testMalformedDiscoveryTimeoutAndParserResynchronization", FirmataTests.self) { try $0.testMalformedDiscoveryTimeoutAndParserResynchronization() }
+runCase("MIDITimeCodeTests.testQuarterFrameDirectionsFragmentationAndCorrection", MIDITimeCodeTests.self) { try $0.testQuarterFrameDirectionsFragmentationAndCorrection() }
+runCase("MIDITimeCodeTests.testFullFrameDropLabelsAndMidnight", MIDITimeCodeTests.self) { try $0.testFullFrameDropLabelsAndMidnight() }
+runCase("MIDITimeCodeTests.testDiscontinuousReservedAndOversizedInputCannotComplete", MIDITimeCodeTests.self) { try $0.testDiscontinuousReservedAndOversizedInputCannotComplete() }
+runCase("PJLinkTests.testFragmentsExactCommandsAndTypedReplies", PJLinkTests.self) { try $0.testFragmentsExactCommandsAndTypedReplies() }
+runCase("PJLinkTests.testRejectsMalformedAndMismatchedWireData", PJLinkTests.self) { try $0.testRejectsMalformedAndMismatchedWireData() }
+runCase("PJLinkTests.testModernHandshakeBindsFreshNonceAndSequentialReplies", PJLinkTests.self) { try $0.testModernHandshakeBindsFreshNonceAndSequentialReplies() }
+runCase("PJLinkTests.testExplicitAuthModesAndNoDowngradeOrWriteBatch", PJLinkTests.self) { try $0.testExplicitAuthModesAndNoDowngradeOrWriteBatch() }
 exit(finishTests())

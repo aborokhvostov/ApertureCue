@@ -18,6 +18,7 @@ extension EditorController {
     @objc func openShowControlTools() { showControls() }
 
     func resetShowControlSessions() {
+        gamepadSession.reset()
         conductorRuntime.reset()
         conductorWindow?.close()
         conductorWindow = nil

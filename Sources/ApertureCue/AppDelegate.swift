@@ -35,6 +35,9 @@ import MappingCore
         editor.media.reset()
         editor.montagePool.reset()
         editor.resetControlMappings()
+        editor.externalVideo.stop()
+        editor.projectorWindow?.reset()
+        editor.closeFirmata()
         waitingForTermination = true
         let finish: @MainActor @Sendable () -> Void = { [weak self] in
             guard let self, self.waitingForTermination else { return }
@@ -69,6 +72,8 @@ import MappingCore
         show.addItem(item("Conductor…", #selector(EditorController.showConductor), ""))
         show.addItem(item("Schedule…", #selector(EditorController.openShowSchedule), ""))
         show.addItem(item("OSC / MIDI Tracks and Clock…", #selector(EditorController.openShowControlTools), ""))
+        show.addItem(item("Gamepad controls…", #selector(EditorController.showGamepadControls), ""))
+        show.addItem(item("MIDI Time Code…", #selector(EditorController.showMIDITimeCode), ""))
         show.addItem(item("Control mappings…", #selector(EditorController.configureControl), ""))
         show.addItem(item("Lighting network…", #selector(EditorController.showLightingNetwork), ""))
         let light = NSMenu()
@@ -78,7 +83,11 @@ import MappingCore
         light.addItem(item("Record / replay…", #selector(EditorController.showDMXSequence), ""))
         light.addItem(item("Import LED scan…", #selector(EditorController.showLEDScanImport), ""))
         light.addItem(item("USB-DMX / SPI…", #selector(EditorController.showLightingAdapters), ""))
-        for (title, submenu) in [("ApertureCue",app),("File",file),("Edit",edit),("Show",show),("Light",light)] {
+        let devices = NSMenu()
+        devices.addItem(item("External video…", #selector(EditorController.showExternalVideo), ""))
+        devices.addItem(item("PJLink projector…", #selector(EditorController.showProjectorControl), ""))
+        devices.addItem(item("Arduino / Firmata…", #selector(EditorController.showFirmata), ""))
+        for (title, submenu) in [("ApertureCue",app),("File",file),("Edit",edit),("Show",show),("Light",light),("Devices",devices)] {
             let i = NSMenuItem(); i.title = title; i.submenu = submenu; menu.addItem(i)
         }
         NSApp.mainMenu = menu
@@ -140,9 +149,14 @@ import MappingCore
     var network: NetworkController?
     var midi: MIDIControlAdapter?
     let controlMapping = ControlMappingSession()
+    let gamepadSession = GamepadSession()
     var lighting: LightingController!
     var lightingView: MTKView!
     var fixtureEditorWindow: FixtureEditorWindow?
+    var externalVideo: ExternalVideoSession!
+    var externalVideoWindow: ExternalVideoWindow?
+    var projectorWindow: PJLinkWindowController?
+    var firmataWindow: FirmataWindow?
     var feedback:FeedbackComposition?
     var lastLighting: Double = 0
     var effectiveSurfaces: [Surface] {
@@ -173,6 +187,8 @@ import MappingCore
         selectedID = project.surfaces.first?.id
         guard let device = MTLCreateSystemDefaultDevice() else { fatalError("ApertureCue requires Metal") }
         metalView.device = device; media = MediaPool(device: device)
+        externalVideo = ExternalVideoSession(device: device)
+        media.externalTexture = { [weak externalVideo] name in externalVideo?.texture(for: name) }
         montagePool = MontagePool(device:device,media:media); media.virtualSources = montagePool
         renderer = MetalRenderer(view: metalView, media: media)
         feedback=FeedbackComposition(media:media)
@@ -419,6 +435,7 @@ import MappingCore
     func reconcile() {
         reconcileOutputWindows()
         updateActiveMedia()
+        externalVideo?.bind(project.assets)
         media.reconcile(assets:project.assets,baseURL:baseURL)
         do { try montagePool.reconcile(montages:project.montages,assets:project.assets,baseURL:baseURL) }
         catch { editError=error.localizedDescription }
@@ -586,16 +603,25 @@ import MappingCore
         })
         if let a = project.assets.first(where:{$0.id == surface.mediaID}) {
             add(label("MEDIA · \(a.name)",size:11,bold:true))
-            let loops=MediaPlayback.effectiveSettings(a).mode == .loop
-            add(ActionButton(loops ? "Loop: ON" : "Loop: OFF") { [weak self] in self?.mutate("Loop") { p in
-                if let aIndex=p.assets.firstIndex(where:{$0.id==a.id}) {
-                    if var settings=p.assets[aIndex].playback {settings.mode=loops ? .once : .loop;p.assets[aIndex].playback=settings}
-                    else {p.assets[aIndex].loop.toggle()}
-                }
-            } })
-            add(ActionSlider(value:a.volume,min:0,max:1) { [weak self] value in self?.mutate("Volume") { p in if let aIndex = p.assets.firstIndex(where:{$0.id == a.id}) { p.assets[aIndex].volume = value } } })
-            add(ActionButton("Source playback / routing…") {[weak self] in self?.selectedMediaID=a.id;self?.sourceWindow?.close();self?.sourceWindow=nil;self?.showSources()})
-            if a.kind != "camera" { add(ActionButton("Relink media…") { [weak self] in self?.relink(a.id) }) }
+            if a.kind == "external-video" {
+                add(ActionButton("External video…") { [weak self] in self?.showExternalVideo() })
+            } else if a.kind == "camera" {
+                add(ActionButton("Reconnect camera") { [weak self] in
+                    guard let self, project.assets.contains(where: { $0.id == a.id && $0.kind == "camera" }) else { return }
+                    media.reloadAsset(id: a.id, assets: project.assets, baseURL: baseURL)
+                })
+            } else {
+                let loops=MediaPlayback.effectiveSettings(a).mode == .loop
+                add(ActionButton(loops ? "Loop: ON" : "Loop: OFF") { [weak self] in self?.mutate("Loop") { p in
+                    if let aIndex=p.assets.firstIndex(where:{$0.id==a.id}) {
+                        if var settings=p.assets[aIndex].playback {settings.mode=loops ? .once : .loop;p.assets[aIndex].playback=settings}
+                        else {p.assets[aIndex].loop.toggle()}
+                    }
+                } })
+                add(ActionSlider(value:a.volume,min:0,max:1) { [weak self] value in self?.mutate("Volume") { p in if let aIndex = p.assets.firstIndex(where:{$0.id == a.id}) { p.assets[aIndex].volume = value } } })
+                add(ActionButton("Source playback / routing…") {[weak self] in self?.selectedMediaID=a.id;self?.sourceWindow?.close();self?.sourceWindow=nil;self?.showSources()})
+                if a.hasLocalFile { add(ActionButton("Relink media…") { [weak self] in self?.relink(a.id) }) }
+            }
         }
         if let montage=project.montages.first(where:{$0.id==surface.mediaID}) {
             add(label("MONTAGE · " + montage.name,size:11,bold:true))
@@ -605,7 +631,7 @@ import MappingCore
     }
     @objc func newProject() {
         stopAutomationRecording(reason:"New project")
-        guard confirmDiscard() else { return }; resetShowControlSessions(); resetControlMappings(); resetAutomationRecording(); closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil; recoveryBaseline=nil; sourceWindow?.close();sourceWindow=nil;media.reset();workMessage=""
+        guard confirmDiscard() else { return }; resetShowControlSessions(); resetControlMappings(); externalVideo.stop(); projectorWindow?.reset(); closeFirmata(); resetAutomationRecording(); closeOutputs(); project = Project(name:"Untitled",surfaces:[Surface()],outputs:[OutputConfig()]); projectURL = nil; recoveryBaseline=nil; sourceWindow?.close();sourceWindow=nil;media.reset();workMessage=""
         history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false; documentGeneration = UUID();feedback?.reset()
         lighting?.stopDocument(); selectedID = project.surfaces.first?.id; dirty = false; showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; reconcile(); refresh()
     }
@@ -636,7 +662,7 @@ import MappingCore
                 }
             } else if recovery.state != .missing {recoveryMessage=recovery.diagnostic}
             guard baseline == (try ProjectStore.captureRecoveryBaseline(for:url)) else {throw ProjectError.invalid("saved project changed during opening; retry")}
-            resetShowControlSessions();resetControlMappings();resetAutomationRecording();media.reset();sourceWindow?.close();sourceWindow=nil
+            resetShowControlSessions();resetControlMappings();externalVideo.stop();projectorWindow?.reset();closeFirmata();resetAutomationRecording();media.reset();sourceWindow?.close();sourceWindow=nil
             closeOutputs(); lighting?.stopDocument(); showRuntime.stop(); media.pause(); media.seek(to:0); montageWindow?.close(); montageWindow=nil; montagePool.reset(); montageSerial &+= 1; timelineWindow?.close(); timelineWindow=nil; cueWindow?.close(); cueWindow=nil; cueMessage=""; history.clear(); cueEngine.cancel(); cueTarget = nil; cueBefore = nil; selectedMediaID = nil; selectedGroupID = nil; editError = ""; overlay.maskMode = false; overlay.meshMode = false; overlay.pathMode = false;overlay.warpMode=false;overlay.drawMode=false; documentGeneration = UUID();feedback?.reset(); project = loaded; projectURL = url; recoveryBaseline=baseline; dirty = false; selectedID = loaded.surfaces.first?.id
             dirty=recovered;workMessage=recoveryMessage
             reconcile(); refresh()
@@ -787,11 +813,13 @@ import MappingCore
     func tick() {
         let now = ProcessInfo.processInfo.systemUptime
         conductorHostTime = now
+        pollGamepad(at: now)
         flushControlMappings(at: now)
         applyExternalShowClock(at: now)
         advanceShow(at: now)
         pollShowSchedule(at: Date())
         media.update()
+        if externalVideo?.update(at: now) == true { updateRender() }
         sourceWindow?.updateClock()
         updateRecordingInspector()
         if let cue = cueTarget {

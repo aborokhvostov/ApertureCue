@@ -7,12 +7,12 @@
 <key>CFBundleExecutable</key><string>ApertureCue</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>0.1.0</string>
-<key>CFBundleVersion</key><string>19</string>
+<key>CFBundleVersion</key><string>20</string>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSCameraUsageDescription</key><string>Use a selected camera as a projection source.</string>
 <key>NSMicrophoneUsageDescription</key><string>Optional live audio analysis for show control.</string>
-<key>NSLocalNetworkUsageDescription</key><string>Use local OSCQuery discovery and communicate with selected OSC and lighting endpoints when you start them.</string>
+<key>NSLocalNetworkUsageDescription</key><string>Use local OSCQuery discovery and communicate with selected OSC, lighting and projector endpoints when you start them.</string>
 <key>NSBonjourServices</key><array><string>_oscjson._tcp</string></array>
 <key>NSAppTransportSecurity</key>
 <dict>
@@ -24,5 +24,7 @@
         <dict><key>NSExceptionAllowsInsecureHTTPLoads</key><true/></dict>
     </dict>
 </dict>
+<key>GCSupportsControllerUserInteraction</key><true/>
+<key>GCSupportedGameControllers</key><array><dict><key>ProfileName</key><string>ExtendedGamepad</string></dict></array>
 <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict></plist>

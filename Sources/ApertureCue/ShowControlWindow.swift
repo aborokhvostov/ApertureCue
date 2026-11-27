@@ -141,7 +141,7 @@ import MappingCore
         clockButton.actionBlock = { [weak self] in
             self?.perform { editor in
                 guard let self else { return }
-                if editor.showControlSession.listener != nil { editor.disarmExternalShowClock(); return }
+                if editor.showControlSession.isClockArmed { editor.disarmExternalShowClock(); return }
                 guard let port = UInt16(self.clockPort.stringValue), port > 0 else { throw ProjectError.invalid("enter a clock port in 1…65535") }
                 try editor.armExternalShowClock(source: self.sourceField.stringValue, port: port)
             }
@@ -175,7 +175,7 @@ import MappingCore
 
     func refreshStatus() {
         guard let session = editor?.showControlSession else { return }
-        let armed = session.listener != nil
+        let armed = session.isClockArmed
         outputHost.isEnabled = !session.outputsArmed
         outputButton.title = session.outputsArmed ? "Disarm outputs" : "Arm outputs"
         outputStatus.stringValue = session.outputStatus

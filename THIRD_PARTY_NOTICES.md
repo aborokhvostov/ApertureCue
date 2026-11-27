@@ -40,6 +40,12 @@ and macOS POSIX serial APIs. The SPI preview exports RGB payloads for a separate
 electrical driver. The base distribution includes neither device drivers nor
 vendor SDKs. [Protocol sources and adapter scope](docs/lighting-adapter-spec.md)
 
+The independently authored optional Syphon helper builds against the upstream
+BSD-licensed framework supplied by the operator. The application archive
+contains no Syphon framework, proprietary receiver runtime or helper binary.
+The macOS build uses the system GameController, CryptoKit and serial APIs.
+[External video integration and vendor scope](docs/stage-7-completion.md)
+
 ## Art-Net protocol credit and registration
 
 The official [Art-Net 4 specification, revision 1.4dp, 23 October 2025](https://art-net.org.uk/downloads/art-net.pdf) permits royalty-free protocol use, requires a user-guide credit and requires manufacturers implementing it to apply for an OEM code. The prescribed credit is reproduced in [the user guide](docs/user-guide.md#protocol-credits). ApertureCue's code was written independently; the protocol document and vendor SDK are not redistributed or relicensed as project source.

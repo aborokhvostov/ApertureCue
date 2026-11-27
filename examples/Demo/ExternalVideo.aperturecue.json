@@ -1,0 +1,393 @@
+{
+  "assets" : [
+    {
+      "id" : "DAFCADF6-9151-42FE-AB39-CFC6173AFDC1",
+      "kind" : "external-video",
+      "loop" : false,
+      "name" : "Original external video",
+      "path" : "demo-feed",
+      "volume" : 0
+    }
+  ],
+  "conductor" : {
+    "banks" : [
+
+    ],
+    "bindings" : [
+
+    ],
+    "signals" : [
+
+    ]
+  },
+  "controlMap" : {
+    "bindings" : [
+
+    ]
+  },
+  "cues" : [
+
+  ],
+  "fixtures" : [
+
+  ],
+  "geometryLockedSurfaceIDs" : [
+
+  ],
+  "globalMasks" : [
+
+  ],
+  "groups" : [
+
+  ],
+  "materials" : [
+
+  ],
+  "montages" : [
+
+  ],
+  "name" : "ApertureCue External Video",
+  "outputs" : [
+    {
+      "edgeBlend" : {
+        "blackLevel" : 0,
+        "bottom" : 0,
+        "gamma" : 1,
+        "left" : 0,
+        "power" : 1,
+        "right" : 0,
+        "top" : 0
+      },
+      "height" : 1080,
+      "id" : "4148086E-F3CF-4FC1-BB95-F910E7F10822",
+      "name" : "Output",
+      "screenIndex" : 0,
+      "width" : 1920
+    }
+  ],
+  "showControlTracks" : [
+
+  ],
+  "showSchedule" : {
+    "entries" : [
+
+    ]
+  },
+  "surfaces" : [
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "solid",
+      "group" : "",
+      "id" : "D95E894F-3DC8-40CD-84CA-722736ECF79A",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mediaID" : "DAFCADF6-9151-42FE-AB39-CFC6173AFDC1",
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "External video",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.09,
+          "y" : 0.15
+        },
+        {
+          "x" : 0.68,
+          "y" : 0.15
+        },
+        {
+          "x" : 0.68,
+          "y" : 0.85
+        },
+        {
+          "x" : 0.09,
+          "y" : 0.85
+        }
+      ],
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    },
+    {
+      "blendMode" : "normal",
+      "brightness" : 1,
+      "color" : [
+        1,
+        1,
+        1
+      ],
+      "effects" : {
+        "inverted" : false,
+        "keyColor" : [
+          0,
+          1,
+          0
+        ],
+        "keyMode" : "none",
+        "posterizeLevels" : 0,
+        "saturation" : 1,
+        "softness" : 0.1,
+        "spill" : 0,
+        "threshold" : 0.1
+      },
+      "enabled" : true,
+      "feather" : 0,
+      "gamma" : 1,
+      "generator" : "gradient",
+      "group" : "",
+      "id" : "351523F5-3530-4379-AE99-92416B089429",
+      "input" : [
+        {
+          "x" : 0,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 0
+        },
+        {
+          "x" : 1,
+          "y" : 1
+        },
+        {
+          "x" : 0,
+          "y" : 1
+        }
+      ],
+      "inputMesh" : [
+
+      ],
+      "inputWarpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      },
+      "mask" : [
+
+      ],
+      "maskSettings" : {
+        "feather" : 0,
+        "inverted" : false,
+        "space" : "sourceUV"
+      },
+      "masks" : [
+
+      ],
+      "materialValues" : {
+
+      },
+      "mesh" : [
+
+      ],
+      "meshColumns" : 0,
+      "meshLinked" : false,
+      "meshRows" : 0,
+      "meshWeights" : [
+
+      ],
+      "name" : "Original comparison gradient",
+      "opacity" : 1,
+      "output" : [
+        {
+          "x" : 0.73,
+          "y" : 0.15
+        },
+        {
+          "x" : 0.91,
+          "y" : 0.15
+        },
+        {
+          "x" : 0.91,
+          "y" : 0.85
+        },
+        {
+          "x" : 0.73,
+          "y" : 0.85
+        }
+      ],
+      "shape" : "quad",
+      "stroke" : {
+        "closed" : false,
+        "nodes" : [
+          {
+            "anchor" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.15,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.15,
+              "y" : 0.5
+            }
+          },
+          {
+            "anchor" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "incoming" : {
+              "x" : 0.85,
+              "y" : 0.5
+            },
+            "outgoing" : {
+              "x" : 0.85,
+              "y" : 0.5
+            }
+          }
+        ],
+        "width" : 0.08
+      },
+      "warpTransform" : {
+        "a" : 1,
+        "b" : 0,
+        "c" : 0,
+        "d" : 1,
+        "pw" : 1,
+        "px" : 0,
+        "py" : 0,
+        "tx" : 0,
+        "ty" : 0
+      }
+    }
+  ],
+  "timeline" : [
+
+  ],
+  "timelineSettings" : {
+    "duration" : 10,
+    "loopEnabled" : false,
+    "loopEnd" : 10,
+    "loopStart" : 0,
+    "markers" : [
+
+    ],
+    "stopAtEnd" : true
+  },
+  "version" : 17
+}

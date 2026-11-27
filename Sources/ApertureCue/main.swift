@@ -4,6 +4,19 @@ import AppKit
 import MappingCore
 
 MainActor.assumeIsolated {
+if CommandLine.arguments.dropFirst().first == "--publish-demo-feed" {
+    exit(ExternalVideoSelfTest.publishDemo(arguments: CommandLine.arguments))
+}
+if CommandLine.arguments.dropFirst().first == "--syphon-loopback-test" {
+    guard CommandLine.arguments.count == 3 else { fputs("Provide a built optional Syphon helper path\n", stderr); exit(2) }
+    exit(ExternalVideoSelfTest.run(syphonHelper: URL(fileURLWithPath: CommandLine.arguments[2]).standardizedFileURL))
+}
+if CommandLine.arguments.contains("--external-video-test") { exit(ExternalVideoSelfTest.run()) }
+if CommandLine.arguments.contains("--pjlink-test") { exit(PJLinkSelfTest.run()) }
+if CommandLine.arguments.contains("--firmata-test") { exit(FirmataSelfTest.run()) }
+if CommandLine.arguments.contains("--midi-time-code-fixture") { exit(MIDITimeCodeSelfTest.runFixture(arguments: CommandLine.arguments)) }
+if CommandLine.arguments.contains("--midi-time-code-test") { exit(MIDITimeCodeSelfTest.run()) }
+if CommandLine.arguments.contains("--gamepad-test") { exit(GamepadSelfTest.run()) }
 if CommandLine.arguments.contains("--control-mapping-test") {exit(ControlMappingSelfTest.run())}
 if CommandLine.arguments.contains("--midi-control-test") {exit(MIDIControlAdapterSelfTest.run())}
 if CommandLine.arguments.contains("--osc-query-client-test") {exit(OSCQuerySelfTest.runClient(arguments:CommandLine.arguments))}
@@ -45,14 +58,15 @@ if CommandLine.arguments.contains("--editor-test") {
     exit(EditorSelfTest.run())
 }
 if let command = CommandLine.arguments.dropFirst().first,
-   ["--generate-show-demo", "--generate-control-demo", "--generate-light-demo"].contains(command) {
+   ["--generate-show-demo", "--generate-control-demo", "--generate-light-demo", "--generate-external-demo"].contains(command) {
     guard CommandLine.arguments.count == 3 else { fputs("Provide a new project path\n", stderr); exit(1) }
     let destination = URL(fileURLWithPath: CommandLine.arguments[2])
     let model: Project
     switch command {
     case "--generate-show-demo": model = ConductorSelfTest.fixture()
     case "--generate-control-demo": model = ControlMappingSelfTest.fixture()
-    default: model = LightEngineSelfTest.fixture()
+    case "--generate-light-demo": model = LightEngineSelfTest.fixture()
+    default: model = ExternalVideoSelfTest.fixture()
     }
     do {
         try ProjectStore.validate(model)

@@ -8,11 +8,18 @@ import MappingCore
     var outputStatus = "Outputs off"
     var clock = ExternalShowClock()
     var listener: NetworkController?
+    var timeCode: MIDITimeCodeAdapter?
+    var timeCodeWindow: MIDITimeCodeWindow?
+    var isClockArmed: Bool { listener != nil || timeCode != nil }
     let output = ShowControlOutput()
 
     func reset() {
         listener?.stop()
         listener = nil
+        timeCode?.stop()
+        timeCode = nil
+        timeCodeWindow?.close()
+        timeCodeWindow = nil
         clock.disarm()
         output.stop()
         try? output.setOSCHost("127.0.0.1")
@@ -75,7 +82,7 @@ extension EditorController {
     func armExternalShowClock(source: String, port: UInt16, at hostTime: Double = ProcessInfo.processInfo.systemUptime) throws {
         guard hostTime.isFinite else { throw ProjectError.invalid("external clock host time must be finite") }
         let session = showControlSession
-        guard session.listener == nil else { throw ProjectError.invalid("disarm the current external clock before changing its source") }
+        guard !session.isClockArmed else { throw ProjectError.invalid("disarm the current external clock before changing its source") }
         var clock = ExternalShowClock()
         try clock.arm(source: source)
         let listener = NetworkController(clockOnly: true) { [weak self] command in
@@ -95,13 +102,15 @@ extension EditorController {
         let session = showControlSession
         session.listener?.stop()
         session.listener = nil
+        session.timeCode?.stop()
+        session.timeCode = nil
         session.clock.disarm()
         showRuntime.allowsPositionJumps = true
         session.window?.refreshStatus()
     }
 
     func disarmExternalShowClock(at hostTime: Double = ProcessInfo.processInfo.systemUptime) {
-        guard showControlSession.listener != nil else { return }
+        guard showControlSession.isClockArmed else { return }
         releaseExternalShowClock()
         externalShowAlign(to: showRuntime.currentTime(at: hostTime), playing: false, at: hostTime)
     }
@@ -112,7 +121,8 @@ extension EditorController {
 
     func applyExternalShowClock(at hostTime: Double) {
         let session = showControlSession
-        guard session.listener != nil else { return }
+        session.timeCode?.refreshEndpoint(at: hostTime)
+        guard session.isClockArmed else { return }
         let oldState = session.clock.state
         let settings = showRuntime.settings
         let loop = settings.loopEnabled ? settings.loopStart...settings.loopEnd : nil
@@ -126,10 +136,10 @@ extension EditorController {
         case nil:
             break
         }
-        if oldState != session.clock.state { session.window?.refreshStatus() }
+        if oldState != session.clock.state { session.window?.refreshStatus(); session.timeCodeWindow?.refreshStatus() }
     }
 
-    private func externalShowAlign(to position: Double, playing: Bool, at hostTime: Double) {
+    func externalShowAlign(to position: Double, playing: Bool, at hostTime: Double) {
         stopAutomationRecording(reason: "External clock alignment", at: hostTime)
         guard hostTime.isFinite, position.isFinite else { return }
         feedback?.reset()

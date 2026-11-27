@@ -173,6 +173,7 @@ final class MediaPool {
     private(set) var errorMessages: [UUID: String] = [:]
     var onChange: (() -> Void)?
     weak var virtualSources:VirtualMediaFrames?
+    var externalTexture: ((String) -> MTLTexture?)?
     private var activeAssetIDs:Set<UUID>?
     private let cameraFactory:(()->MediaCameraSource)?
     private let audioFactory:(()->MediaAudioPlayer)?
@@ -318,6 +319,7 @@ final class MediaPool {
             if let previousTransport {entry.transport=previousTransport}
             entries[asset.id] = entry
             errorMessages.removeValue(forKey: asset.id)
+            if asset.kind == "external-video" { continue }
             if asset.kind == "camera" {
                 prepareCamera(entry)
                 continue
@@ -571,6 +573,7 @@ final class MediaPool {
     /// managed modes accept only the requested sample generation/PTS interval.
     func texture(for id:UUID)->MTLTexture? {
         guard let entry=entries[id] else {return virtualSources?.frameResource(for:id)?.texture}
+        if entry.asset.kind == "external-video" { return externalTexture?(entry.asset.path) }
         if entry.asset.kind=="image" {
             entry.lastImagePull=ProcessInfo.processInfo.systemUptime
             if entry.imageOwner==nil {prepareImage(entry)}

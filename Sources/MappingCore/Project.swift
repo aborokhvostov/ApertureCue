@@ -121,6 +121,7 @@ public struct MediaAsset: Codable, Equatable, Identifiable, Sendable {
     /// Absolute while in memory; ProjectStore writes a path relative to the project file.
     public var path: String
     public var kind: String
+    public var hasLocalFile: Bool { kind != "camera" && kind != "external-video" }
     public var loop: Bool
     public var volume: Double
     /// Nil retains the pre-schema13 loop flag's exact playback meaning.
@@ -232,7 +233,7 @@ public struct Cue: Codable, Equatable, Identifiable, Sendable {
 }
 
 public struct Project: Codable, Equatable, Sendable {
-    public static let currentVersion = 16
+    public static let currentVersion = 17
     public var version: Int
     public var name: String
     public var assets: [MediaAsset]

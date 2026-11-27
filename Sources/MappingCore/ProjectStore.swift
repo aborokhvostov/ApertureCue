@@ -40,7 +40,7 @@ public enum ProjectStore {
             try fm.createDirectory(at:mediaDirectory,withIntermediateDirectories:false)
             var collected=project
             var copiedBytes:Int64=0
-            for i in collected.assets.indices where collected.assets[i].kind != "camera" {
+            for i in collected.assets.indices where collected.assets[i].hasLocalFile {
                 let asset=collected.assets[i]
                 guard NSString(string:asset.path).isAbsolutePath else { throw ProjectError.invalid("collect requires resolved absolute media paths; load or relink \(asset.name) first") }
                 let source=URL(fileURLWithPath:asset.path).resolvingSymlinksInPath().standardizedFileURL
@@ -77,7 +77,7 @@ public enum ProjectStore {
             let verified=try load(from:stagedProject)
             let prefix=mediaDirectory.path+"/"
             guard verified.assets.allSatisfy({ asset in
-                if asset.kind == "camera" {return true}
+                if !asset.hasLocalFile {return true}
                 guard asset.path.hasPrefix(prefix),fm.fileExists(atPath:asset.path) else {return false}
                 return asset.sequence?.frames.allSatisfy {fm.fileExists(atPath:URL(fileURLWithPath:asset.path).appendingPathComponent($0).path)} ?? true
             }) else { throw ProjectError.invalid("collected project contains unresolved media") }
@@ -180,7 +180,7 @@ public enum ProjectStore {
         let base = url.deletingLastPathComponent().standardizedFileURL
         portable.assets = portable.assets.map { asset in
             var a = asset
-            if a.kind != "camera", !a.path.isEmpty {
+            if a.hasLocalFile, !a.path.isEmpty {
                 let absolute = absoluteURL(path:a.path, base:base)
                 a.path = relativePath(to:absolute, from:base)
             }
@@ -255,7 +255,7 @@ public enum ProjectStore {
         p.version = Project.currentVersion
         try validate(p)
         let base = url.deletingLastPathComponent()
-        for index in p.assets.indices where p.assets[index].kind != "camera" && !p.assets[index].path.isEmpty {
+        for index in p.assets.indices where p.assets[index].hasLocalFile && !p.assets[index].path.isEmpty {
             p.assets[index].path = absoluteURL(path:p.assets[index].path, base:base).path
         }
         return p
@@ -418,8 +418,12 @@ public enum ProjectStore {
         var materialPrograms:[UUID:MaterialProgram]=[:]
         for definition in project.materials { materialPrograms[definition.id]=try MaterialProgram(definition:definition) }
         try CompositionPlan.validateMasks(project.globalMasks,global:true)
+        guard Set(project.assets.filter { $0.kind == "external-video" }.map(\.path)).count <= 4 else {
+            throw ProjectError.invalid("Use up to four distinct external video feeds per project")
+        }
         for asset in project.assets {
-            let kinds=project.version>=13 ? ["image","video","audio","camera","sequence"] : ["image","video","camera"]
+            var kinds = project.version >= 13 ? ["image","video","audio","camera","sequence"] : ["image","video","camera"]
+            if project.version >= 17 { kinds.append("external-video") }
             guard kinds.contains(asset.kind) else { throw ProjectError.invalid("unknown media kind \(asset.kind)") }
             if project.version>=13 {
                 try asset.playback?.validate();try asset.audioRouting?.validate()
@@ -432,7 +436,10 @@ public enum ProjectStore {
             }
             guard asset.path.utf8.count <= 32768, !asset.path.contains("\0"), asset.name.utf8.count <= 4096 else { throw ProjectError.invalid("invalid media path or name") }
             guard asset.volume.isFinite, (0...1).contains(asset.volume) else { throw ProjectError.invalid("volume is outside 0...1") }
-            if asset.kind != "camera", asset.path.isEmpty { throw ProjectError.invalid("empty media path") }
+            if asset.hasLocalFile, asset.path.isEmpty { throw ProjectError.invalid("empty media path") }
+            if asset.kind == "external-video", !ExternalVideoFrame.isValidName(asset.path) {
+                throw ProjectError.invalid("Invalid external video feed name")
+            }
         }
         for output in project.outputs {
             try EdgeBlend.validate(output.edgeBlend)

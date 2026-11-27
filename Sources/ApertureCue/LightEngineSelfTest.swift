@@ -47,7 +47,7 @@ import MappingCore
             try checkRaster()
             checks.append("Nearest and clipped box kernels match a sharp two-by-two RGBA oracle")
             try checkPatchAndComposition(samples: &samples)
-            checks.append("Production editor applies atomic patch edits and Undo/Redo, persists schema 16 and restores an off session")
+            checks.append("Production editor applies atomic patch edits and Undo/Redo, persists the current schema and restores an off session")
             checks.append("Metal reads two logical routes from the same composition tick and encodes scoped color and animated 16-bit position")
             try checkRouter(samples: &samples)
             checks.append("ArtDmx input on an isolated port rejects duplicates and other universes, routes real sACN, retires on input loss")
@@ -146,7 +146,7 @@ import MappingCore
         editor.saveTo(file)
         try expect(!editor.dirty, "Native Save did not clear the dirty state")
         editor.openProject(file)
-        try expect(editor.project.version == 16 && editor.project.fixtures == edited
+        try expect(editor.project.version == Project.currentVersion && editor.project.fixtures == edited
                    && !editor.lighting.isSending && !editor.lighting.isSampling, "Light state or saved patch on reopen differs")
     }
 
