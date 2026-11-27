@@ -26,13 +26,13 @@ jobs:
         run: swift test
       - name: Package native macOS application
         run: ./scripts/build.sh
-      - name: Archive application preserving executable permissions
-        run: ditto -c -k --norsrc --noextattr --keepParent dist/ApertureCue.app dist/ApertureCue-macOS.zip
+      - name: Archive application and original demos
+        run: ./scripts/package.sh
       - name: Upload development build
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ApertureCue-macOS-${{ github.sha }}
-          path: dist/ApertureCue-macOS.zip
+          path: dist/ApertureCue-macOS-*.zip
           if-no-files-found: error
           retention-days: 14
       # GPU/media self-tests require a real logged-in graphics session. They are

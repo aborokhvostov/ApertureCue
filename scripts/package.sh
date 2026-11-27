@@ -17,9 +17,7 @@ mkdir -p "$task_release/Examples/Materials" "$task_release/Examples/SVG"
 cp examples/Materials/OriginalGradient.fs examples/Materials/OriginalTint.fs "$task_release/Examples/Materials/"
 cp examples/SVG/geometry.svg "$task_release/Examples/SVG/"
 mkdir -p "$task_release/Media/Frames"
-cp examples/Demo/ControlMapping.aperturecue.json shows saved OSC and MIDI bindings. Open
-Show > Control mappings to start a session service and inspect the addresses.
-Media/Media.aperturecue.json examples/Media/original-time-colors.mov examples/Media/original-stereo-tones.wav "$task_release/Media/"
+cp examples/Media/Media.aperturecue.json examples/Media/original-time-colors.mov examples/Media/original-stereo-tones.wav "$task_release/Media/"
 for task_frame in frame1 frame2 frame10 frame11; do
   cp "examples/Media/Frames/$task_frame.png" "$task_release/Media/Frames/"
 done
@@ -36,6 +34,8 @@ Original import examples are in Examples/Materials and Examples/SVG.
 Demo/ShowControl.aperturecue.json contains a procedural show. Use Show >
 Conductor to launch its two rows independently. Timeline contains a bounded Jump
 and a Pause marker. Schedule and OSC/MIDI dispatch are session controls.
+Demo/ControlMapping.aperturecue.json shows saved OSC and MIDI assignments.
+Open Show > Control mappings to start a session service and inspect addresses.
 Media/Media.aperturecue.json demonstrates frozen image sequences, independent
 source transport and reverse ping-pong. Open Sources in the Media library.
 Its original stereo tone asset is unassigned and volume 0. Assign it to a
