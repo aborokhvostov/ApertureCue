@@ -1,0 +1,24 @@
+{
+  "tag": "v0.1.0-alpha.19",
+  "sourceCommit": "9f072d68618ea009e1c235afe58f4fce5db5f444",
+  "url": "https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.19",
+  "prerelease": true,
+  "draft": false,
+  "publishedAt": "2026-11-27T07:41:26Z",
+  "assets": [
+    {
+      "name": "ApertureCue-macOS-arm64.zip",
+      "sizeBytes": 3130287,
+      "sha256": "cc4b1f61415229c692caa0b1a21903b0e3a3f864cacf4cb944be6e0a56ba3195",
+      "state": "uploaded",
+      "downloadURL": "https://github.com/aborokhvostov/ApertureCue/releases/download/v0.1.0-alpha.19/ApertureCue-macOS-arm64.zip"
+    },
+    {
+      "name": "SHA256SUMS",
+      "sizeBytes": 94,
+      "sha256": "054c44d0358b9276b7a97b2799428eafd17dece5279ba1958751301f13e9efbe",
+      "state": "uploaded",
+      "downloadURL": "https://github.com/aborokhvostov/ApertureCue/releases/download/v0.1.0-alpha.19/SHA256SUMS"
+    }
+  ]
+}

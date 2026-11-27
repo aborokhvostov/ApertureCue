@@ -1,0 +1,15 @@
+{
+  "checkCount": 4,
+  "checks": [
+    "targeted ArtPoll from source port 6454 accepts two deduplicated original bindings, reports loss and rediscovers",
+    "unicast sync order and CID, bounded newest-frame replacement, universe retirement and stop",
+    "two sACN data universes and a distinct sync universe reach their IPv4 multicast groups on loopback",
+    "exclusive Art-Net port loss retries the latest frame after socket recovery; Stop sends zero"
+  ],
+  "elapsedSeconds": 1.4945937500451691,
+  "hardwareVerification": false,
+  "passed": true,
+  "reportVersion": 1,
+  "sampleRateDeltaSeconds": 0.19613150000805035,
+  "scope": "Real macOS UDP sockets on loopback only, original simulated Art-Net node, no device probes"
+}

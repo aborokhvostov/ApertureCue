@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0-alpha.19 — Light engine
+## 0.1.0-alpha.19 — Light engine, 2026-11-27
 
 - Add a fixture patch and channel editor with box sampling, logical output selection, 8/16-bit RGBW/CMY, surface-driven dimmer and pan/tilt, and serpentine layouts.
 - Import CSV and JSON patches or positions from SVG markers. Save validated JSON layouts and restore the patch with project schema 16.

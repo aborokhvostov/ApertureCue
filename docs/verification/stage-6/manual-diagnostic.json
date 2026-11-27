@@ -1,0 +1,15 @@
+{
+  "build": "unoptimized diagnostic snapshot",
+  "executableSHA256": "b0d61c33db83544e32057dc4f5e0295cad3ccbefd3dfaf7951fec019833a35cc",
+  "checks": [
+    "The LED button opened Fixture Patch with inactive edit actions before selection",
+    "Created one disposable 16-pixel RGB line and saw slots 1\u201348 selected in the table",
+    "Opened the channel editor and saw the three preset channel rows",
+    "Added a manual 16-bit coarse/fine channel set to 0.5; the draft showed five slots per pixel and last address 80",
+    "Quit and discarded test edits"
+  ],
+  "limitation": "Accessibility polling timed out when returning from the channel modal. Only observations before returning are credited to this visible test.",
+  "localDate": "2026-11-27",
+  "timezone": "Europe/Moscow",
+  "hardwareVerification": false
+}

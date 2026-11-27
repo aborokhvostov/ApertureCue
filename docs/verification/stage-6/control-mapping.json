@@ -1,0 +1,20 @@
+{
+  "checkCount": 5,
+  "checks": [
+    "Real UDP maps by UUID across reordering, coalesces faders and supports Undo/Redo",
+    "Canonical OSC paths write in displayed units and publish the same value in the live Query tree",
+    "Learn consumes one control without applying it and mapped 14-bit CC keeps its exact resolution",
+    "Main mailbox remains bounded, canceled generations cannot dispatch, and an explicit OSC peer is enforced",
+    "Save/Open preserves saved maps and stops OSC, MIDI and Query"
+  ],
+  "details": {
+    "mailboxDroppedCommands": 1792
+  },
+  "elapsedSeconds": 1.391667416668497,
+  "failure": "",
+  "hardwareVerification": false,
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "schemaVersion": 1,
+  "timestampUTC": "2026-11-27T07:33:31Z"
+}

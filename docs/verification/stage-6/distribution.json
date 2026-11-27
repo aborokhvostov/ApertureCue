@@ -1,0 +1,56 @@
+{
+  "archive": "ApertureCue-macOS-arm64.zip",
+  "sizeBytes": 3130287,
+  "sha256": "cc4b1f61415229c692caa0b1a21903b0e3a3f864cacf4cb944be6e0a56ba3195",
+  "entryCount": 46,
+  "crcPassed": true,
+  "safeUniquePaths": true,
+  "signaturePassed": true,
+  "executableModePassed": true,
+  "appAndDemoMatch": true,
+  "executableSHA256": "25f59b37b186cc644a457739eec08ae3e2213dabfb92230a2c86e9bc02067952",
+  "coreLibrarySHA256": "adba4341952a9b0f72c8c013e3686b9902f6acb502a40f06631aee0e32575c87",
+  "sourceCommit": "9f072d68618ea009e1c235afe58f4fce5db5f444",
+  "extractedChecks": [
+    {
+      "mode": "light-engine-test",
+      "exitCode": 0,
+      "elapsedSeconds": 3.468
+    },
+    {
+      "mode": "dmx-sequence-test",
+      "exitCode": 0,
+      "elapsedSeconds": 0.081
+    },
+    {
+      "mode": "led-scan-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.414
+    },
+    {
+      "mode": "lighting-adapter-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.225
+    },
+    {
+      "mode": "lighting-transport-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.591
+    },
+    {
+      "mode": "lighting-test",
+      "exitCode": 0,
+      "elapsedSeconds": 1.153
+    },
+    {
+      "mode": "composition-test",
+      "exitCode": 0,
+      "elapsedSeconds": 0.979
+    },
+    {
+      "mode": "control-mapping-test",
+      "exitCode": 0,
+      "elapsedSeconds": 5.246
+    }
+  ]
+}

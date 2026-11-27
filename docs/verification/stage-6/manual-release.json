@@ -1,0 +1,11 @@
+{
+  "sourceCommit": "9f072d68618ea009e1c235afe58f4fce5db5f444",
+  "executableSHA256": "25f59b37b186cc644a457739eec08ae3e2213dabfb92230a2c86e9bc02067952",
+  "localDate": "2026-11-27",
+  "timezone": "Europe/Moscow",
+  "checks": [
+    "Launched the freshly extracted signed app and saw the native built-in demo and Light menu"
+  ],
+  "limitation": "The control tool did not observe the new panel from the extracted session. The built-in application launch, the diagnostic native editor workflow, and the optimized/extracted command-line integration checks are recorded separately.",
+  "hardwareVerification": false
+}

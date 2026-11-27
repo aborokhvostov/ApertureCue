@@ -1,0 +1,122 @@
+[
+  {
+    "mode": "light-engine-test",
+    "exitCode": 0,
+    "elapsedSeconds": 3.226
+  },
+  {
+    "mode": "dmx-sequence-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.077
+  },
+  {
+    "mode": "led-scan-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.239
+  },
+  {
+    "mode": "lighting-adapter-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.208
+  },
+  {
+    "mode": "control-mapping-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.441
+  },
+  {
+    "mode": "midi-control-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.826
+  },
+  {
+    "mode": "osc-query-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.645
+  },
+  {
+    "mode": "lighting-transport-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.532
+  },
+  {
+    "mode": "conductor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.572
+  },
+  {
+    "mode": "show-schedule-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.408
+  },
+  {
+    "mode": "show-control-test",
+    "exitCode": 0,
+    "elapsedSeconds": 3.728
+  },
+  {
+    "mode": "montage-test",
+    "exitCode": 0,
+    "elapsedSeconds": 2.879
+  },
+  {
+    "mode": "composition-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.394
+  },
+  {
+    "mode": "media-playback-test",
+    "exitCode": 0,
+    "elapsedSeconds": 2.603
+  },
+  {
+    "mode": "source-editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 16.111
+  },
+  {
+    "mode": "editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 213.229
+  },
+  {
+    "mode": "audio-test",
+    "exitCode": 0,
+    "elapsedSeconds": 1.7
+  },
+  {
+    "mode": "durability-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.256
+  },
+  {
+    "mode": "self-test",
+    "exitCode": 0,
+    "elapsedSeconds": 3.826
+  },
+  {
+    "mode": "live-editor-test",
+    "exitCode": 0,
+    "elapsedSeconds": 9.805
+  },
+  {
+    "mode": "live-composition-test",
+    "exitCode": 0,
+    "elapsedSeconds": 7.881
+  },
+  {
+    "mode": "protocol-loopback",
+    "exitCode": 0,
+    "elapsedSeconds": 0.04
+  },
+  {
+    "mode": "lighting-test",
+    "exitCode": 0,
+    "elapsedSeconds": 0.939
+  },
+  {
+    "mode": "media-soak-test",
+    "exitCode": 0,
+    "elapsedSeconds": 124.329
+  }
+]

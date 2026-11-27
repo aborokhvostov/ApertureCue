@@ -30,9 +30,11 @@ recording, scan capture imports and optional lighting adapters. Open
 `Demo/LightEngine.aperturecue.json` and choose **Light → DMX monitor…** to preview
 the procedural RGBW matrix and animated position channels. [Stage 6 scope](docs/stage-6-completion.md)
 
-[Download the Apple Silicon development build (alpha 18)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.18). It includes the original Control Mapping, Show Control, Media and Composition projects and uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-18).
+[Download the Apple Silicon development build (alpha 19)](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.19). The archive includes the original Light Engine and earlier demo projects. The app uses ad hoc signing without notarization. [Archive verification and checksum](docs/verification/distribution.md#alpha-19)
 
-Alpha 18 completes the declared Stage 5 software checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45952678380) passed 183 XCTest on each macOS and Linux. The optimized app passed 20 modes, with seven focused modes repeated from the ZIP. Physical controllers and lighting nodes have separate verification gates.
+Alpha 19 completes the declared Stage 6 software checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45958866571) passed 199 XCTest on each macOS and Linux. The optimized app passed 24 modes, with eight tested again after ZIP extraction. Physical fixture, camera, USB and SPI checks have separate gates.
+
+[Alpha 18](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.18) completes the declared Stage 5 software checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45952678380) passed 183 XCTest on each macOS and Linux. The optimized app passed 20 modes, with seven focused modes repeated from the ZIP.
 
 [Alpha 17](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.17) completes the declared Stage 4 software checks. [Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45946371538) passed 171 XCTest on each macOS and Linux. The scoped visible workflow and seven extracted-app modes also passed.
 

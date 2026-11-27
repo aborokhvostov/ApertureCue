@@ -8,18 +8,23 @@
 - Текущий компилятор: Apple Swift 6.4.2 / Apple clang 21 из Xcode; прежние проверки выполнены Swift 6.3.3 / CLT; Нативная сборка использует установленные Apple SDK, без Qt/CMake/FFmpeg и без загрузки внешних зависимостей.
 - Установлен MadMapper **Demo 6.0.5**, bundle build `6.0.5.25122226043`. GUI доступен. В отдельном новом тестовом Video-проекте проверены пустой список поверхностей и создание группы. В Demo пункты Open/Save/Collect/Export отключены. Подробности O01–O04 в [research](research.md).
 - Публичные материалы исследованы для ветки MadMapper 6: 44 источника, 84 строки каталога. Это широкий первоначальный каталог, не доказанный исчерпывающий перечень всех меню и параметров конкретной patch-версии.
-- [Исходники](https://github.com/aborokhvostov/ApertureCue) и [prerelease alpha 18](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.18) опубликованы для `9ad241aa7f0d529d78069508fdfa56344c5cfb5c`. [Проверка ZIP](verification/distribution.md#alpha-18). Предыдущие alpha доступны в истории релизов.
+- [Исходники](https://github.com/aborokhvostov/ApertureCue) и [prerelease alpha 19](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.19) опубликованы для `9f072d68618ea009e1c235afe58f4fce5db5f444`. [Проверка ZIP](verification/distribution.md#alpha-19). Предыдущие alpha доступны в истории релизов.
 - Внешние проекторы/свет/MIDI hardware не подтверждены. Camera adapter проверен по отказу, захват реального устройства не проверен. Локальный графический сеанс может использовать виртуальный дисплей.
 
 ## Реализованный работающий subset
 
-AppKit editor и Metal compositor: PNG/AVFoundation video, quad/triangle/ellipse, textured line/cubic paths и freehand, независимые input/output regular и Bézier warps, явный mesh link, projective группы с isolation/opacity/blend/FX, polygon/cubic masks слоя/группы/global, numeric transforms/nudge, chroma/luma key и color FX, expression materials и объявленный ISF subset, SVG→PNG import, video-wall tiles, edge ramps и previous-generation output feedback. Undo/Redo, schema 15 JSON, legacy migration, relative media paths, atomic save, recovery и Collect сохраняются.
+AppKit editor и Metal compositor: PNG/AVFoundation video, quad/triangle/ellipse, textured line/cubic paths и freehand, независимые input/output regular и Bézier warps, явный mesh link, projective группы с isolation/opacity/blend/FX, polygon/cubic masks слоя/группы/global, numeric transforms/nudge, chroma/luma key и color FX, expression materials и объявленный ISF subset, SVG→PNG import, video-wall tiles, edge ramps и previous-generation output feedback. Undo/Redo, schema 16 JSON, legacy migration, relative media paths, atomic save, recovery и Collect сохраняются.
 
 Отдельные output windows с display selection/routing/blackout, full/selective surface snapshots с 15 атомарными полями и редактором Scenes, графический parameter timeline с Hold/Linear/Bezier, независимыми часами, loop/continuation и Pause/Scene markers. Latest-frame AVCapture, сохранённые MIDI/OSC назначения, MIDI feedback и переподключение, локальный OSCQuery, basic RGB/GRB/RGBW strips, асинхронный sampling, симулятор и IPv4 Art-Net/sACN с опциональным sync. OBJ импортируется как статическая pinhole-проекция в editable quad patches, без depth buffer и сохранения исходной 3D-сцены. PNG still export.
 
 ## Текущий этап
 
-**Этап 6 · Light engine — schema 16 на приёмке.** В редакторе светового патча доступны собственные приборы, 8/16-битные каналы, выбор видеовыхода и импорт схемы. Добавлены DMX-монитор, запись и воспроизведение, импорт серий вспышек и модуль буферизованного USB-DMX/SPI. [Объём программной проверки](stage-6-completion.md).
+**Этап 6 · Light engine — программная приёмка завершена, alpha 19 опубликована.** Schema 16 сохраняет световой патч, 8/16-битные профили приборов и выбор видеовыхода. Добавлены DMX-монитор и локальный маршрут, запись и воспроизведение, импорт схем и LED-вспышек, буферизованный USB-DMX и экспорт SPI RGB. [Объём и границы этапа](stage-6-completion.md).
+
+- Локально прошли 199 методов standalone harness. Оптимизированное приложение прошло 24 режима, включая 5 проверок Light engine, 5 DMX sequence, 4 LED-скана и 4 адаптера с виртуальным приёмником.
+- GitHub Actions на точном коммите выполнил по 199 XCTest без ошибок на macOS и Linux. macOS собрала бандл и загрузила ZIP с оригинальными демо. [CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45958866571)
+- Из распакованного ZIP прошли восемь проверок. В диагностическом интерфейсе вручную добавлен патч и отредактирован черновик 16-битного канала. Сохранение, повторное открытие и значения на проводе проверены автотестом. [Отчёты](verification/stage-6/)
+- Локально проверены виртуальная схема света, тестовые UDP-получатели, подготовленные изображения вспышек и виртуальный USB-приёмник. Реальное оборудование, съёмка калибровки, электрический SPI и сетевые измерения на площадке требуют отдельной проверки.
 
 **Этап 5 · Control protocols — программная приёмка завершена, alpha 18 опубликована.** Schema 15 сохраняет OSC и MIDI назначения к UUID поверхностей и сцен. Добавлены Learn, обратная связь и переподключение MIDI, OSCQuery на loopback, проверка известного Art-Net-узла и sACN IPv4 multicast/sync. [Критерии и границы этапа](stage-5-completion.md).
 

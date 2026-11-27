@@ -1,0 +1,18 @@
+{
+  "checkCount": 4,
+  "checks": [
+    "buffered USB packet and SPI payload match native preview byte oracles; serial endpoint syntax is explicit",
+    "worker retained one latest frame through a blocked virtual write",
+    "stale input sends zero, fresh input recovers and Stop sends a last zero before close",
+    "a simulated write failure closes the adapter without retrying live data"
+  ],
+  "elapsedSeconds": 1.1753475416917354,
+  "hardwareAccess": false,
+  "hardwareVerification": false,
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "schemaVersion": 1,
+  "scope": "Native adapter worker and injectable local virtual byte sink; buffered DMX-Pro output frame and SPI RGB payload",
+  "timestampUTC": "2026-11-27T07:33:29Z",
+  "virtualSink": true
+}

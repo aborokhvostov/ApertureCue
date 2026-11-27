@@ -1,0 +1,26 @@
+{
+  "checkCount": 9,
+  "checks": [
+    "source playback and audio-routing callbacks preserve geometry, validate atomically and support Undo/Redo",
+    "hidden Sources window Play/Pause/Seek/Follow actions isolate the source clock and reject obsolete document callbacks",
+    "original PNG folder import freezes numeric order, retains geometry/history and admits new frames only by explicit refresh",
+    "effective opacity automation admits and decodes original managed MOV frames even when the saved base opacity is zero",
+    "schema-13 Save/Open and portable collection retain source settings, audio matrix, UUIDs and folder manifests",
+    "available recovery uses the decision callback, selects the restored model and is removed by its next successful Save",
+    "a sidecar corrupted during the Restore decision retains the clean saved model, reconciles adapters and preserves the diagnostic bytes",
+    "stale and corrupt recovery open without a modal decision and remain preserved even after an explicit Save",
+    "explicit Discard removes owned bound recovery and preserves unrelated invalid sidecars"
+  ],
+  "elapsedSeconds": 15.914959666668437,
+  "fixtureDirectory": "C6B904FD-B990-4005-B1FA-4FB351BA90EA",
+  "gpu": "Apple M2",
+  "hardwareVerification": false,
+  "limitations": "Automatic hidden native callbacks, not manual GUI evidence. No user project, camera, external display, physical audio/MIDI/light device, audible-output or long-show claim. The dedicated process durability mode checks forced termination separately.",
+  "modalDialogs": false,
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "schemaVersion": 1,
+  "scope": "Production source/editor commands, hidden Sources window callbacks, original PNG/MOV fixtures, schema-13 persistence and bound recovery; focused independent harness",
+  "timestampUTC": "2026-11-27T07:33:46Z",
+  "windowsShown": false
+}

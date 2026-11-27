@@ -1,0 +1,62 @@
+{
+  "checkCount": 14,
+  "checks": [
+    "ordinary sources independently play/pause/seek and explicitly rejoin the master without seeking adjacent sources",
+    "ordinary seek hides stale textures immediately and only the final rapid-seek generation publishes",
+    "trim, once, hold, loop, ping-pong and reverse display independently expected H.264 colors and covering PTS intervals",
+    "seeded random reader trace is stable across nonmonotonic and repeated seeks",
+    "reverse late-frame admission respects contiguous PTS runs, explicit gaps, the 120ms bound and exact paused seeks",
+    "syntactically valid trim outside actual media extent produces a visible diagnostic",
+    "frozen naturally sorted folder frames, missing-frame fallback and same-path restoration use exact bounded image resources",
+    "sequence requests coalesce during decode and cache failed frames until explicit refresh/relink",
+    "transient image admission pressure retries after leases release without permanently poisoning a frame",
+    "camera simulator disconnect clears capture/latest frame while retained GPU buffers survive; old-session callbacks cannot clear replacement",
+    "eight-reader admission releases inactive assignments and permits the ninth source without document deletion",
+    "visible video demand retires hidden-but-assigned readers while preserving ordinary audio assignment semantics",
+    "same saved audio route explicitly retries a stopped backend using the actual silent offline engine",
+    "bounded multi-source playback soak records actual PTS age, drops, generations and clock drift"
+  ],
+  "hardwareVerification": false,
+  "observations": {
+    "imagePayloadLimitBytes": 67108864,
+    "randomPresentationTrace": [
+      0.13333333333333333,
+      2.8,
+      1.1333333333333333,
+      2.8
+    ],
+    "retainedImagePayloadBytes": 4096,
+    "soak": {
+      "acceptedPullsBySource": [
+        3405,
+        3405,
+        3234,
+        2891
+      ],
+      "clockResynchronizations": 6,
+      "codec": "original H.264 MOV 30fps",
+      "imagePayloadBytes": 4096,
+      "limitations": "No optical output, audible audio, hardware throughput or show-length guarantee; missing pulls include startup and intentional backward-generation resets.",
+      "logicalOutputs": 0,
+      "managedDecoderCount": 2,
+      "maximumLegacyClockDriftSeconds": 0.11830375037102825,
+      "maximumManagedPTSAgeSeconds": 0.20000383338968586,
+      "missingFramePulls": 705,
+      "polls": 3410,
+      "resolution": [
+        160,
+        96
+      ],
+      "seconds": 120.0062402083422,
+      "sourceCount": 4,
+      "sourcePulls": 13640,
+      "successfulDecodedSourcePolls": 13635,
+      "totalDecodedFrames": 12657
+    }
+  },
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "schemaVersion": 1,
+  "scope": "Original H.264 MOV/PNG and simulated camera through production MediaPool, decoder, textures and source transports. No physical camera/audio/output hardware.",
+  "timestampUTC": "2026-11-27T07:40:04Z"
+}

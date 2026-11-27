@@ -292,3 +292,25 @@ The uploaded digests and sizes match both local assets.
 
 [Distribution identity](stage-5/distribution.json) · [Release metadata](stage-5/release.json) ·
 [Stage results and measurements](../stage-5-completion.md)
+
+## Alpha 19
+
+[Alpha 19](https://github.com/aborokhvostov/ApertureCue/releases/tag/v0.1.0-alpha.19)
+was published on 27 November 2026 Europe/Moscow from
+`9f072d68618ea009e1c235afe58f4fce5db5f444`.
+[Exact-source CI](https://github.com/aborokhvostov/ApertureCue/actions/runs/45958866571)
+passed 199 XCTest on each macOS and Linux and assembled the macOS bundle and
+ZIP with the original demos.
+
+The Apple Silicon app targets macOS 13+ and uses ad hoc signing without
+notarization. The 46-entry ZIP is 3,130,287 bytes and hashes to
+`cc4b1f61415229c692caa0b1a21903b0e3a3f864cacf4cb944be6e0a56ba3195`.
+The 94-byte `SHA256SUMS` hashes to
+`054c44d0358b9276b7a97b2799428eafd17dece5279ba1958751301f13e9efbe`.
+CRC, paths, signature, executable mode and app/demo byte identity passed after
+fresh extraction. Eight focused modes passed in the extracted app.
+The published tag resolves to the tested source, and the size and SHA-256 of
+both uploaded assets match the local files.
+
+[Distribution identity](stage-6/distribution.json) ·
+[Release metadata](stage-6/release.json) · [Stage results and scope](../stage-6-completion.md)

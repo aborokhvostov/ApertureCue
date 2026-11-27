@@ -1,0 +1,75 @@
+{
+  "actualWindowContentSize": [
+    1280,
+    800
+  ],
+  "checkCount": 3,
+  "checks": [
+    "actual visible Composition editor keeps static overlay layers while its production timer, material clock and drawables advance",
+    "native Input mode action redraws the overlay without changing saved source/output geometry",
+    "native Output mode action restores composition and ordinary auto-resize resumes frames without changing the model"
+  ],
+  "drawableSizing": "Production MTKView.autoResizeDrawable; actual view size and acquired texture dimensions are reported.",
+  "elapsedSeconds": 9.693571249954402,
+  "gpu": "Apple M2",
+  "hardwareVerification": false,
+  "interval": {
+    "actualViewDrawableSize": [
+      1506,
+      848
+    ],
+    "completedCommands": 139,
+    "lastTextureSize": [
+      1506,
+      848
+    ],
+    "mainQueueProbe": {
+      "count": 300,
+      "maximumMilliseconds": 18.170125025790185,
+      "meanMilliseconds": 0.7446381942524265
+    },
+    "maximumDrawableWaitMilliseconds": 91.86241665156558,
+    "seconds": 6.001253249996807,
+    "showClockDelta": 5.9802307083737105,
+    "staticOverlayLayerIdentityPreserved": true
+  },
+  "limitations": "Local graphics session may use a virtual display. Main-queue response and submitted commands are measured; accessibility clients, optical refresh, physical devices, GPU utilization and long-show behavior are unmeasured. Static layer identity is a regression gate for time-only ticks, not a frame-rate claim.",
+  "modalDialogs": false,
+  "modeActions": {
+    "inputOverlayRedrawn": true,
+    "modelPreserved": true,
+    "outputOverlayRedrawn": true,
+    "resizedLastTextureSize": [
+      1506,
+      848
+    ],
+    "resizedViewDrawableSize": [
+      1506,
+      848
+    ],
+    "resizedWindowRequestedContentSize": [
+      1279,
+      801
+    ]
+  },
+  "overlayLogicalSize": [
+    753,
+    424
+  ],
+  "passed": true,
+  "platform": "Version 26.6.2 (Build 25G83)",
+  "requestedWindowContentSize": [
+    1280,
+    800
+  ],
+  "schemaVersion": 1,
+  "scope": "Actual EditorController, generated original Composition project, production 30 Hz timer, live materials, AppKit overlay layers and native mode picker actions.",
+  "startupMainQueueProbe": {
+    "count": 20,
+    "maximumMilliseconds": 2736.5986250224523,
+    "meanMilliseconds": 140.91203749994747
+  },
+  "timestampUTC": "2026-11-27T07:37:42Z",
+  "warmupSeconds": 0.5291195416939445,
+  "windowsShown": true
+}

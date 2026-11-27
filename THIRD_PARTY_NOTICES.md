@@ -35,6 +35,11 @@ No additional GPL linking exception has been introduced for optional proprietary
 
 Syphon, Spout, NDI, Blackmagic, Canon SDKs, depth-camera SDKs, USB-DMX vendor libraries, Ableton Link, PJLink libraries, laser DAC SDKs and MiniMad software are not shipped. Each future adapter must record the exact source/version, license, dynamic/static linking, redistribution conditions and test hardware. A codec protocol implemented from a public specification does not include a vendor's implementation or establish hardware certification.
 
+ApertureCue's optional buffered USB-DMX adapter uses its own packet encoder
+and macOS POSIX serial APIs. The SPI preview exports RGB payloads for a separate
+electrical driver. The base distribution includes neither device drivers nor
+vendor SDKs. [Protocol sources and adapter scope](docs/lighting-adapter-spec.md)
+
 ## Art-Net protocol credit and registration
 
 The official [Art-Net 4 specification, revision 1.4dp, 23 October 2025](https://art-net.org.uk/downloads/art-net.pdf) permits royalty-free protocol use, requires a user-guide credit and requires manufacturers implementing it to apply for an OEM code. The prescribed credit is reproduced in [the user guide](docs/user-guide.md#protocol-credits). ApertureCue's code was written independently; the protocol document and vendor SDK are not redistributed or relicensed as project source.
