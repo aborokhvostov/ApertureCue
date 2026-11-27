@@ -304,14 +304,21 @@ import MappingCore
     func numberOfRows(in tableView:NSTableView) -> Int { tableView === layerTable ? project.surfaces.count : project.assets.count + project.montages.count }
     func tableView(_ tableView:NSTableView,viewFor tableColumn:NSTableColumn?,row:Int) -> NSView? {
         if tableView === layerTable {
+            guard project.surfaces.indices.contains(row) else { return nil }
             let s = project.surfaces[row]
             let visible = resolvedBaseSurfaces.first(where:{$0.id == s.id})?.enabled ?? s.enabled
             let prefix = s.groupID.flatMap { id in project.groups.first(where:{$0.id == id})?.name }.map { "[\($0)] " } ?? ""
             let lock = project.geometryLockedSurfaceIDs.contains(s.id) ? " · Locked" : ""
             return label((visible ? "◈ " : "○ ") + prefix + s.name + lock)
         }
-        if row >= project.assets.count { return label("▤ " + project.montages[row-project.assets.count].name) }
-        let a = project.assets[row]; return label((a.kind == "video" ? "▶ " : "▧ ") + a.name)
+        if project.assets.indices.contains(row) {
+            let a = project.assets[row]
+            return label((a.kind == "video" ? "▶ " : "▧ ") + a.name)
+        }
+        guard row >= project.assets.count else { return nil }
+        let montageIndex = row - project.assets.count
+        guard project.montages.indices.contains(montageIndex) else { return nil }
+        return label("▤ " + project.montages[montageIndex].name)
     }
     func tableViewSelectionDidChange(_ notification:Notification) {
         guard let table = notification.object as? NSTableView else { return }

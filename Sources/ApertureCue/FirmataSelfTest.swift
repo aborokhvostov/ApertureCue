@@ -100,13 +100,30 @@ import MappingCore
                 throw SystemFailure(message: "Explicit serial call-out path validation failed")
             }
             let editor = EditorController()
+            editor.timer?.invalidate()
+            editor.timer = nil
+            editor.window?.orderOut(nil)
+            editor.metalView.isPaused = true
+            editor.lightingView.isPaused = true
+            defer {
+                editor.closeFirmata()
+                editor.media.reset()
+                editor.dirty = false
+                editor.window?.close()
+            }
             let surface = Surface(name: "Firmata fixture", opacity: 0)
             editor.project = Project(name: "Original Firmata fixture", surfaces: [surface])
+            guard editor.tableView(editor.layerTable, viewFor: nil, row: 1) == nil,
+                  editor.tableView(editor.mediaTable, viewFor: nil, row: 0) == nil else {
+                throw SystemFailure(message: "A stale table row rendered after replacing the editor document")
+            }
+            pass("native editor ignores rows left over from a previous document")
+            editor.reconcile()
+            editor.refresh()
             editor.showFirmata()
             guard let panel = editor.firmataWindow, panel.window?.isVisible == true else {
                 throw SystemFailure(message: "The Firmata panel did not open")
             }
-            defer { editor.closeFirmata() }
             let first = try BoardFixture()
             first.attach(to: panel)
             try first.expect([0xF9])
